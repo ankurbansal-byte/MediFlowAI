@@ -1,4 +1,5 @@
 import AIInsights from "../components/AIInsights";
+import ClinicalIntelligencePanel from "../components/ClinicalIntelligencePanel";
 import DashboardHeader from "../components/DashboardHeader";
 import PatientProfileCard from "../components/PatientProfileCard";
 import PatientSelector from "../components/PatientSelector";
@@ -88,6 +89,11 @@ const Dashboard = () => {
                 latestRecordedAt={selectedPatientOption?.latestRecordedAt}
                 totalRecords={selectedPatientOption?.totalRecords ?? 0}
                 isLoading={isPatientsLoading}
+              />
+
+              <ClinicalIntelligencePanel
+                summary={summary}
+                isLoading={isTimelineLoading || isPatientsLoading}
               />
 
               {hasSummaryError ? (

@@ -28,7 +28,7 @@ const TrendChart = ({ records, period, onPeriodChange, isLoading, hasError }: Tr
       .filter((record) => Number.isFinite(record.numericValue));
   }, [records]);
 
-  const { minimum, maximum, plotHeight, points, pointString, unit } = useMemo(() => {
+  const { latest, average, minimum, maximum, plotHeight, points, pointString, unit } = useMemo(() => {
     const values = data.map(({ numericValue }) => numericValue);
     const minVal = values.length > 0 ? Math.min(...values) : 0;
     const maxVal = values.length > 0 ? Math.max(...values) : 0;
@@ -44,8 +44,14 @@ const TrendChart = ({ records, period, onPeriodChange, isLoading, hasError }: Tr
 
     const ptsString = pts.map(({ x, y }) => `${x},${y}`).join(" ");
     const unitSymbol = data[0]?.unit ?? "mg/dL";
+    const latestVal = data.length > 0 ? data[data.length - 1].numericValue : 0;
+    const avgVal = values.length > 0
+      ? Number((values.reduce((total, val) => total + val, 0) / values.length).toFixed(1))
+      : 0;
 
     return {
+      latest: latestVal,
+      average: avgVal,
       minimum: minVal,
       maximum: maxVal,
       plotHeight: plotH,
@@ -76,15 +82,63 @@ const TrendChart = ({ records, period, onPeriodChange, isLoading, hasError }: Tr
         </div>
       </div>
 
-      {isLoading ? <p className="trend-section__state">Loading blood sugar trend...</p> : null}
-      {hasError ? <p className="trend-section__state trend-section__state--error">Blood sugar trend is currently unavailable.</p> : null}
-      {!isLoading && !hasError && data.length === 0 ? <p className="trend-section__state">No blood sugar readings are available for this period.</p> : null}
+      {isLoading ? (
+        <div className="clinical-timeline-skeleton" style={{ marginTop: "20px" }}>
+          <div className="clinical-timeline-skeleton__group" style={{ width: "35%" }} />
+          <div className="clinical-timeline-skeleton__item" style={{ height: "120px" }} />
+        </div>
+      ) : null}
+      {hasError ? (
+        <div className="clinical-state-card clinical-state-card--error" style={{ marginTop: "20px" }}>
+          <span className="clinical-state-card__icon" aria-hidden="true">⚠</span>
+          <div className="clinical-state-card__content">
+            <h3 className="clinical-state-card__title">Trend Analysis Unavailable</h3>
+            <p className="clinical-state-card__message">
+              The physiological trends for the selected parameters could not be constructed. Check database parameters.
+            </p>
+          </div>
+        </div>
+      ) : null}
+      {!isLoading && !hasError && data.length === 0 ? (
+        <div className="clinical-state-card clinical-state-card--empty" style={{ marginTop: "20px" }}>
+          <span className="clinical-state-card__icon" aria-hidden="true">◈</span>
+          <div className="clinical-state-card__content">
+            <h3 className="clinical-state-card__title">No Trend Data</h3>
+            <p className="clinical-state-card__message">
+              No blood sugar recordings are available during the selected clinical period.
+            </p>
+          </div>
+        </div>
+      ) : null}
       {!isLoading && !hasError && data.length > 0 ? (
         <div className="trend-chart">
-          <div className="trend-chart__summary">
-            <span>Range</span>
-            <strong>{minimum}–{maximum} {unit}</strong>
+          <div className="quick-stats-grid">
+            <div className="quick-stats-card">
+              <span className="quick-stats-card__label">Latest</span>
+              <strong className="quick-stats-card__value">
+                {latest} <span className="quick-stats-card__unit">{unit}</span>
+              </strong>
+            </div>
+            <div className="quick-stats-card">
+              <span className="quick-stats-card__label">Average</span>
+              <strong className="quick-stats-card__value">
+                {average} <span className="quick-stats-card__unit">{unit}</span>
+              </strong>
+            </div>
+            <div className="quick-stats-card">
+              <span className="quick-stats-card__label">Highest</span>
+              <strong className="quick-stats-card__value">
+                {maximum} <span className="quick-stats-card__unit">{unit}</span>
+              </strong>
+            </div>
+            <div className="quick-stats-card">
+              <span className="quick-stats-card__label">Lowest</span>
+              <strong className="quick-stats-card__value">
+                {minimum} <span className="quick-stats-card__unit">{unit}</span>
+              </strong>
+            </div>
           </div>
+
           <svg aria-labelledby="blood-sugar-trend-title" className="trend-chart__svg" role="img" viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
             <line className="trend-chart__grid" x1={padding.left} x2={chartWidth - padding.right} y1={padding.top} y2={padding.top} />
             <line className="trend-chart__grid" x1={padding.left} x2={chartWidth - padding.right} y1={padding.top + plotHeight / 2} y2={padding.top + plotHeight / 2} />
