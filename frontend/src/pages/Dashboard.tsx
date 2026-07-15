@@ -2,7 +2,7 @@ import AIInsights from "../components/AIInsights";
 import ClinicalIntelligencePanel from "../components/ClinicalIntelligencePanel";
 import DashboardHeader from "../components/DashboardHeader";
 import PatientProfileCard from "../components/PatientProfileCard";
-import PatientSelector from "../components/PatientSelector";
+import PatientListPanel from "../components/PatientListPanel";
 import PatientTimeline from "../components/PatientTimeline";
 import Sidebar from "../components/Sidebar";
 import SummaryCard from "../components/SummaryCard";
@@ -49,6 +49,13 @@ const Dashboard = () => {
   return (
     <div className="dashboard">
       <Sidebar />
+      <PatientListPanel
+        patients={patients}
+        selectedPatientId={selectedPatientId}
+        onSelect={setSelectedPatientId}
+        isLoading={isPatientsLoading}
+        isError={hasPatientsError}
+      />
       <main className="dashboard__content">
         <DashboardHeader />
 
@@ -79,8 +86,12 @@ const Dashboard = () => {
           <>
             <section className="summary-section" aria-labelledby="patient-summary-title">
               <div className="summary-section__top-row">
-                <div><p className="summary-section__eyebrow">Patient overview</p><h2 className="summary-section__heading" id="patient-summary-title">Patient workspace & vital statistics</h2></div>
-                <PatientSelector onSelect={setSelectedPatientId} patients={patients} selectedPatientId={selectedPatientId} />
+                <div>
+                  <p className="summary-section__eyebrow">Patient overview</p>
+                  <h2 className="summary-section__heading" id="patient-summary-title">
+                    Patient workspace & vital statistics
+                  </h2>
+                </div>
               </div>
               <p className="summary-section__description">A clinical overview of the selected patient&apos;s records and vital trends.</p>
 

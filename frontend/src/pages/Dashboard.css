@@ -6,9 +6,248 @@
   --canvas: #f5f7fb;
   display: grid;
   min-height: 100vh;
-  grid-template-columns: 256px minmax(0, 1fr);
+  grid-template-columns: 256px 340px minmax(0, 1fr);
   background: var(--canvas);
   color: var(--navy);
+}
+
+/* Patient List Panel Styles */
+.patient-list-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  padding: 30px 20px;
+  box-sizing: border-box;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+}
+
+.patient-list-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.patient-list-panel__title {
+  margin: 0;
+  color: var(--navy);
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.patient-list-panel__count {
+  font-size: 0.75rem;
+  font-weight: 750;
+  color: #178f80;
+  background: #e7f8f5;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.patient-list-panel__search-box {
+  margin-bottom: 20px;
+}
+
+.patient-list-panel__search-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 750;
+  color: #7e8ba1;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+
+.patient-list-panel__search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.patient-list-panel__search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.patient-list-panel__search-input {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border: 1px solid #d5deeb;
+  border-radius: 9px;
+  color: var(--navy);
+  font: inherit;
+  font-size: 0.86rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.patient-list-panel__search-input:focus {
+  border-color: #238b82;
+  box-shadow: 0 0 0 3px rgba(35, 139, 130, 0.12);
+  outline: none;
+}
+
+.patient-list-panel__list {
+  flex-grow: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+
+/* Custom Scrollbar for Patient List */
+.patient-list-panel__list::-webkit-scrollbar {
+  width: 6px;
+}
+.patient-list-panel__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.patient-list-panel__list::-webkit-scrollbar-thumb {
+  background-color: var(--line);
+  border-radius: 3px;
+}
+
+.patient-list-panel__item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.patient-list-panel__item:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.patient-list-panel__item:focus-visible,
+.patient-list-panel__item--highlighted {
+  border-color: #85b9d4;
+  background: #f0f7fa;
+  outline: 2px solid rgba(53, 143, 170, .18);
+  outline-offset: 1px;
+}
+
+.patient-list-panel__item--selected {
+  background: #e7f8f5;
+  border-color: #238b82;
+}
+
+.patient-list-panel__item--selected:hover {
+  background: #def5f1;
+}
+
+.patient-list-panel__item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.patient-list-panel__item-id {
+  font-family: monospace;
+  font-size: 0.95rem;
+  font-weight: 750;
+  color: var(--navy);
+}
+
+.patient-list-panel__item-records {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.patient-list-panel__item--selected .patient-list-panel__item-records {
+  background: #c3ece5;
+  color: #115e59;
+}
+
+.patient-list-panel__item-body {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.patient-list-panel__item-activity-label {
+  font-weight: 550;
+}
+
+.patient-list-panel__item-activity-date {
+  font-weight: 700;
+  color: #334155;
+}
+
+.patient-list-panel__item--selected .patient-list-panel__item-activity-date {
+  color: #115e59;
+}
+
+/* List Panel Empty & Error states */
+.patient-list-panel__empty-state,
+.patient-list-panel__error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  flex-grow: 1;
+}
+
+.patient-list-panel__empty-icon,
+.patient-list-panel__error-icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+
+.patient-list-panel__empty-text,
+.patient-list-panel__error-text {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Skeleton items */
+.patient-list-panel__skeleton-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  animation: pulse 1.8s infinite ease-in-out;
+}
+
+.patient-list-panel__skeleton-line-title {
+  height: 16px;
+  background: #e5eaf2;
+  border-radius: 4px;
+  width: 60%;
+}
+
+.patient-list-panel__skeleton-line-sub {
+  height: 12px;
+  background: #e5eaf2;
+  border-radius: 4px;
+  width: 80%;
 }
 
 .sidebar { display: flex; min-height: 100vh; flex-direction: column; padding: 30px 18px; background: #10213d; box-sizing: border-box; color: #c6d3e6; }
@@ -859,6 +1098,11 @@
   border-radius: 10px;
 }
 
+@media (max-width: 1200px) {
+  .dashboard {
+    grid-template-columns: 200px 280px minmax(0, 1fr);
+  }
+}
 @media (max-width: 1180px) {
   .summary-grid { grid-template-columns: repeat(3, minmax(160px, 1fr)); }
   .patient-profile-card__details-grid, .patient-profile-card__skeleton-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
@@ -872,6 +1116,17 @@
   .sidebar__link { width: auto; padding: 9px 12px; white-space: nowrap; }
   .sidebar__support { display: none; }
   .dashboard__content { padding-top: 30px; }
+
+  .patient-list-panel {
+    height: auto;
+    position: relative;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    padding: 20px;
+  }
+  .patient-list-panel__list {
+    max-height: 250px;
+  }
 }
 @media (max-width: 700px) {
   .timeline-item { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
