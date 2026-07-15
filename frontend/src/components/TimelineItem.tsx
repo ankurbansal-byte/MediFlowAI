@@ -25,31 +25,47 @@ const formatConfidence = (confidence?: number) => {
   return `${Math.round(percentage)}%`;
 };
 
-const TimelineItem = ({ record }: TimelineItemProps) => (
-  <article className="timeline-item">
-    <div className="timeline-item__measurement">
-      <p className="timeline-item__parameter">{formatParameter(record.parameter)}</p>
-      <p className="timeline-item__value">
-        {record.value}
-        {record.unit ? <span>{record.unit}</span> : null}
-      </p>
-    </div>
+const getAccentClass = (parameter: string) => {
+  const p = parameter.toLowerCase();
+  if (p.includes("sugar")) return "blue";
+  if (p.includes("pressure")) return "rose";
+  if (p.includes("rate") || p.includes("heart")) return "violet";
+  if (p.includes("temp")) return "orange";
+  if (p.includes("weight")) return "teal";
+  return "default";
+};
 
-    <div className="timeline-item__detail">
-      <span className="timeline-item__detail-label">Recorded</span>
-      <span>{formatLongDate(record.recordedAt)}</span>
-    </div>
+const TimelineItem = ({ record }: TimelineItemProps) => {
+  const accent = getAccentClass(record.parameter);
 
-    <div className="timeline-item__detail">
-      <span className="timeline-item__detail-label">Source</span>
-      <span className="timeline-item__source">{record.source ?? "Unknown"}</span>
-    </div>
+  return (
+    <article className={`timeline-item timeline-item--accent-${accent}`}>
+      <div className="timeline-item__measurement">
+        <span className={`timeline-item__badge-label timeline-item__badge-label--${accent}`}>
+          {formatParameter(record.parameter)}
+        </span>
+        <p className="timeline-item__value">
+          {record.value}
+          {record.unit ? <span>{record.unit}</span> : null}
+        </p>
+      </div>
 
-    <div className="timeline-item__detail">
-      <span className="timeline-item__detail-label">Confidence</span>
-      <span>{formatConfidence(record.confidence)}</span>
-    </div>
-  </article>
-);
+      <div className="timeline-item__detail">
+        <span className="timeline-item__detail-label">Recorded Time</span>
+        <span className="timeline-item__detail-value">{formatLongDate(record.recordedAt)}</span>
+      </div>
+
+      <div className="timeline-item__detail">
+        <span className="timeline-item__detail-label">Source</span>
+        <span className="timeline-item__source">{record.source ?? "Unknown"}</span>
+      </div>
+
+      <div className="timeline-item__detail">
+        <span className="timeline-item__detail-label">Confidence</span>
+        <span className="timeline-item__confidence-value">{formatConfidence(record.confidence)}</span>
+      </div>
+    </article>
+  );
+};
 
 export default TimelineItem;
