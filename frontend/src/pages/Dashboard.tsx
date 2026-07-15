@@ -4,6 +4,7 @@ import DashboardHeader from "../components/DashboardHeader";
 import PatientProfileCard from "../components/PatientProfileCard";
 import PatientListPanel from "../components/PatientListPanel";
 import PatientTimeline from "../components/PatientTimeline";
+import { useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import SummaryCard from "../components/SummaryCard";
 import TimelineFilter from "../components/TimelineFilter";
@@ -11,6 +12,7 @@ import TrendChart from "../components/TrendChart";
 import { usePatients } from "../hooks/usePatients";
 import { usePatientData } from "../hooks/usePatientData";
 import { useTrendData } from "../hooks/useTrendData";
+import { calculateParameterStats } from "../utils/stats";
 import "./Dashboard.css";
 
 const Dashboard = () => {
@@ -35,12 +37,21 @@ const Dashboard = () => {
   const selectedPatientOption = patients.find(p => p.patientId === selectedPatientId);
 
   const {
+    trends,
     trend,
     trendPeriod,
     setTrendPeriod,
+    selectedParameter,
+    setSelectedParameter,
     isTrendLoading,
     hasTrendError,
   } = useTrendData(selectedPatientId);
+
+  const bloodSugarStats = useMemo(() => calculateParameterStats(trends.blood_sugar, "blood_sugar", summary?.blood_sugar?.unit), [trends.blood_sugar, summary?.blood_sugar?.unit]);
+  const bloodPressureStats = useMemo(() => calculateParameterStats(trends.blood_pressure, "blood_pressure", summary?.blood_pressure?.unit), [trends.blood_pressure, summary?.blood_pressure?.unit]);
+  const heartRateStats = useMemo(() => calculateParameterStats(trends.heart_rate, "heart_rate", summary?.heart_rate?.unit), [trends.heart_rate, summary?.heart_rate?.unit]);
+  const temperatureStats = useMemo(() => calculateParameterStats(trends.body_temperature, "body_temperature", summary?.body_temperature?.unit), [trends.body_temperature, summary?.body_temperature?.unit]);
+  const weightStats = useMemo(() => calculateParameterStats(trends.weight, "weight", summary?.weight?.unit), [trends.weight, summary?.weight?.unit]);
 
   const visibleTimeline = timelineFilter === "all"
     ? timeline
@@ -122,17 +133,64 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="summary-grid">
-                  <SummaryCard accent="blue" icon="◒" label="Blood Sugar" unit={summary.blood_sugar?.unit} value={summary.blood_sugar?.value} />
-                  <SummaryCard accent="rose" icon="♥" label="Blood Pressure" unit={summary.blood_pressure?.unit} value={summary.blood_pressure?.value} />
-                  <SummaryCard accent="violet" icon="⌁" label="Heart Rate" unit={summary.heart_rate?.unit} value={summary.heart_rate?.value} />
-                  <SummaryCard accent="orange" icon="°" label="Temperature" unit={summary.body_temperature?.unit} value={summary.body_temperature?.value} />
-                  <SummaryCard accent="teal" icon="◈" label="Weight" unit={summary.weight?.unit} value={summary.weight?.value} />
+                  <SummaryCard
+                    accent="blue"
+                    icon="◒"
+                    label="Blood Sugar"
+                    stats={bloodSugarStats}
+                    isSelected={selectedParameter === "blood_sugar"}
+                    onClick={() => setSelectedParameter("blood_sugar")}
+                  />
+                  <SummaryCard
+                    accent="rose"
+                    icon="♥"
+                    label="Blood Pressure"
+                    stats={bloodPressureStats}
+                    isSelected={selectedParameter === "blood_pressure"}
+                    onClick={() => setSelectedParameter("blood_pressure")}
+                  />
+                  <SummaryCard
+                    accent="violet"
+                    icon="⌁"
+                    label="Heart Rate"
+                    stats={heartRateStats}
+                    isSelected={selectedParameter === "heart_rate"}
+                    onClick={() => setSelectedParameter("heart_rate")}
+                  />
+                  <SummaryCard
+                    accent="orange"
+                    icon="°"
+                    label="Temperature"
+                    stats={temperatureStats}
+                    isSelected={selectedParameter === "body_temperature"}
+                    onClick={() => setSelectedParameter("body_temperature")}
+                  />
+                  <SummaryCard
+                    accent="teal"
+                    icon="◈"
+                    label="Weight"
+                    stats={weightStats}
+                    isSelected={selectedParameter === "weight"}
+                    onClick={() => setSelectedParameter("weight")}
+                  />
                 </div>
               )}
             </section>
 
-            <TrendChart hasError={hasTrendError} isLoading={isTrendLoading} onPeriodChange={setTrendPeriod} period={trendPeriod} records={trend} />
-            <AIInsights hasError={hasTrendError} isLoading={isTrendLoading} records={trend} />
+            <TrendChart
+              hasError={hasTrendError}
+              isLoading={isTrendLoading}
+              onPeriodChange={setTrendPeriod}
+              period={trendPeriod}
+              records={trend}
+              parameter={selectedParameter}
+            />
+            <AIInsights
+              hasError={hasTrendError}
+              isLoading={isTrendLoading}
+              records={trend}
+              parameter={selectedParameter}
+            />
 
             <div className="timeline-filter-section">
               <TimelineFilter onChange={setTimelineFilter} value={timelineFilter} />
