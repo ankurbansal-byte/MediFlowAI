@@ -1,3 +1,6 @@
+import { useMemo } from "react";
+import { formatShortDate } from "../utils/date";
+
 export type TrendPeriod = 7 | 30;
 
 export type TrendRecord = {
@@ -18,35 +21,39 @@ const chartWidth = 720;
 const chartHeight = 260;
 const padding = { top: 26, right: 26, bottom: 38, left: 54 };
 
-const formatDate = (dateValue?: string) => {
-  if (!dateValue) {
-    return "Unknown date";
-  }
-
-  const date = new Date(dateValue);
-  return Number.isNaN(date.getTime())
-    ? "Unknown date"
-    : new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(date);
-};
-
 const TrendChart = ({ records, period, onPeriodChange, isLoading, hasError }: TrendChartProps) => {
-  const data = records
-    .map((record) => ({ ...record, numericValue: Number(record.value) }))
-    .filter((record) => Number.isFinite(record.numericValue));
+  const data = useMemo(() => {
+    return records
+      .map((record) => ({ ...record, numericValue: Number(record.value) }))
+      .filter((record) => Number.isFinite(record.numericValue));
+  }, [records]);
 
-  const values = data.map(({ numericValue }) => numericValue);
-  const minimum = values.length > 0 ? Math.min(...values) : 0;
-  const maximum = values.length > 0 ? Math.max(...values) : 0;
-  const range = maximum - minimum || 1;
-  const plotWidth = chartWidth - padding.left - padding.right;
-  const plotHeight = chartHeight - padding.top - padding.bottom;
-  const points = data.map((record, index) => {
-    const x = padding.left + (index / Math.max(data.length - 1, 1)) * plotWidth;
-    const y = padding.top + (1 - (record.numericValue - minimum) / range) * plotHeight;
-    return { x, y, ...record };
-  });
-  const pointString = points.map(({ x, y }) => `${x},${y}`).join(" ");
-  const unit = data[0]?.unit ?? "mg/dL";
+  const { minimum, maximum, plotHeight, points, pointString, unit } = useMemo(() => {
+    const values = data.map(({ numericValue }) => numericValue);
+    const minVal = values.length > 0 ? Math.min(...values) : 0;
+    const maxVal = values.length > 0 ? Math.max(...values) : 0;
+    const rng = maxVal - minVal || 1;
+    const plotWidth = chartWidth - padding.left - padding.right;
+    const plotH = chartHeight - padding.top - padding.bottom;
+
+    const pts = data.map((record, index) => {
+      const x = padding.left + (index / Math.max(data.length - 1, 1)) * plotWidth;
+      const y = padding.top + (1 - (record.numericValue - minVal) / rng) * plotH;
+      return { x, y, ...record };
+    });
+
+    const ptsString = pts.map(({ x, y }) => `${x},${y}`).join(" ");
+    const unitSymbol = data[0]?.unit ?? "mg/dL";
+
+    return {
+      minimum: minVal,
+      maximum: maxVal,
+      plotHeight: plotH,
+      points: pts,
+      pointString: ptsString,
+      unit: unitSymbol,
+    };
+  }, [data]);
 
   return (
     <section className="trend-section" aria-labelledby="blood-sugar-trend-title">
@@ -87,11 +94,11 @@ const TrendChart = ({ records, period, onPeriodChange, isLoading, hasError }: Tr
             <polyline className="trend-chart__line" points={pointString} />
             {points.map((point, index) => (
               <circle className="trend-chart__point" cx={point.x} cy={point.y} key={`${point.recordedAt ?? index}-${point.value}`} r="4.5">
-                <title>{`${point.value} ${point.unit ?? unit} on ${formatDate(point.recordedAt)}`}</title>
+                <title>{`${point.value} ${point.unit ?? unit} on ${formatShortDate(point.recordedAt)}`}</title>
               </circle>
             ))}
-            <text className="trend-chart__axis-label" x={padding.left} y={chartHeight - 10}>{formatDate(data[0]?.recordedAt)}</text>
-            <text className="trend-chart__axis-label trend-chart__axis-label--end" x={chartWidth - padding.right} y={chartHeight - 10}>{formatDate(data[data.length - 1]?.recordedAt)}</text>
+            <text className="trend-chart__axis-label" x={padding.left} y={chartHeight - 10}>{formatShortDate(data[0]?.recordedAt)}</text>
+            <text className="trend-chart__axis-label trend-chart__axis-label--end" x={chartWidth - padding.right} y={chartHeight - 10}>{formatShortDate(data[data.length - 1]?.recordedAt)}</text>
           </svg>
         </div>
       ) : null}
