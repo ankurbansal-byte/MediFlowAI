@@ -9,6 +9,7 @@ import Sidebar from "../components/Sidebar";
 import SummaryCard from "../components/SummaryCard";
 import TimelineFilter from "../components/TimelineFilter";
 import TrendChart from "../components/TrendChart";
+import HealthSummary from "../components/HealthSummary";
 import { usePatients } from "../hooks/usePatients";
 import { usePatientData } from "../hooks/usePatientData";
 import { useTrendData } from "../hooks/useTrendData";
@@ -176,6 +177,14 @@ const Dashboard = () => {
                 </div>
               )}
             </section>
+
+            <HealthSummary
+              trends={trends}
+              selectedParameter={selectedParameter}
+              setSelectedParameter={setSelectedParameter}
+              period={trendPeriod}
+              isLoading={isTrendLoading}
+            />
 
             <TrendChart
               hasError={hasTrendError}

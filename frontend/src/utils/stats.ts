@@ -1,4 +1,5 @@
 import { type TrendRecord } from "../components/TrendChart";
+import { formatLongDate } from "./date";
 
 export interface ParameterStats {
   latest: string | number;
@@ -8,7 +9,102 @@ export interface ParameterStats {
   trendDirection: "Rising" | "Falling" | "Stable" | "No Data";
   unit: string;
   count: number;
+  lastUpdated: string;
 }
+
+export interface ConsistencyInfo {
+  level: "High Consistency" | "Moderate Consistency" | "Low Consistency" | "No Data";
+  color: string;
+  percentage: number;
+  description: string;
+}
+
+export const calculateReadingConsistency = (
+  count: number,
+  period: number
+): ConsistencyInfo => {
+  if (count === 0) {
+    return {
+      level: "No Data",
+      color: "#6c7890", // var(--muted)
+      percentage: 0,
+      description: `No readings recorded for this parameter in the last ${period} days.`,
+    };
+  }
+
+  // Define thresholds based on the selected period
+  if (period === 7) {
+    if (count >= 5) {
+      return {
+        level: "High Consistency",
+        color: "#178f80", // teal
+        percentage: 100,
+        description: `Excellent frequency! Recorded ${count} readings in the last 7 days (target: 5+).`,
+      };
+    } else if (count >= 3) {
+      return {
+        level: "Moderate Consistency",
+        color: "#d67b2a", // orange
+        percentage: 60,
+        description: `Good progress. Recorded ${count} readings in the last 7 days (target: 5+).`,
+      };
+    } else {
+      return {
+        level: "Low Consistency",
+        color: "#c84d64", // rose
+        percentage: 25,
+        description: `Infrequent monitoring. Only ${count} reading${count > 1 ? "s" : ""} recorded in the last 7 days.`,
+      };
+    }
+  } else if (period === 90) {
+    if (count >= 45) {
+      return {
+        level: "High Consistency",
+        color: "#178f80", // teal
+        percentage: 100,
+        description: `Excellent frequency! Recorded ${count} readings in the last 90 days (target: 45+).`,
+      };
+    } else if (count >= 15) {
+      return {
+        level: "Moderate Consistency",
+        color: "#d67b2a", // orange
+        percentage: 60,
+        description: `Stable monitoring. Recorded ${count} readings in the last 90 days (target: 45+).`,
+      };
+    } else {
+      return {
+        level: "Low Consistency",
+        color: "#c84d64", // rose
+        percentage: 25,
+        description: `Attention needed. Only ${count} reading${count > 1 ? "s" : ""} recorded in the last 90 days.`,
+      };
+    }
+  } else {
+    // Default to 30 days
+    if (count >= 15) {
+      return {
+        level: "High Consistency",
+        color: "#178f80", // teal
+        percentage: 100,
+        description: `Excellent frequency! Recorded ${count} readings in the last 30 days (target: 15+).`,
+      };
+    } else if (count >= 5) {
+      return {
+        level: "Moderate Consistency",
+        color: "#d67b2a", // orange
+        percentage: 60,
+        description: `Satisfactory. Recorded ${count} readings in the last 30 days (target: 15+).`,
+      };
+    } else {
+      return {
+        level: "Low Consistency",
+        color: "#c84d64", // rose
+        percentage: 25,
+        description: `Monitoring frequency is low. Only ${count} reading${count > 1 ? "s" : ""} recorded in the last 30 days.`,
+      };
+    }
+  }
+};
 
 export const calculateParameterStats = (
   records: TrendRecord[],
@@ -34,12 +130,14 @@ export const calculateParameterStats = (
       trendDirection: "No Data",
       unit,
       count: 0,
+      lastUpdated: "—",
     };
   }
 
   // Latest is simply the last record (since they are sorted in ascending order of recordedAt)
   const latestRecord = records[records.length - 1];
   const latestValue = latestRecord.value;
+  const lastUpdated = latestRecord.recordedAt ? formatLongDate(latestRecord.recordedAt) : "—";
 
   if (parameter === "blood_pressure") {
     const parsedBP = records
@@ -65,6 +163,7 @@ export const calculateParameterStats = (
         trendDirection: "Stable",
         unit,
         count: 0,
+        lastUpdated,
       };
     }
 
@@ -95,6 +194,7 @@ export const calculateParameterStats = (
       trendDirection,
       unit,
       count: parsedBP.length,
+      lastUpdated,
     };
   } else {
     // For numeric parameters
@@ -111,6 +211,7 @@ export const calculateParameterStats = (
         trendDirection: "Stable",
         unit,
         count: 0,
+        lastUpdated,
       };
     }
 
@@ -143,6 +244,7 @@ export const calculateParameterStats = (
       trendDirection,
       unit,
       count: parsedNumeric.length,
+      lastUpdated,
     };
   }
 };
