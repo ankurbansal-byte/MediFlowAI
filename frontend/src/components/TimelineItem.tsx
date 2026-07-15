@@ -1,3 +1,5 @@
+import { formatLongDate } from "../utils/date";
+
 export type TimelineRecord = {
   parameter: string;
   value: string | number;
@@ -13,26 +15,6 @@ type TimelineItemProps = {
 
 const formatParameter = (parameter: string) =>
   parameter.replace(/_/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
-
-const formatRecordedTime = (recordedAt?: string) => {
-  if (!recordedAt) {
-    return "Not recorded";
-  }
-
-  const date = new Date(recordedAt);
-
-  if (Number.isNaN(date.getTime())) {
-    return "Not recorded";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-};
 
 const formatConfidence = (confidence?: number) => {
   if (confidence === undefined || confidence === null) {
@@ -55,7 +37,7 @@ const TimelineItem = ({ record }: TimelineItemProps) => (
 
     <div className="timeline-item__detail">
       <span className="timeline-item__detail-label">Recorded</span>
-      <span>{formatRecordedTime(record.recordedAt)}</span>
+      <span>{formatLongDate(record.recordedAt)}</span>
     </div>
 
     <div className="timeline-item__detail">

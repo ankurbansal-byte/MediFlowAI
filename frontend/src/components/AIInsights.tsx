@@ -1,4 +1,6 @@
+import { useMemo } from "react";
 import { type TrendRecord } from "./TrendChart";
+import { formatShortDate } from "../utils/date";
 
 type AIInsightsProps = {
   records: TrendRecord[];
@@ -11,26 +13,44 @@ type Reading = TrendRecord & {
   index: number;
 };
 
-const formatDate = (recordedAt?: string) => {
-  if (!recordedAt) {
-    return "the latest recorded reading";
-  }
-
-  const date = new Date(recordedAt);
-  return Number.isNaN(date.getTime())
-    ? "the latest recorded reading"
-    : new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(date);
-};
-
 const AIInsights = ({ records, isLoading, hasError }: AIInsightsProps) => {
-  const readings = records
-    .map((record, index) => ({ ...record, index, numericValue: Number(record.value) }))
-    .filter((record): record is Reading => Number.isFinite(record.numericValue))
-    .sort((first, second) => {
-      const firstTime = first.recordedAt ? Date.parse(first.recordedAt) : first.index;
-      const secondTime = second.recordedAt ? Date.parse(second.recordedAt) : second.index;
-      return firstTime - secondTime;
-    });
+  const readings = useMemo(() => {
+    return records
+      .map((record, index) => ({ ...record, index, numericValue: Number(record.value) }))
+      .filter((record): record is Reading => Number.isFinite(record.numericValue))
+      .sort((first, second) => {
+        const firstTime = first.recordedAt ? Date.parse(first.recordedAt) : first.index;
+        const secondTime = second.recordedAt ? Date.parse(second.recordedAt) : second.index;
+        return firstTime - secondTime;
+      });
+  }, [records]);
+
+  const observations = useMemo(() => {
+    if (readings.length === 0) return [];
+
+    const values = readings.map(({ numericValue }) => numericValue);
+    const latest = readings[readings.length - 1];
+    const first = readings[0];
+    const minimum = Math.min(...values);
+    const maximum = Math.max(...values);
+    const average = values.reduce((total, value) => total + value, 0) / values.length;
+    const unit = latest.unit ?? "mg/dL";
+    const difference = latest.numericValue - first.numericValue;
+    const direction = Math.abs(difference) < 5
+      ? "remained relatively stable"
+      : difference > 0
+        ? `increased by ${Math.round(difference)} ${unit}`
+        : `decreased by ${Math.round(Math.abs(difference))} ${unit}`;
+
+    return [
+      `The latest blood sugar reading was ${latest.numericValue} ${unit} on ${formatShortDate(latest.recordedAt, "the latest recorded reading")}.`,
+      `The average across ${readings.length} recorded reading${readings.length === 1 ? "" : "s"} was ${average.toFixed(1)} ${unit}.`,
+      `Recorded values ranged from ${minimum} to ${maximum} ${unit} during this period.`,
+      readings.length === 1
+        ? "Only one reading is available, so a change over time cannot yet be determined."
+        : `From the first to latest reading, the value ${direction}.`,
+    ];
+  }, [readings]);
 
   if (isLoading) {
     return <section className="ai-insights"><p className="ai-insights__state">Preparing trend observations...</p></section>;
@@ -54,29 +74,6 @@ const AIInsights = ({ records, isLoading, hasError }: AIInsightsProps) => {
       </section>
     );
   }
-
-  const values = readings.map(({ numericValue }) => numericValue);
-  const latest = readings[readings.length - 1];
-  const first = readings[0];
-  const minimum = Math.min(...values);
-  const maximum = Math.max(...values);
-  const average = values.reduce((total, value) => total + value, 0) / values.length;
-  const unit = latest.unit ?? "mg/dL";
-  const difference = latest.numericValue - first.numericValue;
-  const direction = Math.abs(difference) < 5
-    ? "remained relatively stable"
-    : difference > 0
-      ? `increased by ${Math.round(difference)} ${unit}`
-      : `decreased by ${Math.round(Math.abs(difference))} ${unit}`;
-
-  const observations = [
-    `The latest blood sugar reading was ${latest.numericValue} ${unit} on ${formatDate(latest.recordedAt)}.`,
-    `The average across ${readings.length} recorded reading${readings.length === 1 ? "" : "s"} was ${average.toFixed(1)} ${unit}.`,
-    `Recorded values ranged from ${minimum} to ${maximum} ${unit} during this period.`,
-    readings.length === 1
-      ? "Only one reading is available, so a change over time cannot yet be determined."
-      : `From the first to latest reading, the value ${direction}.`,
-  ];
 
   return (
     <section className="ai-insights" aria-labelledby="ai-insights-title">
