@@ -7,6 +7,7 @@ import {
   getPatientSummary,
   getParameterTrend,
   getParameterStatistics,
+  addHealthRecord,
 } from "../controllers/patientController";
 
 const router = Router();
@@ -15,6 +16,8 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get("/", getPatients);
+
+router.post("/record", addHealthRecord);
 
 router.get("/timeline/:patientId", getPatientTimeline);
 

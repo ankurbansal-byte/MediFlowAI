@@ -30,6 +30,34 @@ export const getPatientSummary = async (patientId: string): Promise<PatientSumma
   return response.data;
 };
 
+export interface AddRecordPayload {
+  parameter: string;
+  value: string | number;
+  unit: string;
+  recordedAt?: string;
+}
+
+export interface AddRecordResponse {
+  success: boolean;
+  message: string;
+  record: {
+    patientId: string;
+    parameter: string;
+    value: string | number;
+    unit: string;
+    recordedAt: string;
+    source: string;
+    confidence: number;
+    originalMessage: string;
+    whatsappMessageId: string;
+  };
+}
+
+export const addPatientRecord = async (payload: AddRecordPayload): Promise<AddRecordResponse> => {
+  const response = await api.post<AddRecordResponse>("/patient/record", payload);
+  return response.data;
+};
+
 export const getPatientTimeline = async (patientId: string): Promise<PatientTimelineResponse> => {
   const response = await api.get<PatientTimelineResponse>(
     `/patient/timeline/${patientId}`

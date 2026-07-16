@@ -10,6 +10,9 @@ export const usePatientData = (selectedPatientId: string) => {
   const [isTimelineLoading, setIsTimelineLoading] = useState(false);
   const [hasSummaryError, setHasSummaryError] = useState(false);
   const [hasTimelineError, setHasTimelineError] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refetch = () => setRefreshKey((prev) => prev + 1);
 
   useEffect(() => {
     if (!selectedPatientId) return;
@@ -45,7 +48,7 @@ export const usePatientData = (selectedPatientId: string) => {
 
     loadPatientData();
     return () => { isCurrentRequest = false; };
-  }, [selectedPatientId]);
+  }, [selectedPatientId, refreshKey]);
 
   return {
     summary,
@@ -55,5 +58,6 @@ export const usePatientData = (selectedPatientId: string) => {
     isTimelineLoading,
     hasSummaryError,
     hasTimelineError,
+    refetch,
   };
 };

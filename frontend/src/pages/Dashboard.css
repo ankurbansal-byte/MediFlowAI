@@ -1157,3 +1157,119 @@
 @media (max-width: 350px) {
   .summary-grid { grid-template-columns: 1fr; }
 }
+
+/* Patient Portal Specific Styles & Enhancements */
+.dashboard--patient {
+  grid-template-columns: 256px 1fr !important;
+}
+
+.dashboard--patient .dashboard__content {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Welcoming Top Section */
+.patient-welcome-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 28px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.patient-welcome-section__info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.patient-welcome-section__title {
+  margin: 0;
+  color: var(--navy);
+  font-size: clamp(1.8rem, 3.2vw, 2.5rem);
+  font-weight: 850;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+}
+
+.patient-welcome-section__subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+.btn-add-record {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #238b82;
+  color: #ffffff;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-size: 0.98rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.1s, box-shadow 0.15s;
+  box-shadow: 0 4px 12px rgba(35, 139, 130, 0.2);
+}
+
+.btn-add-record:hover {
+  background-color: #1a6f68;
+  box-shadow: 0 6px 16px rgba(35, 139, 130, 0.3);
+}
+
+.btn-add-record:active {
+  transform: scale(0.98);
+}
+
+.btn-add-record__icon {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Equal Height & Alignments for Cards */
+.summary-grid {
+  align-items: stretch;
+}
+
+.summary-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.clinical-panel__main-grid {
+  align-items: stretch;
+}
+
+.status-display {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.alerts-display {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.alerts-display__list {
+  flex-grow: 1;
+}
+
+/* Responsive and alignments on mobile & tablet devices */
+@media (max-width: 1024px) {
+  .dashboard--patient {
+    grid-template-columns: 1fr !important;
+  }
+}

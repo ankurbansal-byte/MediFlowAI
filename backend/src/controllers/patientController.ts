@@ -112,10 +112,20 @@ export const getPatients = async (req: AuthenticatedRequest, res: Response) => {
 
   // For Doctor (All patients)
   if (process.env.USE_MOCK_DATA === "true") {
+    const dynamicMockPatients = Object.keys(MOCK_RECORDS).map((pId) => {
+      const recs = MOCK_RECORDS[pId] || [];
+      const latestRec = recs[recs.length - 1];
+      return {
+        patientId: pId,
+        latestRecordedAt: latestRec ? latestRec.recordedAt : new Date(),
+        totalRecords: recs.length,
+      };
+    }).sort((a, b) => new Date(b.latestRecordedAt).getTime() - new Date(a.latestRecordedAt).getTime());
+
     return res.status(200).json({
       success: true,
-      totalPatients: MOCK_PATIENTS.length,
-      patients: MOCK_PATIENTS,
+      totalPatients: dynamicMockPatients.length,
+      patients: dynamicMockPatients,
     });
   }
 
@@ -150,6 +160,125 @@ export const getPatients = async (req: AuthenticatedRequest, res: Response) => {
     return res.status(500).json({
       success: false,
       message: "Failed to fetch patients.",
+    });
+  }
+};
+
+// ==============================
+// Add New Health Record (For Patient Only)
+// ==============================
+export const addHealthRecord = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  const user = req.user;
+
+  if (!user) {
+    return res.status(401).json({ success: false, message: "Unauthorized." });
+  }
+
+  if (user.role !== "patient") {
+    return res.status(403).json({ success: false, message: "Forbidden. Only patients can submit records." });
+  }
+
+  const { parameter, value, unit, recordedAt } = req.body;
+
+  if (!parameter || value === undefined || value === null) {
+    return res.status(400).json({
+      success: false,
+      message: "Parameter and value are required.",
+    });
+  }
+
+  // Validate parameter name
+  const validParameters = [
+    "blood_sugar",
+    "blood_pressure",
+    "weight",
+    "heart_rate",
+    "body_temperature",
+  ];
+
+  if (!validParameters.includes(parameter)) {
+    return res.status(400).json({
+      success: false,
+      message: `Invalid parameter: ${parameter}. Must be one of: ${validParameters.join(", ")}`,
+    });
+  }
+
+  // Validate value format
+  if (parameter === "blood_pressure") {
+    const bpStr = String(value).trim();
+    const parts = bpStr.split("/");
+    if (parts.length !== 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Blood pressure must be in the format 'systolic/diastolic' (e.g., 120/80).",
+      });
+    }
+    const systolic = Number(parts[0]);
+    const diastolic = Number(parts[1]);
+    if (isNaN(systolic) || systolic <= 0 || isNaN(diastolic) || diastolic <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Blood pressure systolic and diastolic must be positive numbers.",
+      });
+    }
+  } else {
+    const numVal = Number(value);
+    if (isNaN(numVal) || numVal <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: `${parameter.replace("_", " ")} must be a positive number.`,
+      });
+    }
+  }
+
+  const patientId = user.patientId;
+  if (!patientId) {
+    return res.status(403).json({ success: false, message: "Forbidden. Patient ID not found." });
+  }
+
+  const recordDate = recordedAt ? new Date(recordedAt) : new Date();
+  const whatsappMessageId = `portal_${patientId}_${parameter}_${Date.now()}`;
+
+  const recordPayload = {
+    patientId,
+    parameter,
+    value: parameter === "blood_pressure" ? String(value).trim() : Number(value),
+    unit: unit || "",
+    recordedAt: recordDate,
+    source: "portal",
+    confidence: 1.0,
+    originalMessage: `Submitted via Patient Portal: ${parameter} = ${value} ${unit || ""}`,
+    whatsappMessageId,
+  };
+
+  if (process.env.USE_MOCK_DATA === "true") {
+    if (!MOCK_RECORDS[patientId]) {
+      MOCK_RECORDS[patientId] = [];
+    }
+    MOCK_RECORDS[patientId].push(recordPayload);
+
+    return res.status(201).json({
+      success: true,
+      message: "Health record submitted successfully (mock mode).",
+      record: recordPayload,
+    });
+  }
+
+  try {
+    const record = await HealthRecord.create(recordPayload);
+    return res.status(201).json({
+      success: true,
+      message: "Health record submitted successfully.",
+      record,
+    });
+  } catch (error) {
+    console.error("Error creating health record:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to save health record.",
     });
   }
 };
