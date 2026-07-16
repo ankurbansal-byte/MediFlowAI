@@ -1,10 +1,10 @@
+import React, { useMemo } from "react";
 import AIInsights from "../components/AIInsights";
 import ClinicalIntelligencePanel from "../components/ClinicalIntelligencePanel";
 import DashboardHeader from "../components/DashboardHeader";
 import PatientProfileCard from "../components/PatientProfileCard";
 import PatientListPanel from "../components/PatientListPanel";
 import PatientTimeline from "../components/PatientTimeline";
-import { useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import SummaryCard from "../components/SummaryCard";
 import TimelineFilter from "../components/TimelineFilter";
@@ -14,9 +14,15 @@ import { usePatients } from "../hooks/usePatients";
 import { usePatientData } from "../hooks/usePatientData";
 import { useTrendData } from "../hooks/useTrendData";
 import { calculateParameterStats } from "../utils/stats";
+import { type User } from "../App";
 import "./Dashboard.css";
 
-const Dashboard = () => {
+interface DashboardProps {
+  user: User;
+  onLogout: () => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const {
     patients,
     selectedPatientId,
@@ -24,6 +30,12 @@ const Dashboard = () => {
     isPatientsLoading,
     hasPatientsError,
   } = usePatients();
+
+  // If role is patient, override selection to patient's ID
+  const effectivePatientId = user.role === "patient" ? (user.patientId ?? "") : selectedPatientId;
+
+  // Sync selected patient option
+  const selectedPatientOption = patients.find(p => p.patientId === effectivePatientId);
 
   const {
     summary,
@@ -33,9 +45,7 @@ const Dashboard = () => {
     isTimelineLoading,
     hasSummaryError,
     hasTimelineError,
-  } = usePatientData(selectedPatientId);
-
-  const selectedPatientOption = patients.find(p => p.patientId === selectedPatientId);
+  } = usePatientData(effectivePatientId);
 
   const {
     trends,
@@ -46,7 +56,7 @@ const Dashboard = () => {
     setSelectedParameter,
     isTrendLoading,
     hasTrendError,
-  } = useTrendData(selectedPatientId);
+  } = useTrendData(effectivePatientId);
 
   const bloodSugarStats = useMemo(() => calculateParameterStats(trends.blood_sugar, "blood_sugar", summary?.blood_sugar?.unit), [trends.blood_sugar, summary?.blood_sugar?.unit]);
   const bloodPressureStats = useMemo(() => calculateParameterStats(trends.blood_pressure, "blood_pressure", summary?.blood_pressure?.unit), [trends.blood_pressure, summary?.blood_pressure?.unit]);
@@ -60,16 +70,18 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard">
-      <Sidebar />
-      <PatientListPanel
-        patients={patients}
-        selectedPatientId={selectedPatientId}
-        onSelect={setSelectedPatientId}
-        isLoading={isPatientsLoading}
-        isError={hasPatientsError}
-      />
-      <main className="dashboard__content">
-        <DashboardHeader />
+      <Sidebar onLogout={onLogout} userRole={user.role} />
+      {user.role === "doctor" && (
+        <PatientListPanel
+          patients={patients}
+          selectedPatientId={effectivePatientId}
+          onSelect={setSelectedPatientId}
+          isLoading={isPatientsLoading}
+          isError={hasPatientsError}
+        />
+      )}
+      <main className={`dashboard__content ${user.role === "patient" ? "dashboard__content--patient" : ""}`} style={user.role === "patient" ? { paddingLeft: "32px", paddingRight: "32px" } : {}}>
+        <DashboardHeader userRole={user.role} username={user.username} />
 
         {isPatientsLoading ? (
           <div className="dashboard__loading-container">
@@ -89,7 +101,7 @@ const Dashboard = () => {
             <h1>Patients unavailable</h1>
             <p>Please check the connection and try again.</p>
           </div>
-        ) : !selectedPatientId ? (
+        ) : !effectivePatientId ? (
           <div className="dashboard__state-card" style={{ margin: "40px auto" }}>
             <h1>No patients found</h1>
             <p>Health records will appear here once a patient has submitted a measurement.</p>
@@ -108,7 +120,7 @@ const Dashboard = () => {
               <p className="summary-section__description">A clinical overview of the selected patient&apos;s records and vital trends.</p>
 
               <PatientProfileCard
-                patientId={selectedPatientId}
+                patientId={effectivePatientId}
                 latestRecordedAt={selectedPatientOption?.latestRecordedAt}
                 totalRecords={selectedPatientOption?.totalRecords ?? 0}
                 isLoading={isPatientsLoading}
