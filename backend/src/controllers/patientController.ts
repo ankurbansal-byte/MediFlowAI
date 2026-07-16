@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import HealthRecord from "../models/HealthRecord";
+import { generateDemoRecords } from "../utils/demoData";
 
 type PatientDiscoveryResult = {
   patientId: string;
@@ -10,36 +11,36 @@ type PatientDiscoveryResult = {
 // ==============================
 // Fallback Mock Data Definition
 // ==============================
-const MOCK_PATIENTS = [
-  { patientId: "PAT-001", latestRecordedAt: new Date(Date.now() - 3600000 * 4), totalRecords: 24 },
-  { patientId: "PAT-002", latestRecordedAt: new Date(Date.now() - 3600000 * 24), totalRecords: 15 },
-  { patientId: "PAT-003", latestRecordedAt: new Date(Date.now() - 3600000 * 48), totalRecords: 8 },
-];
+const demoRecords = generateDemoRecords();
 
-const MOCK_RECORDS: Record<string, any[]> = {
-  "PAT-001": [
-    { parameter: "blood_sugar", value: 110, unit: "mg/dL", recordedAt: new Date(Date.now() - 3600000 * 4), source: "text", confidence: 0.98, originalMessage: "Blood sugar is 110" },
-    { parameter: "blood_pressure", value: "122/81", unit: "mmHg", recordedAt: new Date(Date.now() - 3600000 * 8), source: "text", confidence: 0.99, originalMessage: "BP is 122/81" },
-    { parameter: "heart_rate", value: 72, unit: "bpm", recordedAt: new Date(Date.now() - 3600000 * 12), source: "text", confidence: 0.95, originalMessage: "Heart rate is 72" },
-    { parameter: "body_temperature", value: 36.6, unit: "°C", recordedAt: new Date(Date.now() - 3600000 * 16), source: "text", confidence: 0.99, originalMessage: "Temp 36.6C" },
-    { parameter: "weight", value: 70, unit: "kg", recordedAt: new Date(Date.now() - 3600000 * 20), source: "text", confidence: 0.99, originalMessage: "Weight is 70kg" },
-    { parameter: "blood_sugar", value: 145, unit: "mg/dL", recordedAt: new Date(Date.now() - 3600000 * 28), source: "text", confidence: 0.98, originalMessage: "Sugar 145" },
-    { parameter: "blood_pressure", value: "135/88", unit: "mmHg", recordedAt: new Date(Date.now() - 3600000 * 32), source: "text", confidence: 0.99, originalMessage: "BP 135/88" },
-    { parameter: "heart_rate", value: 84, unit: "bpm", recordedAt: new Date(Date.now() - 3600000 * 36), source: "text", confidence: 0.95, originalMessage: "Pulse is 84" },
-  ],
-  "PAT-002": [
-    { parameter: "blood_sugar", value: 155, unit: "mg/dL", recordedAt: new Date(Date.now() - 3600000 * 24), source: "text", confidence: 0.98, originalMessage: "Sugar 155" },
-    { parameter: "blood_pressure", value: "142/92", unit: "mmHg", recordedAt: new Date(Date.now() - 3600000 * 30), source: "text", confidence: 0.99, originalMessage: "BP is 142/92" },
-    { parameter: "heart_rate", value: 88, unit: "bpm", recordedAt: new Date(Date.now() - 3600000 * 36), source: "text", confidence: 0.95, originalMessage: "Pulse is 88" },
-    { parameter: "body_temperature", value: 37.8, unit: "°C", recordedAt: new Date(Date.now() - 3600000 * 42), source: "text", confidence: 0.99, originalMessage: "Fever around 37.8C" },
-    { parameter: "weight", value: 85, unit: "kg", recordedAt: new Date(Date.now() - 3600000 * 48), source: "text", confidence: 0.99, originalMessage: "Weight 85 kg" },
-  ],
-  "PAT-003": [
-    { parameter: "blood_sugar", value: 92, unit: "mg/dL", recordedAt: new Date(Date.now() - 3600000 * 48), source: "text", confidence: 0.98, originalMessage: "Sugar 92" },
-    { parameter: "blood_pressure", value: "115/75", unit: "mmHg", recordedAt: new Date(Date.now() - 3600000 * 56), source: "text", confidence: 0.99, originalMessage: "BP 115/75" },
-    { parameter: "heart_rate", value: 65, unit: "bpm", recordedAt: new Date(Date.now() - 3600000 * 64), source: "text", confidence: 0.95, originalMessage: "Heart rate is 65" },
-  ]
-};
+// Group by patientId
+const MOCK_RECORDS: Record<string, any[]> = {};
+for (const r of demoRecords) {
+  if (!MOCK_RECORDS[r.patientId]) {
+    MOCK_RECORDS[r.patientId] = [];
+  }
+  MOCK_RECORDS[r.patientId].push({
+    parameter: r.parameter,
+    value: r.value,
+    unit: r.unit,
+    recordedAt: r.recordedAt,
+    source: r.source,
+    confidence: r.confidence,
+    originalMessage: r.originalMessage,
+    whatsappMessageId: r.whatsappMessageId
+  });
+}
+
+// Generate patient discovery summary list sorted by latestRecordedAt descending
+const MOCK_PATIENTS = Object.keys(MOCK_RECORDS).map((patientId) => {
+  const records = MOCK_RECORDS[patientId];
+  const latestRecord = records[records.length - 1];
+  return {
+    patientId,
+    latestRecordedAt: latestRecord.recordedAt,
+    totalRecords: records.length,
+  };
+}).sort((a, b) => b.latestRecordedAt.getTime() - a.latestRecordedAt.getTime());
 
 // ==============================
 // List Patients
@@ -95,10 +96,10 @@ export const getPatientTimeline = async (
   req: Request,
   res: Response
 ) => {
-  const { patientId } = req.params;
+  const patientId = req.params.patientId as string;
 
   if (process.env.USE_MOCK_DATA === "true") {
-    const records = MOCK_RECORDS[patientId] || [];
+    const records = [...(MOCK_RECORDS[patientId] || [])].reverse();
     return res.status(200).json({
       success: true,
       totalRecords: records.length,
@@ -139,10 +140,10 @@ export const getPatientSummary = async (
   req: Request,
   res: Response
 ) => {
-  const { patientId } = req.params;
+  const patientId = req.params.patientId as string;
 
   if (process.env.USE_MOCK_DATA === "true") {
-    const records = MOCK_RECORDS[patientId] || [];
+    const records = [...(MOCK_RECORDS[patientId] || [])].reverse();
     const latest: Record<string, any> = {};
 
     for (const record of records) {
@@ -205,13 +206,14 @@ export const getParameterTrend = async (
   req: Request,
   res: Response
 ) => {
-  const { patientId, parameter } = req.params;
+  const patientId = req.params.patientId as string;
+  const parameter = req.params.parameter as string;
   const days = Number(req.query.days) || 30;
 
   if (process.env.USE_MOCK_DATA === "true") {
     const records = (MOCK_RECORDS[patientId] || [])
-      .filter((r) => r.parameter === parameter)
-      .map((r) => ({
+      .filter((r: any) => r.parameter === parameter)
+      .map((r: any) => ({
         value: r.value,
         unit: r.unit,
         recordedAt: r.recordedAt,
@@ -267,12 +269,13 @@ export const getParameterStatistics = async (
   req: Request,
   res: Response
 ) => {
-  const { patientId, parameter } = req.params;
+  const patientId = req.params.patientId as string;
+  const parameter = req.params.parameter as string;
   const days = Number(req.query.days) || 30;
 
   if (process.env.USE_MOCK_DATA === "true") {
     const records = (MOCK_RECORDS[patientId] || [])
-      .filter((r) => r.parameter === parameter);
+      .filter((r: any) => r.parameter === parameter);
 
     if (records.length === 0) {
       return res.status(404).json({
@@ -282,14 +285,14 @@ export const getParameterStatistics = async (
     }
 
     const numericValues = records
-      .map((record) => Number(record.value))
-      .filter((value) => !isNaN(value));
+      .map((record: any) => Number(record.value))
+      .filter((value: any) => !isNaN(value));
 
     const latest = numericValues[numericValues.length - 1] || 0;
     const minimum = numericValues.length > 0 ? Math.min(...numericValues) : 0;
     const maximum = numericValues.length > 0 ? Math.max(...numericValues) : 0;
     const average = numericValues.length > 0
-      ? numericValues.reduce((sum, value) => sum + value, 0) / numericValues.length
+      ? numericValues.reduce((sum: any, value: any) => sum + value, 0) / numericValues.length
       : 0;
 
     return res.json({
