@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authMiddleware } from "../utils/authMiddleware";
 
 import {
   getPatients,
@@ -9,6 +10,9 @@ import {
 } from "../controllers/patientController";
 
 const router = Router();
+
+// Apply authMiddleware to protect all patient routes
+router.use(authMiddleware);
 
 router.get("/", getPatients);
 

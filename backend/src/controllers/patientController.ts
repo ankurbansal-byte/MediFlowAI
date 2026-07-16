@@ -1,6 +1,7 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import HealthRecord from "../models/HealthRecord";
 import { generateDemoRecords } from "../utils/demoData";
+import { AuthenticatedRequest } from "../utils/authMiddleware";
 
 type PatientDiscoveryResult = {
   patientId: string;
@@ -45,7 +46,71 @@ const MOCK_PATIENTS = Object.keys(MOCK_RECORDS).map((patientId) => {
 // ==============================
 // List Patients
 // ==============================
-export const getPatients = async (_req: Request, res: Response) => {
+export const getPatients = async (req: AuthenticatedRequest, res: Response) => {
+  const user = req.user;
+
+  if (!user) {
+    return res.status(401).json({ success: false, message: "Unauthorized." });
+  }
+
+  // If Patient, restrict to only their own PatientOption
+  if (user.role === "patient") {
+    const patientId = user.patientId;
+    if (!patientId) {
+      return res.status(403).json({ success: false, message: "Forbidden." });
+    }
+
+    if (process.env.USE_MOCK_DATA === "true") {
+      const records = MOCK_RECORDS[patientId] || [];
+      const latestRecord = records[records.length - 1];
+      const singlePatient = latestRecord ? [{
+        patientId,
+        latestRecordedAt: latestRecord.recordedAt,
+        totalRecords: records.length,
+      }] : [];
+
+      return res.status(200).json({
+        success: true,
+        totalPatients: singlePatient.length,
+        patients: singlePatient,
+      });
+    }
+
+    try {
+      const patients = await HealthRecord.aggregate<PatientDiscoveryResult>([
+        { $match: { patientId } },
+        {
+          $group: {
+            _id: "$patientId",
+            latestRecordedAt: { $max: "$recordedAt" },
+            totalRecords: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            patientId: "$_id",
+            latestRecordedAt: 1,
+            totalRecords: 1,
+          },
+        },
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        totalPatients: patients.length,
+        patients,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch patients.",
+      });
+    }
+  }
+
+  // For Doctor (All patients)
   if (process.env.USE_MOCK_DATA === "true") {
     return res.status(200).json({
       success: true,
@@ -93,10 +158,19 @@ export const getPatients = async (_req: Request, res: Response) => {
 // Get Patient Timeline
 // ==============================
 export const getPatientTimeline = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
   const patientId = req.params.patientId as string;
+  const user = req.user;
+
+  if (!user) {
+    return res.status(401).json({ success: false, message: "Unauthorized." });
+  }
+
+  if (user.role === "patient" && user.patientId !== patientId) {
+    return res.status(403).json({ success: false, message: "Forbidden. You can only access your own health records." });
+  }
 
   if (process.env.USE_MOCK_DATA === "true") {
     const records = [...(MOCK_RECORDS[patientId] || [])].reverse();
@@ -137,10 +211,19 @@ export const getPatientTimeline = async (
 // Get Patient Summary
 // ==============================
 export const getPatientSummary = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
   const patientId = req.params.patientId as string;
+  const user = req.user;
+
+  if (!user) {
+    return res.status(401).json({ success: false, message: "Unauthorized." });
+  }
+
+  if (user.role === "patient" && user.patientId !== patientId) {
+    return res.status(403).json({ success: false, message: "Forbidden. You can only access your own health records." });
+  }
 
   if (process.env.USE_MOCK_DATA === "true") {
     const records = [...(MOCK_RECORDS[patientId] || [])].reverse();
@@ -203,12 +286,21 @@ export const getPatientSummary = async (
 // Get Parameter Trend
 // ==============================
 export const getParameterTrend = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
   const patientId = req.params.patientId as string;
   const parameter = req.params.parameter as string;
   const days = Number(req.query.days) || 30;
+  const user = req.user;
+
+  if (!user) {
+    return res.status(401).json({ success: false, message: "Unauthorized." });
+  }
+
+  if (user.role === "patient" && user.patientId !== patientId) {
+    return res.status(403).json({ success: false, message: "Forbidden. You can only access your own health records." });
+  }
 
   if (process.env.USE_MOCK_DATA === "true") {
     const records = (MOCK_RECORDS[patientId] || [])
@@ -266,12 +358,21 @@ export const getParameterTrend = async (
 // Get Parameter Statistics
 // ==============================
 export const getParameterStatistics = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ) => {
   const patientId = req.params.patientId as string;
   const parameter = req.params.parameter as string;
   const days = Number(req.query.days) || 30;
+  const user = req.user;
+
+  if (!user) {
+    return res.status(401).json({ success: false, message: "Unauthorized." });
+  }
+
+  if (user.role === "patient" && user.patientId !== patientId) {
+    return res.status(403).json({ success: false, message: "Forbidden. You can only access your own health records." });
+  }
 
   if (process.env.USE_MOCK_DATA === "true") {
     const records = (MOCK_RECORDS[patientId] || [])

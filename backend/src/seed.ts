@@ -1,7 +1,9 @@
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import HealthRecord from "./models/HealthRecord";
+import User from "./models/User";
 import { generateDemoRecords } from "./utils/demoData";
+import { MOCK_USERS } from "./utils/mockUsers";
 
 dotenv.config();
 
@@ -31,6 +33,20 @@ async function runSeeder() {
     console.log(`🌱 Seeding ${demoRecords.length} new health records...`);
     const insertResult = await HealthRecord.insertMany(demoRecords);
     console.log(`✅ Successfully seeded ${insertResult.length} health records!`);
+
+    console.log("🧹 Cleaning up existing users...");
+    const userUsernames = MOCK_USERS.map((u) => u.username);
+    await User.deleteMany({ username: { $in: userUsernames } });
+
+    console.log("🌱 Seeding user accounts...");
+    const usersToInsert = MOCK_USERS.map((u) => ({
+      username: u.username,
+      password: u.passwordHash,
+      role: u.role,
+      patientId: u.patientId || null,
+    }));
+    const userInsertResult = await User.insertMany(usersToInsert);
+    console.log(`✅ Successfully seeded ${userInsertResult.length} users!`);
 
     console.log("🎉 Seeding completed successfully!");
   } catch (error) {
