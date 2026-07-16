@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import AIInsights from "../components/AIInsights";
 import ClinicalIntelligencePanel from "../components/ClinicalIntelligencePanel";
 import DashboardHeader from "../components/DashboardHeader";
@@ -10,6 +10,7 @@ import SummaryCard from "../components/SummaryCard";
 import TimelineFilter from "../components/TimelineFilter";
 import TrendChart from "../components/TrendChart";
 import HealthSummary from "../components/HealthSummary";
+import RecordSubmissionModal from "../components/RecordSubmissionModal";
 import { usePatients } from "../hooks/usePatients";
 import { usePatientData } from "../hooks/usePatientData";
 import { useTrendData } from "../hooks/useTrendData";
@@ -23,12 +24,15 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const {
     patients,
     selectedPatientId,
     setSelectedPatientId,
     isPatientsLoading,
     hasPatientsError,
+    refetch: refetchPatients,
   } = usePatients();
 
   // If role is patient, override selection to patient's ID
@@ -45,6 +49,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     isTimelineLoading,
     hasSummaryError,
     hasTimelineError,
+    refetch: refetchPatientData,
   } = usePatientData(effectivePatientId);
 
   const {
@@ -56,7 +61,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     setSelectedParameter,
     isTrendLoading,
     hasTrendError,
+    refetch: refetchTrendData,
   } = useTrendData(effectivePatientId);
+
+  const handleSuccess = () => {
+    refetchPatients();
+    refetchPatientData();
+    refetchTrendData();
+  };
 
   const bloodSugarStats = useMemo(() => calculateParameterStats(trends.blood_sugar, "blood_sugar", summary?.blood_sugar?.unit), [trends.blood_sugar, summary?.blood_sugar?.unit]);
   const bloodPressureStats = useMemo(() => calculateParameterStats(trends.blood_pressure, "blood_pressure", summary?.blood_pressure?.unit), [trends.blood_pressure, summary?.blood_pressure?.unit]);
@@ -69,7 +81,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     : timeline.filter((record) => record.parameter === timelineFilter);
 
   return (
-    <div className="dashboard">
+    <div className={`dashboard ${user.role === "patient" ? "dashboard--patient" : ""}`}>
       <Sidebar onLogout={onLogout} userRole={user.role} />
       {user.role === "doctor" && (
         <PatientListPanel
@@ -81,7 +93,22 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         />
       )}
       <main className={`dashboard__content ${user.role === "patient" ? "dashboard__content--patient" : ""}`} style={user.role === "patient" ? { paddingLeft: "32px", paddingRight: "32px" } : {}}>
-        <DashboardHeader userRole={user.role} username={user.username} />
+        {user.role === "patient" ? (
+          <div className="patient-welcome-section">
+            <div className="patient-welcome-section__info">
+              <h1 className="patient-welcome-section__title">Welcome, {user.username}</h1>
+              <p className="patient-welcome-section__subtitle">Your health summary at a glance.</p>
+            </div>
+            <button
+              className="btn-add-record"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <span className="btn-add-record__icon">+</span> Add New Health Record
+            </button>
+          </div>
+        ) : (
+          <DashboardHeader userRole={user.role} username={user.username} />
+        )}
 
         {isPatientsLoading ? (
           <div className="dashboard__loading-container">
@@ -226,6 +253,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           </>
         )}
       </main>
+      <RecordSubmissionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={handleSuccess}
+      />
     </div>
   );
 };

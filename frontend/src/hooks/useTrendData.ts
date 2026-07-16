@@ -16,6 +16,9 @@ export const useTrendData = (selectedPatientId: string) => {
   const [selectedParameter, setSelectedParameter] = useState<HealthParameter>("blood_sugar");
   const [isTrendLoading, setIsTrendLoading] = useState(false);
   const [hasTrendError, setHasTrendError] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refetch = () => setRefreshKey((prev) => prev + 1);
 
   useEffect(() => {
     if (!selectedPatientId) return;
@@ -59,7 +62,7 @@ export const useTrendData = (selectedPatientId: string) => {
     return () => {
       isCurrentRequest = false;
     };
-  }, [selectedPatientId, trendPeriod]);
+  }, [selectedPatientId, trendPeriod, refreshKey]);
 
   return {
     trends,
@@ -70,5 +73,6 @@ export const useTrendData = (selectedPatientId: string) => {
     setSelectedParameter,
     isTrendLoading,
     hasTrendError,
+    refetch,
   };
 };
