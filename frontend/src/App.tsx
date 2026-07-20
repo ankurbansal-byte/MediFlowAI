@@ -93,6 +93,11 @@ function App() {
     setActiveView("login");
   };
 
+  const handleProfileUpdate = (updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem("mediflow_user", JSON.stringify(updatedUser));
+  };
+
   // Guard routing
   if (user) {
     // If user is logged in, check if email is verified
@@ -107,7 +112,7 @@ function App() {
         />
       );
     }
-    return <Dashboard user={user} onLogout={handleLogout} />;
+    return <Dashboard user={user} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} />;
   }
 
   // Guest Routing

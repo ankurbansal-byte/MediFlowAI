@@ -12,6 +12,7 @@ const navigationItems: NavigationItem[] = [
   { label: "Patients", icon: "♙", tab: "patients" },
   { label: "Trends", icon: "↗", tab: "trends" },
   { label: "AI Insights", icon: "✦", tab: "ai-insights" },
+  { label: "Profile", icon: "👤", tab: "profile" },
   { label: "Settings", icon: "⚙", tab: "settings" },
 ];
 

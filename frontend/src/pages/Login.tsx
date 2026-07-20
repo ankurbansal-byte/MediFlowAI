@@ -23,11 +23,11 @@ const Login: React.FC<LoginProps> = ({
   onOpenDoctorRegister,
   onOpenForgotPassword,
 }) => {
-  // Initialize state using function expressions to avoid synchronous setStates in useEffect
   const [username, setUsername] = useState<string>(() => {
     return localStorage.getItem("mediflow_remembered_username") || "";
   });
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState<boolean>(() => {
     return !!localStorage.getItem("mediflow_remembered_username");
   });
@@ -48,7 +48,6 @@ const Login: React.FC<LoginProps> = ({
       if (response.data.success) {
         const { token, refreshToken, user } = response.data;
 
-        // Save token and user details
         localStorage.setItem("mediflow_token", token);
         localStorage.setItem("mediflow_refresh_token", refreshToken || "");
         localStorage.setItem("mediflow_user", JSON.stringify(user));
@@ -95,7 +94,7 @@ const Login: React.FC<LoginProps> = ({
               className="login-input"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="e.g. doctor1, PAT-101 or user@email.com"
+              placeholder="e.g. PAT-101 or user@email.com"
               required
               disabled={loading}
               autoComplete="username"
@@ -112,22 +111,48 @@ const Login: React.FC<LoginProps> = ({
                   e.preventDefault();
                   onOpenForgotPassword();
                 }}
-                style={{ fontSize: "12px", color: "#0080ff", fontWeight: 600, textDecoration: "none" }}
+                style={{ fontSize: "12px", color: "#115e59", fontWeight: 600, textDecoration: "none" }}
               >
                 Forgot Password?
               </a>
             </div>
-            <input
-              id="password"
-              type="password"
-              className="login-input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
-              required
-              disabled={loading}
-              autoComplete="current-password"
-            />
+
+            <div style={{ position: "relative" }}>
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                className="login-input"
+                style={{ paddingRight: "40px" }}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                required
+                disabled={loading}
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  color: "#627d98",
+                  padding: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {showPassword ? "🙈" : "👁"}
+              </button>
+            </div>
           </div>
 
           <div className="remember-me-container" style={{ display: "flex", alignItems: "center", gap: "8px", margin: "4px 0 12px 0" }}>
@@ -149,56 +174,54 @@ const Login: React.FC<LoginProps> = ({
           </button>
         </form>
 
-        <div className="login-footer" style={{ borderTop: "1px solid #e4e7eb", marginTop: "20px", paddingTop: "15px" }}>
-          <p style={{ margin: "0 0 10px 0", fontSize: "13px", color: "#627d98" }}>Don't have an account yet? Register:</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+        <div className="login-footer" style={{ borderTop: "1px solid #e4e7eb", marginTop: "24px", paddingTop: "20px", textAlign: "center" }}>
+          <p style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: 600, color: "#486581" }}>Create Account</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <button
               type="button"
               onClick={onOpenPatientRegister}
               disabled={loading}
               style={{
                 backgroundColor: "#ffffff",
-                color: "#0080ff",
-                border: "1.5px solid #0080ff",
-                padding: "8px",
-                borderRadius: "6px",
-                fontSize: "13px",
-                fontWeight: 600,
+                color: "#115e59",
+                border: "1.5px solid #115e59",
+                padding: "10px 16px",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: 700,
                 cursor: "pointer",
-                transition: "all 0.2s ease"
+                transition: "all 0.2s ease",
+                width: "100%",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
               }}
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#e6f2ff"; }}
+              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#f0fdfa"; }}
               onMouseOut={(e) => { e.currentTarget.style.backgroundColor = "#ffffff"; }}
             >
-              Patient Sign Up
+              Register as Patient
             </button>
             <button
               type="button"
               onClick={onOpenDoctorRegister}
               disabled={loading}
               style={{
-                backgroundColor: "#0080ff",
+                backgroundColor: "#115e59",
                 color: "#ffffff",
                 border: "none",
-                padding: "8px",
-                borderRadius: "6px",
-                fontSize: "13px",
-                fontWeight: 600,
+                padding: "10px 16px",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: 700,
                 cursor: "pointer",
-                transition: "all 0.2s ease"
+                transition: "all 0.2s ease",
+                width: "100%",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
               }}
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#0066cc"; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = "#0080ff"; }}
+              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#0d4d49"; }}
+              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = "#115e59"; }}
             >
-              Doctor Sign Up
+              Register as Doctor
             </button>
           </div>
-        </div>
-
-        <div className="login-footer" style={{ marginTop: "15px", fontSize: "11px", color: "#829ab1" }}>
-          <p style={{ margin: "0 0 4px 0" }}>Demo Accounts:</p>
-          <p style={{ margin: 0 }}><strong>Doctor:</strong> doctor1 / password</p>
-          <p style={{ margin: 0 }}><strong>Patient:</strong> PAT-101 to PAT-106 / password</p>
         </div>
       </div>
     </div>

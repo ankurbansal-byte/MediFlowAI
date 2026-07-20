@@ -8,7 +8,10 @@ import {
   forgotPassword,
   resetPassword,
   logout,
+  getProfile,
+  updateProfile,
 } from "../controllers/authController";
+import { authMiddleware } from "../utils/authMiddleware";
 
 const router = Router();
 
@@ -20,5 +23,7 @@ router.post("/verify-email", verifyEmail);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.post("/logout", logout);
+router.get("/profile", authMiddleware, getProfile);
+router.put("/profile", authMiddleware, updateProfile);
 
 export default router;

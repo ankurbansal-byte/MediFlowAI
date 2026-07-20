@@ -68,6 +68,22 @@ const userSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
+    yearsOfExperience: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    // Patient Profile Fields
+    address: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    emergencyContact: {
+      type: String,
+      required: false,
+      trim: true,
+    },
     // Security and Flow Fields
     isEmailVerified: {
       type: Boolean,
