@@ -24,6 +24,77 @@ const userSchema = new mongoose.Schema(
       required: false,
       default: null,
     },
+    // New Profile Fields
+    fullName: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: false,
+      unique: true,
+      sparse: true,
+      trim: true,
+      lowercase: true,
+    },
+    mobileNumber: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    dob: {
+      type: String,
+      required: false,
+    },
+    gender: {
+      type: String,
+      required: false,
+      enum: ["Male", "Female", "Other", ""],
+    },
+    // New Doctor-Specific Fields
+    medicalRegistrationNumber: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    hospitalClinicName: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    specialization: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    // Security and Flow Fields
+    isEmailVerified: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
+    emailVerificationToken: {
+      type: String,
+      required: false,
+    },
+    emailVerificationTokenExpires: {
+      type: Date,
+      required: false,
+    },
+    passwordResetToken: {
+      type: String,
+      required: false,
+    },
+    passwordResetTokenExpires: {
+      type: Date,
+      required: false,
+    },
+    refreshTokens: {
+      type: [String],
+      required: false,
+      default: [],
+    },
   },
   {
     timestamps: true,
