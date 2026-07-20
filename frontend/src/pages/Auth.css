@@ -1,0 +1,286 @@
+/* Shared Auth CSS styles for modern, clinical, hospital-grade screens */
+
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0f8ff 0%, #e6f2ff 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.auth-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 520px;
+  padding: 40px;
+  box-sizing: border-box;
+}
+
+.auth-card-wide {
+  max-width: 680px;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.auth-logo-mark {
+  background-color: #0080ff;
+  color: white;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.auth-header h2 {
+  color: #0a2540;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+}
+
+.auth-header p {
+  color: #627d98;
+  font-size: 14px;
+  margin: 0;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.auth-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 580px) {
+  .auth-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.auth-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.auth-form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334e68;
+}
+
+.auth-input, .auth-select {
+  padding: 10px 14px;
+  border: 1.5px solid #cbd2d9;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #102a43;
+  background-color: #f5f7fa;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.auth-input:focus, .auth-select:focus {
+  outline: none;
+  border-color: #0080ff;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 128, 255, 0.15);
+}
+
+.auth-checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.auth-checkbox-group input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.auth-checkbox-group label {
+  font-size: 13px;
+  color: #486581;
+  cursor: pointer;
+  user-select: none;
+}
+
+.auth-submit-btn {
+  background-color: #0080ff;
+  color: #ffffff;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-top: 10px;
+}
+
+.auth-submit-btn:hover:not(:disabled) {
+  background-color: #0066cc;
+}
+
+.auth-submit-btn:disabled {
+  background-color: #bac7d5;
+  cursor: not-allowed;
+}
+
+.auth-cancel-btn {
+  background-color: #ffffff;
+  color: #486581;
+  border: 1.5px solid #cbd2d9;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.auth-cancel-btn:hover {
+  background-color: #f5f7fa;
+  border-color: #9fb3c8;
+}
+
+.auth-error {
+  background-color: #ffe3e3;
+  border-left: 4px solid #e12d39;
+  color: #a61b24;
+  padding: 10px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  text-align: left;
+}
+
+.auth-error-list {
+  margin: 4px 0 0 0;
+  padding-left: 20px;
+}
+
+.auth-success {
+  background-color: #e3fcef;
+  border-left: 4px solid #00a389;
+  color: #006653;
+  padding: 12px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.auth-success code {
+  background-color: rgba(0, 102, 83, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 13px;
+  color: #627d98;
+}
+
+.auth-footer a {
+  color: #0080ff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Password strength feedback meter */
+.password-meter-container {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.password-meter-bar {
+  height: 4px;
+  border-radius: 2px;
+  background-color: #e4e7eb;
+  position: relative;
+  overflow: hidden;
+}
+
+.password-meter-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.password-meter-text {
+  font-size: 11px;
+  font-weight: 500;
+  color: #627d98;
+  text-align: right;
+}
+
+/* Email Verification Overlay styling */
+.verification-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(10, 37, 64, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.verification-overlay-card {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.verification-overlay-card h2 {
+  color: #0a2540;
+  margin: 15px 0 10px 0;
+}
+
+.verification-overlay-card p {
+  color: #486581;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}

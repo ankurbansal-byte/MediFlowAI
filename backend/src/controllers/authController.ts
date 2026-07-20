@@ -1,101 +1,416 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import User from "../models/User";
 import { MOCK_USERS } from "../utils/mockUsers";
+import { mailService } from "../services/mailService";
+import {
+  validatePatientRegistration,
+  validateDoctorRegistration,
+  isStrongPassword,
+} from "../utils/validators";
 
 const JWT_SECRET = process.env.JWT_SECRET || "mediflow_secret_key_change_me_in_production";
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "mediflow_refresh_key_change_me_in_production";
 
+// Initialize in-memory dynamic mock database synced from the original MOCK_USERS array
+export let dynamicMockUsers = [...MOCK_USERS].map((user) => ({
+  username: user.username,
+  passwordHash: user.passwordHash,
+  role: user.role,
+  patientId: user.patientId,
+  fullName: user.role === "doctor" ? "Dr. Demo" : `Patient ${user.username}`,
+  email: `${user.username.toLowerCase()}@mediflow.com`,
+  mobileNumber: "+1234567890",
+  isEmailVerified: true, // Seeded users are pre-verified
+  refreshTokens: [] as string[],
+  emailVerificationToken: undefined as string | undefined,
+  emailVerificationTokenExpires: undefined as Date | undefined,
+  passwordResetToken: undefined as string | undefined,
+  passwordResetTokenExpires: undefined as Date | undefined,
+  dob: user.role === "patient" ? "1990-01-01" : undefined,
+  gender: user.role === "patient" ? "Male" : undefined,
+  medicalRegistrationNumber: user.role === "doctor" ? "MED-12345" : undefined,
+  hospitalClinicName: user.role === "doctor" ? "MediFlow Hospital" : undefined,
+  specialization: user.role === "doctor" ? "General Medicine" : undefined,
+}));
+
+/**
+ * Utility to calculate next available Patient ID
+ */
+const getNextPatientId = async (): Promise<string> => {
+  let maxId = 106; // Standard seeded users go PAT-101 to PAT-106
+
+  if (process.env.USE_MOCK_DATA === "true") {
+    for (const u of dynamicMockUsers) {
+      if (u.role === "patient" && u.patientId && u.patientId.startsWith("PAT-")) {
+        const num = parseInt(u.patientId.substring(4), 10);
+        if (!isNaN(num) && num > maxId) {
+          maxId = num;
+        }
+      }
+    }
+  } else {
+    try {
+      const users = await User.find({ role: "patient", patientId: { $ne: null } });
+      for (const u of users) {
+        if (u.patientId && u.patientId.startsWith("PAT-")) {
+          const num = parseInt(u.patientId.substring(4), 10);
+          if (!isNaN(num) && num > maxId) {
+            maxId = num;
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error finding max patientId in DB:", e);
+    }
+  }
+
+  return `PAT-${maxId + 1}`;
+};
+
+/**
+ * Endpoint: Patient Registration
+ */
+export const registerPatient = async (req: Request, res: Response) => {
+  const errors = validatePatientRegistration(req.body);
+  if (errors.length > 0) {
+    return res.status(400).json({ success: false, errors });
+  }
+
+  const { fullName, email, mobileNumber, dob, gender, password } = req.body;
+  const patientId = await getNextPatientId();
+  const username = patientId; // Patient login credential
+
+  const salt = bcrypt.genSaltSync(10);
+  const passwordHash = bcrypt.hashSync(password, salt);
+
+  const verificationToken = crypto.randomBytes(32).toString("hex");
+  const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+  // MOCK PERSISTENCE
+  if (process.env.USE_MOCK_DATA === "true") {
+    // Check email unique in mock
+    const emailExists = dynamicMockUsers.some(
+      (u) => u.email && u.email.toLowerCase() === email.trim().toLowerCase()
+    );
+    if (emailExists) {
+      return res.status(400).json({
+        success: false,
+        errors: ["An account with this email address already exists."],
+      });
+    }
+
+    const newMockUser = {
+      username,
+      passwordHash,
+      role: "patient" as const,
+      patientId,
+      fullName,
+      email: email.trim().toLowerCase(),
+      mobileNumber: mobileNumber.trim(),
+      dob,
+      gender,
+      isEmailVerified: false,
+      refreshTokens: [],
+      emailVerificationToken: verificationToken,
+      emailVerificationTokenExpires: verificationExpires,
+      passwordResetToken: undefined,
+      passwordResetTokenExpires: undefined,
+      medicalRegistrationNumber: undefined,
+      hospitalClinicName: undefined,
+      specialization: undefined,
+    };
+
+    dynamicMockUsers.push(newMockUser);
+
+    // Send verification mail
+    await mailService.sendVerificationEmail(newMockUser.email, verificationToken);
+
+    return res.status(201).json({
+      success: true,
+      message: "Patient registered successfully. A verification link has been sent to your email.",
+      patientId,
+      emailVerificationToken: verificationToken, // sent in JSON for easy test verification
+    });
+  }
+
+  // DB PERSISTENCE
+  try {
+    const existingUser = await User.findOne({
+      $or: [
+        { username },
+        { email: { $regex: new RegExp(`^${email.trim()}$`, "i") } },
+      ],
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        errors: ["An account with this email address or Patient ID already exists."],
+      });
+    }
+
+    const newUser = await User.create({
+      username,
+      password: passwordHash,
+      role: "patient",
+      patientId,
+      fullName,
+      email: email.trim().toLowerCase(),
+      mobileNumber: mobileNumber.trim(),
+      dob,
+      gender,
+      isEmailVerified: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationTokenExpires: verificationExpires,
+    });
+
+    await mailService.sendVerificationEmail(newUser.email!, verificationToken);
+
+    return res.status(201).json({
+      success: true,
+      message: "Patient registered successfully. A verification link has been sent to your email.",
+      patientId,
+      emailVerificationToken: verificationToken,
+    });
+  } catch (error) {
+    console.error("Patient registration error:", error);
+    return res.status(500).json({
+      success: false,
+      errors: ["Server error during patient registration."],
+    });
+  }
+};
+
+/**
+ * Endpoint: Doctor Registration
+ */
+export const registerDoctor = async (req: Request, res: Response) => {
+  const errors = validateDoctorRegistration(req.body);
+  if (errors.length > 0) {
+    return res.status(400).json({ success: false, errors });
+  }
+
+  const {
+    fullName,
+    email,
+    mobileNumber,
+    medicalRegistrationNumber,
+    hospitalClinicName,
+    specialization,
+    password,
+  } = req.body;
+
+  const username = email.trim().toLowerCase(); // Doctors login with email as username
+  const salt = bcrypt.genSaltSync(10);
+  const passwordHash = bcrypt.hashSync(password, salt);
+
+  const verificationToken = crypto.randomBytes(32).toString("hex");
+  const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+  // MOCK PERSISTENCE
+  if (process.env.USE_MOCK_DATA === "true") {
+    const emailExists = dynamicMockUsers.some(
+      (u) => u.email && u.email.toLowerCase() === email.trim().toLowerCase()
+    );
+    if (emailExists) {
+      return res.status(400).json({
+        success: false,
+        errors: ["An account with this email address already exists."],
+      });
+    }
+
+    const newMockUser = {
+      username,
+      passwordHash,
+      role: "doctor" as const,
+      patientId: undefined,
+      fullName,
+      email: email.trim().toLowerCase(),
+      mobileNumber: mobileNumber.trim(),
+      dob: undefined,
+      gender: undefined,
+      isEmailVerified: false,
+      refreshTokens: [],
+      emailVerificationToken: verificationToken,
+      emailVerificationTokenExpires: verificationExpires,
+      passwordResetToken: undefined,
+      passwordResetTokenExpires: undefined,
+      medicalRegistrationNumber,
+      hospitalClinicName,
+      specialization,
+    };
+
+    dynamicMockUsers.push(newMockUser);
+
+    await mailService.sendVerificationEmail(newMockUser.email, verificationToken);
+
+    return res.status(201).json({
+      success: true,
+      message: "Doctor registered successfully. A verification link has been sent to your email.",
+      emailVerificationToken: verificationToken,
+    });
+  }
+
+  // DB PERSISTENCE
+  try {
+    const existingUser = await User.findOne({
+      $or: [
+        { username },
+        { email: { $regex: new RegExp(`^${email.trim()}$`, "i") } },
+      ],
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        errors: ["An account with this email address already exists."],
+      });
+    }
+
+    const newUser = await User.create({
+      username,
+      password: passwordHash,
+      role: "doctor",
+      patientId: null,
+      fullName,
+      email: email.trim().toLowerCase(),
+      mobileNumber: mobileNumber.trim(),
+      medicalRegistrationNumber,
+      hospitalClinicName,
+      specialization,
+      isEmailVerified: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationTokenExpires: verificationExpires,
+    });
+
+    await mailService.sendVerificationEmail(newUser.email!, verificationToken);
+
+    return res.status(201).json({
+      success: true,
+      message: "Doctor registered successfully. A verification link has been sent to your email.",
+      emailVerificationToken: verificationToken,
+    });
+  } catch (error) {
+    console.error("Doctor registration error:", error);
+    return res.status(500).json({
+      success: false,
+      errors: ["Server error during doctor registration."],
+    });
+  }
+};
+
+/**
+ * Endpoint: Secure Login (Username, Email or Patient ID)
+ */
 export const login = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
     return res.status(400).json({
       success: false,
-      message: "Username and password are required.",
+      message: "Username, email, or Patient ID, and password are required.",
     });
   }
 
-  // Handle Mock Fallback mode
+  const cleanQuery = username.trim().toLowerCase();
+
+  // MOCK LOGIN FLOW
   if (process.env.USE_MOCK_DATA === "true") {
-    const mockUser = MOCK_USERS.find(
-      (u) => u.username.toLowerCase() === username.trim().toLowerCase()
+    const user = dynamicMockUsers.find(
+      (u) =>
+        u.username.toLowerCase() === cleanQuery ||
+        (u.email && u.email.toLowerCase() === cleanQuery) ||
+        (u.patientId && u.patientId.toLowerCase() === cleanQuery)
     );
 
-    if (!mockUser) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials.",
-      });
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Invalid credentials." });
     }
 
-    const isMatch = bcrypt.compareSync(password, mockUser.passwordHash);
+    const isMatch = bcrypt.compareSync(password, user.passwordHash);
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials.",
-      });
+      return res.status(401).json({ success: false, message: "Invalid credentials." });
     }
 
     const token = jwt.sign(
-      {
-        username: mockUser.username,
-        role: mockUser.role,
-        patientId: mockUser.patientId,
-      },
+      { username: user.username, role: user.role, patientId: user.patientId },
       JWT_SECRET,
-      { expiresIn: "24h" }
+      { expiresIn: "1h" }
     );
+
+    const refreshToken = jwt.sign(
+      { username: user.username },
+      JWT_REFRESH_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    user.refreshTokens.push(refreshToken);
 
     return res.status(200).json({
       success: true,
       token,
+      refreshToken,
       user: {
-        username: mockUser.username,
-        role: mockUser.role,
-        patientId: mockUser.patientId,
+        username: user.username,
+        role: user.role,
+        patientId: user.patientId,
+        isEmailVerified: user.isEmailVerified,
+        email: user.email,
+        fullName: user.fullName,
       },
     });
   }
 
-  // Handle Database mode
+  // DB LOGIN FLOW
   try {
     const user = await User.findOne({
-      username: { $regex: new RegExp(`^${username.trim()}$`, "i") },
+      $or: [
+        { username: { $regex: new RegExp(`^${cleanQuery}$`, "i") } },
+        { email: { $regex: new RegExp(`^${cleanQuery}$`, "i") } },
+        { patientId: { $regex: new RegExp(`^${cleanQuery}$`, "i") } },
+      ],
     });
 
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials.",
-      });
+      return res.status(401).json({ success: false, message: "Invalid credentials." });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials.",
-      });
+      return res.status(401).json({ success: false, message: "Invalid credentials." });
     }
 
     const token = jwt.sign(
-      {
-        username: user.username,
-        role: user.role,
-        patientId: user.patientId,
-      },
+      { username: user.username, role: user.role, patientId: user.patientId },
       JWT_SECRET,
-      { expiresIn: "24h" }
+      { expiresIn: "1h" }
     );
+
+    const refreshToken = jwt.sign(
+      { username: user.username },
+      JWT_REFRESH_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // Save refresh token
+    const refreshTokens = user.refreshTokens || [];
+    refreshTokens.push(refreshToken);
+    await User.updateOne({ _id: user._id }, { $set: { refreshTokens } });
 
     return res.status(200).json({
       success: true,
       token,
+      refreshToken,
       user: {
         username: user.username,
         role: user.role,
         patientId: user.patientId,
+        isEmailVerified: user.isEmailVerified,
+        email: user.email,
+        fullName: user.fullName,
       },
     });
   } catch (error) {
@@ -103,6 +418,358 @@ export const login = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: "Server error during login.",
+    });
+  }
+};
+
+/**
+ * Endpoint: Refresh Token Rotation
+ */
+export const refreshToken = async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(400).json({ success: false, message: "Refresh token is required." });
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET) as { username: string };
+
+    // MOCK FLOW
+    if (process.env.USE_MOCK_DATA === "true") {
+      const user = dynamicMockUsers.find((u) => u.username === decoded.username);
+      if (!user || !user.refreshTokens.includes(refreshToken)) {
+        return res.status(401).json({ success: false, message: "Invalid or revoked refresh token." });
+      }
+
+      // Rotate Refresh Token
+      user.refreshTokens = user.refreshTokens.filter((t) => t !== refreshToken);
+
+      const newToken = jwt.sign(
+        { username: user.username, role: user.role, patientId: user.patientId },
+        JWT_SECRET,
+        { expiresIn: "1h" }
+      );
+
+      const newRefreshToken = jwt.sign(
+        { username: user.username },
+        JWT_REFRESH_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      user.refreshTokens.push(newRefreshToken);
+
+      return res.status(200).json({
+        success: true,
+        token: newToken,
+        refreshToken: newRefreshToken,
+      });
+    }
+
+    // DB FLOW
+    const user = await User.findOne({ username: decoded.username });
+    if (!user || !user.refreshTokens || !user.refreshTokens.includes(refreshToken)) {
+      return res.status(401).json({ success: false, message: "Invalid or revoked refresh token." });
+    }
+
+    // Rotate Refresh Token
+    const refreshTokens = user.refreshTokens.filter((t) => t !== refreshToken);
+
+    const newToken = jwt.sign(
+      { username: user.username, role: user.role, patientId: user.patientId },
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    const newRefreshToken = jwt.sign(
+      { username: user.username },
+      JWT_REFRESH_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    refreshTokens.push(newRefreshToken);
+    await User.updateOne({ _id: user._id }, { $set: { refreshTokens } });
+
+    return res.status(200).json({
+      success: true,
+      token: newToken,
+      refreshToken: newRefreshToken,
+    });
+  } catch (error) {
+    console.error("Refresh token error:", error);
+    return res.status(401).json({ success: false, message: "Invalid or expired refresh token." });
+  }
+};
+
+/**
+ * Endpoint: Email Verification
+ */
+export const verifyEmail = async (req: Request, res: Response) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ success: false, message: "Verification token is required." });
+  }
+
+  // MOCK FLOW
+  if (process.env.USE_MOCK_DATA === "true") {
+    const user = dynamicMockUsers.find(
+      (u) =>
+        u.emailVerificationToken === token &&
+        u.emailVerificationTokenExpires &&
+        u.emailVerificationTokenExpires.getTime() > Date.now()
+    );
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired email verification token.",
+      });
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationTokenExpires = undefined;
+
+    return res.status(200).json({
+      success: true,
+      message: "Email verified successfully! You can now access all clinical features.",
+    });
+  }
+
+  // DB FLOW
+  try {
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationTokenExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired email verification token.",
+      });
+    }
+
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          isEmailVerified: true,
+          emailVerificationToken: null,
+          emailVerificationTokenExpires: null,
+        },
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Email verified successfully! You can now access all clinical features.",
+    });
+  } catch (error) {
+    console.error("Email verification error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error during email verification.",
+    });
+  }
+};
+
+/**
+ * Endpoint: Forgot Password (Request Link)
+ */
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if (!email || !email.trim()) {
+    return res.status(400).json({ success: false, message: "Email is required." });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  // MOCK FLOW
+  if (process.env.USE_MOCK_DATA === "true") {
+    const user = dynamicMockUsers.find((u) => u.email && u.email.toLowerCase() === cleanEmail);
+
+    if (user) {
+      user.passwordResetToken = resetToken;
+      user.passwordResetTokenExpires = resetExpires;
+      await mailService.sendResetPasswordEmail(user.email, resetToken);
+    }
+
+    // Always return success for security (prevent email enumeration), but return reset token for verification
+    return res.status(200).json({
+      success: true,
+      message: "If that email exists in our system, we have sent a reset link.",
+      passwordResetToken: user ? resetToken : undefined, // sent in body for testing ease
+    });
+  }
+
+  // DB FLOW
+  try {
+    const user = await User.findOne({
+      email: { $regex: new RegExp(`^${cleanEmail}$`, "i") },
+    });
+
+    if (user) {
+      await User.updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            passwordResetToken: resetToken,
+            passwordResetTokenExpires: resetExpires,
+          },
+        }
+      );
+      await mailService.sendResetPasswordEmail(user.email!, resetToken);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "If that email exists in our system, we have sent a reset link.",
+      passwordResetToken: user ? resetToken : undefined,
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error during forgot password processing.",
+    });
+  }
+};
+
+/**
+ * Endpoint: Reset Password (Confirm Password Change)
+ */
+export const resetPassword = async (req: Request, res: Response) => {
+  const { token, password, confirmPassword } = req.body;
+
+  if (!token || !password) {
+    return res.status(400).json({
+      success: false,
+      message: "Reset token and new password are required.",
+    });
+  }
+
+  if (!isStrongPassword(password)) {
+    return res.status(400).json({
+      success: false,
+      message: "Password must be at least 8 characters long, with 1 uppercase, 1 lowercase, 1 number, and 1 special character.",
+    });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Password and Confirm Password do not match.",
+    });
+  }
+
+  const salt = bcrypt.genSaltSync(10);
+  const passwordHash = bcrypt.hashSync(password, salt);
+
+  // MOCK FLOW
+  if (process.env.USE_MOCK_DATA === "true") {
+    const user = dynamicMockUsers.find(
+      (u) =>
+        u.passwordResetToken === token &&
+        u.passwordResetTokenExpires &&
+        u.passwordResetTokenExpires.getTime() > Date.now()
+    );
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired password reset token.",
+      });
+    }
+
+    user.passwordHash = passwordHash;
+    user.passwordResetToken = undefined;
+    user.passwordResetTokenExpires = undefined;
+    user.refreshTokens = []; // Revoke sessions
+
+    return res.status(200).json({
+      success: true,
+      message: "Password has been reset successfully. Please log in with your new credentials.",
+    });
+  }
+
+  // DB FLOW
+  try {
+    const user = await User.findOne({
+      passwordResetToken: token,
+      passwordResetTokenExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired password reset token.",
+      });
+    }
+
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          password: passwordHash,
+          passwordResetToken: null,
+          passwordResetTokenExpires: null,
+          refreshTokens: [], // Revoke active sessions
+        },
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Password has been reset successfully. Please log in with your new credentials.",
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error during password reset.",
+    });
+  }
+};
+
+/**
+ * Endpoint: Secure Logout (Revoke Refresh Token)
+ */
+export const logout = async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(400).json({ success: false, message: "Refresh token is required." });
+  }
+
+  // MOCK FLOW
+  if (process.env.USE_MOCK_DATA === "true") {
+    for (const u of dynamicMockUsers) {
+      if (u.refreshTokens.includes(refreshToken)) {
+        u.refreshTokens = u.refreshTokens.filter((t) => t !== refreshToken);
+        break;
+      }
+    }
+    return res.status(200).json({ success: true, message: "Logged out successfully (mock mode)." });
+  }
+
+  // DB FLOW
+  try {
+    const user = await User.findOne({ refreshTokens: refreshToken });
+    if (user) {
+      const refreshTokens = (user.refreshTokens || []).filter((t: string) => t !== refreshToken);
+      await User.updateOne({ _id: user._id }, { $set: { refreshTokens } });
+    }
+    return res.status(200).json({ success: true, message: "Logged out successfully." });
+  } catch (error) {
+    console.error("Logout error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error during logout.",
     });
   }
 };
