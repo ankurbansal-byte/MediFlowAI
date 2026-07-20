@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import api from "../api/axios";
 import "./Auth.css";
 
+// Refactored VerifyEmail component for Enterprise Blue SaaS Redesign
 interface VerifyEmailProps {
   tokenParam?: string;
   onVerifySuccess: () => void;

@@ -176,7 +176,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
 
   if (loading) {
     return (
-      <div style={{ padding: "40px", textAlign: "center", color: "var(--navy)" }}>
+      <div style={{ padding: "40px", textAlign: "center", color: "#0a2540" }}>
         <h3>Loading your clinical profile...</h3>
       </div>
     );
@@ -185,14 +185,14 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
   return (
     <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px" }}>
       {/* Header */}
-      <div style={{ marginBottom: "28px", borderBottom: "1px solid var(--line)", paddingBottom: "20px" }}>
-        <p className="summary-section__eyebrow" style={{ color: "#115e59", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+      <div style={{ marginBottom: "28px", borderBottom: "1px solid var(--line, #e4e7eb)", paddingBottom: "20px" }}>
+        <p className="summary-section__eyebrow" style={{ color: "#0080ff", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.85rem", margin: 0 }}>
           Secure Portal Workspace
         </p>
-        <h1 style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "2rem", fontWeight: 850, letterSpacing: "-0.02em" }}>
+        <h1 style={{ margin: "4px 0 0 0", color: "var(--navy, #0a2540)", fontSize: "2rem", fontWeight: 850, letterSpacing: "-0.02em" }}>
           User Profile Management
         </h1>
-        <p style={{ margin: "4px 0 0 0", color: "var(--muted)", fontSize: "0.95rem" }}>
+        <p style={{ margin: "4px 0 0 0", color: "var(--muted, #486581)", fontSize: "0.95rem" }}>
           Review, edit, and secure your personal records and system credentials.
         </p>
       </div>
@@ -200,49 +200,49 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
       {/* Profile Core Block */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "32px" }} className="profile-grid-layout">
 
-        {/* Left Column: Placeholder Photo & Account Card */}
+        {/* Left Column: Avatar & Account Card */}
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           {/* Avatar Placeholder Card */}
           <div style={{
-            background: "var(--surface)",
-            border: "1px solid var(--line)",
+            background: "var(--surface, #ffffff)",
+            border: "1px solid var(--line, #e4e7eb)",
             borderRadius: "14px",
             padding: "32px 24px",
             textAlign: "center",
-            boxShadow: "0 4px 16px rgba(23, 49, 84, 0.03)"
+            boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
           }}>
             <div style={{
               width: "120px",
               height: "120px",
               borderRadius: "50%",
-              backgroundColor: "#e7f8f5",
-              color: "#115e59",
+              backgroundColor: "#e6f0ff",
+              color: "#0080ff",
               fontSize: "48px",
               fontWeight: 800,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               margin: "0 auto 20px auto",
-              border: "3px solid #115e59"
+              border: "3px solid #0080ff"
             }}>
               {fullName ? fullName.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}
             </div>
 
-            <h3 style={{ margin: "0 0 4px 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 850 }}>
+            <h3 style={{ margin: "0 0 4px 0", color: "var(--navy, #0a2540)", fontSize: "1.25rem", fontWeight: 850 }}>
               {fullName || "User Account"}
             </h3>
-            <p style={{ margin: "0 0 16px 0", color: "#115e59", fontWeight: 700, fontSize: "0.85rem", textTransform: "uppercase" }}>
+            <p style={{ margin: "0 0 16px 0", color: "#0080ff", fontWeight: 700, fontSize: "0.85rem", textTransform: "uppercase" }}>
               {user.role} Portal
             </p>
 
             <div style={{
               display: "inline-block",
-              background: "#f0fdfa",
-              border: "1px solid #99f6e4",
+              background: "#f0f4f8",
+              border: "1px solid #cbd5e1",
               borderRadius: "6px",
               padding: "6px 12px",
               fontSize: "0.8rem",
-              color: "#115e59",
+              color: "#486581",
               fontWeight: 750
             }}>
               ID: {profile?.patientId || profile?.username}
@@ -251,23 +251,23 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
 
           {/* Quick Stats/Meta */}
           <div style={{
-            background: "var(--surface)",
-            border: "1px solid var(--line)",
+            background: "var(--surface, #ffffff)",
+            border: "1px solid var(--line, #e4e7eb)",
             borderRadius: "14px",
             padding: "24px",
-            boxShadow: "0 4px 16px rgba(23, 49, 84, 0.03)"
+            boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
           }}>
-            <h4 style={{ margin: "0 0 12px 0", color: "var(--navy)", fontSize: "0.95rem", fontWeight: 800, textTransform: "uppercase" }}>
+            <h4 style={{ margin: "0 0 12px 0", color: "var(--navy, #0a2540)", fontSize: "0.95rem", fontWeight: 800, textTransform: "uppercase" }}>
               Security Details
             </h4>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "0.88rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "var(--muted)", fontWeight: 600 }}>Verification Status:</span>
-                <span style={{ color: "#00a389", fontWeight: 750 }}>✓ Verified Email</span>
+                <span style={{ color: "var(--muted, #486581)", fontWeight: 600 }}>Verification Status:</span>
+                <span style={{ color: "#0080ff", fontWeight: 750 }}>✓ Verified Email</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "var(--muted)", fontWeight: 600 }}>System Username:</span>
-                <span style={{ color: "var(--navy)", fontWeight: 700, fontFamily: "monospace" }}>{profile?.username}</span>
+                <span style={{ color: "var(--muted, #486581)", fontWeight: 600 }}>System Username:</span>
+                <span style={{ color: "var(--navy, #0a2540)", fontWeight: 700, fontFamily: "monospace" }}>{profile?.username}</span>
               </div>
             </div>
           </div>
@@ -278,13 +278,13 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
 
           {/* General Information Form */}
           <div style={{
-            background: "var(--surface)",
-            border: "1px solid var(--line)",
+            background: "var(--surface, #ffffff)",
+            border: "1px solid var(--line, #e4e7eb)",
             borderRadius: "14px",
             padding: "28px",
-            boxShadow: "0 4px 16px rgba(23, 49, 84, 0.03)"
+            boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
           }}>
-            <h3 style={{ margin: "0 0 20px 0", color: "var(--navy)", fontSize: "1.2rem", fontWeight: 800, borderBottom: "1px solid var(--line)", paddingBottom: "10px" }}>
+            <h3 style={{ margin: "0 0 20px 0", color: "var(--navy, #0a2540)", fontSize: "1.2rem", fontWeight: 800, borderBottom: "1px solid var(--line, #e4e7eb)", paddingBottom: "10px" }}>
               General Information
             </h3>
 
@@ -294,7 +294,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
             <form onSubmit={handleProfileSave} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <div className="auth-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                 <div className="auth-form-group">
-                  <label htmlFor="p-fullName" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#7e8ba1", textTransform: "uppercase", marginBottom: "6px" }}>Full Name</label>
+                  <label htmlFor="p-fullName" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Full Name</label>
                   <input
                     id="p-fullName"
                     type="text"
@@ -307,7 +307,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                 </div>
 
                 <div className="auth-form-group">
-                  <label htmlFor="p-email" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#7e8ba1", textTransform: "uppercase", marginBottom: "6px" }}>Email Address</label>
+                  <label htmlFor="p-email" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Email Address</label>
                   <input
                     id="p-email"
                     type="email"
@@ -322,7 +322,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
 
               <div className="auth-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                 <div className="auth-form-group">
-                  <label htmlFor="p-mobileNumber" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#7e8ba1", textTransform: "uppercase", marginBottom: "6px" }}>Mobile Number</label>
+                  <label htmlFor="p-mobileNumber" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Mobile Number</label>
                   <input
                     id="p-mobileNumber"
                     type="tel"
@@ -336,7 +336,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
 
                 {user.role === "patient" ? (
                   <div className="auth-form-group">
-                    <label htmlFor="p-dob" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#7e8ba1", textTransform: "uppercase", marginBottom: "6px" }}>Date of Birth</label>
+                    <label htmlFor="p-dob" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Date of Birth</label>
                     <input
                       id="p-dob"
                       type="date"
@@ -349,7 +349,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                   </div>
                 ) : (
                   <div className="auth-form-group">
-                    <label htmlFor="p-yearsExp" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#7e8ba1", textTransform: "uppercase", marginBottom: "6px" }}>Years of Experience</label>
+                    <label htmlFor="p-yearsExp" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Years of Experience</label>
                     <input
                       id="p-yearsExp"
                       type="text"
@@ -367,7 +367,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                 <>
                   <div className="auth-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                     <div className="auth-form-group">
-                      <label htmlFor="p-gender" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#7e8ba1", textTransform: "uppercase", marginBottom: "6px" }}>Gender</label>
+                      <label htmlFor="p-gender" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Gender</label>
                       <select
                         id="p-gender"
                         className="auth-select"
@@ -375,7 +375,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                         onChange={(e) => setGender(e.target.value)}
                         required
                         disabled={saving}
-                        style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--line)", borderRadius: "8px" }}
+                        style={{ width: "100%", padding: "12px 14px", border: "1.5px solid #cbd2d9", borderRadius: "8px" }}
                       >
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
@@ -384,7 +384,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                     </div>
 
                     <div className="auth-form-group">
-                      <label htmlFor="p-emergency" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#7e8ba1", textTransform: "uppercase", marginBottom: "6px" }}>Emergency Contact</label>
+                      <label htmlFor="p-emergency" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Emergency Contact</label>
                       <input
                         id="p-emergency"
                         type="text"
@@ -398,7 +398,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                   </div>
 
                   <div className="auth-form-group">
-                    <label htmlFor="p-address" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#7e8ba1", textTransform: "uppercase", marginBottom: "6px" }}>Home Address</label>
+                    <label htmlFor="p-address" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Home Address</label>
                     <input
                       id="p-address"
                       type="text"
@@ -413,7 +413,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
               ) : (
                 <div className="auth-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                   <div className="auth-form-group">
-                    <label htmlFor="p-hospital" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#7e8ba1", textTransform: "uppercase", marginBottom: "6px" }}>Hospital / Clinic Name</label>
+                    <label htmlFor="p-hospital" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Hospital / Clinic Name</label>
                     <input
                       id="p-hospital"
                       type="text"
@@ -426,7 +426,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                   </div>
 
                   <div className="auth-form-group">
-                    <label htmlFor="p-specialization" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#7e8ba1", textTransform: "uppercase", marginBottom: "6px" }}>Specialization</label>
+                    <label htmlFor="p-specialization" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Specialization</label>
                     <input
                       id="p-specialization"
                       type="text"
@@ -440,7 +440,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                 </div>
               )}
 
-              <button type="submit" className="auth-submit-btn" style={{ padding: "12px", borderRadius: "8px", background: "#115e59", color: "#ffffff", fontWeight: 750, border: "none", cursor: "pointer", transition: "all 0.15s ease", marginTop: "10px" }} disabled={saving}>
+              <button type="submit" className="auth-submit-btn" style={{ padding: "14px", borderRadius: "8px", background: "#0080ff", color: "#ffffff", fontWeight: 750, border: "none", cursor: "pointer", transition: "all 0.15s ease", marginTop: "10px" }} disabled={saving}>
                 {saving ? "Saving Changes..." : "Save Profile Details"}
               </button>
             </form>
@@ -448,16 +448,16 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
 
           {/* Change Password Block */}
           <div style={{
-            background: "var(--surface)",
-            border: "1px solid var(--line)",
+            background: "var(--surface, #ffffff)",
+            border: "1px solid var(--line, #e4e7eb)",
             borderRadius: "14px",
             padding: "28px",
-            boxShadow: "0 4px 16px rgba(23, 49, 84, 0.03)"
+            boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
           }}>
-            <h3 style={{ margin: "0 0 6px 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 800 }}>
+            <h3 style={{ margin: "0 0 6px 0", color: "var(--navy, #0a2540)", fontSize: "1.25rem", fontWeight: 800 }}>
               Change Password
             </h3>
-            <p style={{ margin: "0 0 20px 0", color: "var(--muted)", fontSize: "0.85rem" }}>
+            <p style={{ margin: "0 0 20px 0", color: "var(--muted, #486581)", fontSize: "0.85rem" }}>
               Securely update your system credentials.
             </p>
 
@@ -466,7 +466,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
 
             <form onSubmit={handlePasswordChange} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <div className="auth-form-group">
-                <label htmlFor="p-oldPass" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#7e8ba1", textTransform: "uppercase", marginBottom: "6px" }}>Current Password</label>
+                <label htmlFor="p-oldPass" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Current Password</label>
                 <div style={{ position: "relative" }}>
                   <input
                     id="p-oldPass"
@@ -504,7 +504,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
 
               <div className="auth-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                 <div className="auth-form-group">
-                  <label htmlFor="p-newPass" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#7e8ba1", textTransform: "uppercase", marginBottom: "6px" }}>New Password</label>
+                  <label htmlFor="p-newPass" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>New Password</label>
                   <div style={{ position: "relative" }}>
                     <input
                       id="p-newPass"
@@ -541,7 +541,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                 </div>
 
                 <div className="auth-form-group">
-                  <label htmlFor="p-confirmPass" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#7e8ba1", textTransform: "uppercase", marginBottom: "6px" }}>Confirm New Password</label>
+                  <label htmlFor="p-confirmPass" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Confirm New Password</label>
                   <div style={{ position: "relative" }}>
                     <input
                       id="p-confirmPass"
@@ -578,7 +578,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                 </div>
               </div>
 
-              <button type="submit" className="auth-submit-btn" style={{ padding: "12px", borderRadius: "8px", background: "#e11d48", color: "#ffffff", fontWeight: 750, border: "none", cursor: "pointer", transition: "all 0.15s ease" }} disabled={saving}>
+              <button type="submit" className="auth-submit-btn" style={{ padding: "14px", borderRadius: "8px", background: "#ef4444", color: "#ffffff", fontWeight: 750, border: "none", cursor: "pointer", transition: "all 0.15s ease" }} disabled={saving}>
                 {saving ? "Updating..." : "Update Password Credentials"}
               </button>
             </form>

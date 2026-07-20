@@ -114,12 +114,12 @@ const PatientRegister: React.FC<PatientRegisterProps> = ({ onBackToLogin, onRegi
     switch (passwordStrength) {
       case 1:
       case 2:
-        return "#e12d39"; // red
+        return "#ef4444"; // premium soft red
       case 3:
-        return "#ff9c2a"; // orange
+        return "#f59e0b"; // premium soft orange
       case 4:
       case 5:
-        return "#00a389"; // green
+        return "#0080ff"; // Consistent MediFlowAI blue theme
       default:
         return "#e4e7eb";
     }

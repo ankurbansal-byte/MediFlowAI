@@ -23,26 +23,41 @@ const Login: React.FC<LoginProps> = ({
   onOpenDoctorRegister,
   onOpenForgotPassword,
 }) => {
-  const [username, setUsername] = useState<string>(() => {
-    return localStorage.getItem("mediflow_remembered_username") || "";
+  // Doctor states
+  const [docUsername, setDocUsername] = useState<string>(() => {
+    const saved = localStorage.getItem("mediflow_remembered_username_doctor") || localStorage.getItem("mediflow_remembered_username") || "";
+    return saved.toUpperCase().startsWith("PAT-") ? "" : saved;
   });
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState<boolean>(() => {
-    return !!localStorage.getItem("mediflow_remembered_username");
+  const [docPassword, setDocPassword] = useState("");
+  const [docShowPassword, setDocShowPassword] = useState(false);
+  const [docRememberMe, setDocRememberMe] = useState<boolean>(() => {
+    return !!localStorage.getItem("mediflow_remembered_username_doctor") || (!!localStorage.getItem("mediflow_remembered_username") && !localStorage.getItem("mediflow_remembered_username")?.toUpperCase().startsWith("PAT-"));
   });
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [docError, setDocError] = useState("");
+  const [docLoading, setDocLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Patient states
+  const [patUsername, setPatUsername] = useState<string>(() => {
+    const saved = localStorage.getItem("mediflow_remembered_username_patient") || localStorage.getItem("mediflow_remembered_username") || "";
+    return saved.toUpperCase().startsWith("PAT-") ? saved : "";
+  });
+  const [patPassword, setPatPassword] = useState("");
+  const [patShowPassword, setPatShowPassword] = useState(false);
+  const [patRememberMe, setPatRememberMe] = useState<boolean>(() => {
+    return !!localStorage.getItem("mediflow_remembered_username_patient") || (!!localStorage.getItem("mediflow_remembered_username") && !!localStorage.getItem("mediflow_remembered_username")?.toUpperCase().startsWith("PAT-"));
+  });
+  const [patError, setPatError] = useState("");
+  const [patLoading, setPatLoading] = useState(false);
+
+  const handleDoctorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setDocError("");
+    setDocLoading(true);
 
     try {
       const response = await api.post("/auth/login", {
-        username: username.trim(),
-        password,
+        username: docUsername.trim(),
+        password: docPassword,
       });
 
       if (response.data.success) {
@@ -52,177 +67,282 @@ const Login: React.FC<LoginProps> = ({
         localStorage.setItem("mediflow_refresh_token", refreshToken || "");
         localStorage.setItem("mediflow_user", JSON.stringify(user));
 
-        if (rememberMe) {
-          localStorage.setItem("mediflow_remembered_username", username.trim());
-        } else {
+        if (docRememberMe) {
+          localStorage.setItem("mediflow_remembered_username_doctor", docUsername.trim());
+          localStorage.removeItem("mediflow_remembered_username_patient");
           localStorage.removeItem("mediflow_remembered_username");
+        } else {
+          localStorage.removeItem("mediflow_remembered_username_doctor");
         }
 
         onLoginSuccess(user);
       } else {
-        setError(response.data.message || "Invalid credentials.");
+        setDocError(response.data.message || "Invalid credentials.");
       }
     } catch (err) {
-      console.error("Login error:", err);
+      console.error("Doctor Login error:", err);
       const loginError = err as LoginErrorResponse;
-      setError(
+      setDocError(
         loginError.response?.data?.message ||
           "Failed to connect to the server. Please verify the backend is running."
       );
     } finally {
-      setLoading(false);
+      setDocLoading(false);
+    }
+  };
+
+  const handlePatientSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPatError("");
+    setPatLoading(true);
+
+    try {
+      const response = await api.post("/auth/login", {
+        username: patUsername.trim(),
+        password: patPassword,
+      });
+
+      if (response.data.success) {
+        const { token, refreshToken, user } = response.data;
+
+        localStorage.setItem("mediflow_token", token);
+        localStorage.setItem("mediflow_refresh_token", refreshToken || "");
+        localStorage.setItem("mediflow_user", JSON.stringify(user));
+
+        if (patRememberMe) {
+          localStorage.setItem("mediflow_remembered_username_patient", patUsername.trim());
+          localStorage.removeItem("mediflow_remembered_username_doctor");
+          localStorage.removeItem("mediflow_remembered_username");
+        } else {
+          localStorage.removeItem("mediflow_remembered_username_patient");
+        }
+
+        onLoginSuccess(user);
+      } else {
+        setPatError(response.data.message || "Invalid credentials.");
+      }
+    } catch (err) {
+      console.error("Patient Login error:", err);
+      const loginError = err as LoginErrorResponse;
+      setPatError(
+        loginError.response?.data?.message ||
+          "Failed to connect to the server. Please verify the backend is running."
+      );
+    } finally {
+      setPatLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-header">
-          <span className="login-logo-mark">+</span>
-          <h2>MediFlowAI</h2>
-          <p>Clinical Intelligence & Patient Portal</p>
+    <div className="login-page-wrapper">
+      {/* Brand Header */}
+      <header className="login-brand-header">
+        <div className="login-logo-container">
+          <span className="login-logo-mark-blue">+</span>
+          <h1>MediFlowAI</h1>
         </div>
+        <p className="login-brand-subtitle">Enterprise Clinical Intelligence & Patient Telemetry Platform</p>
+      </header>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          {error && <div className="login-error" role="alert">{error}</div>}
+      {/* Dual Portal Layout Container */}
+      <div className="login-dual-portal-container">
 
-          <div className="login-form-group">
-            <label htmlFor="username">Username, Email or Patient ID</label>
-            <input
-              id="username"
-              type="text"
-              className="login-input"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="e.g. PAT-101 or user@email.com"
-              required
-              disabled={loading}
-              autoComplete="username"
-            />
+        {/* LEFT SECTION: Doctor Portal */}
+        <section className="login-portal-section doctor-portal">
+          <div className="portal-header">
+            <div className="portal-icon-wrapper doctor-color">
+              🩺
+            </div>
+            <h2>Doctor Portal</h2>
+            <p>Access patient telemetry, AI clinical insights, and workspaces</p>
           </div>
 
-          <div className="login-form-group">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-              <label htmlFor="password" style={{ margin: 0 }}>Password</label>
-              <a
-                href="#forgot-password"
-                className="forgot-password-link"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onOpenForgotPassword();
-                }}
-                style={{ fontSize: "12px", color: "#115e59", fontWeight: 600, textDecoration: "none" }}
-              >
-                Forgot Password?
-              </a>
-            </div>
+          <form onSubmit={handleDoctorSubmit} className="portal-form">
+            {docError && <div className="portal-error-alert" role="alert">{docError}</div>}
 
-            <div style={{ position: "relative" }}>
+            <div className="portal-form-group">
+              <label htmlFor="doc-username">Username or Email</label>
               <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                className="login-input"
-                style={{ paddingRight: "40px" }}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
+                id="doc-username"
+                type="text"
+                className="portal-input"
+                value={docUsername}
+                onChange={(e) => setDocUsername(e.target.value)}
+                placeholder="e.g. doctor1 or dr.smith@mediflow.ai"
                 required
-                disabled={loading}
-                autoComplete="current-password"
+                disabled={docLoading || patLoading}
+                autoComplete="username"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                style={{
-                  position: "absolute",
-                  right: "12px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: "16px",
-                  color: "#627d98",
-                  padding: "4px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {showPassword ? "🙈" : "👁"}
-              </button>
             </div>
-          </div>
 
-          <div className="remember-me-container" style={{ display: "flex", alignItems: "center", gap: "8px", margin: "4px 0 12px 0" }}>
-            <input
-              id="rememberMe"
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              disabled={loading}
-              style={{ cursor: "pointer", width: "16px", height: "16px" }}
-            />
-            <label htmlFor="rememberMe" style={{ fontSize: "13px", color: "#486581", cursor: "pointer", userSelect: "none", fontWeight: 600 }}>
-              Remember Me on this device
-            </label>
-          </div>
+            <div className="portal-form-group">
+              <div className="portal-password-header">
+                <label htmlFor="doc-password">Password</label>
+                <a
+                  href="#forgot-password"
+                  className="portal-forgot-link"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onOpenForgotPassword();
+                  }}
+                >
+                  Forgot Password?
+                </a>
+              </div>
 
-          <button type="submit" className="login-submit-btn" disabled={loading}>
-            {loading ? "Authenticating..." : "Login"}
-          </button>
-        </form>
+              <div className="portal-input-with-icon">
+                <input
+                  id="doc-password"
+                  type={docShowPassword ? "text" : "password"}
+                  className="portal-input password-padding"
+                  value={docPassword}
+                  onChange={(e) => setDocPassword(e.target.value)}
+                  placeholder="Enter your doctor password"
+                  required
+                  disabled={docLoading || patLoading}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setDocShowPassword(!docShowPassword)}
+                  aria-label={docShowPassword ? "Hide password" : "Show password"}
+                  className="portal-eye-toggle"
+                >
+                  {docShowPassword ? "🙈" : "👁"}
+                </button>
+              </div>
+            </div>
 
-        <div className="login-footer" style={{ borderTop: "1px solid #e4e7eb", marginTop: "24px", paddingTop: "20px", textAlign: "center" }}>
-          <p style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: 600, color: "#486581" }}>Create Account</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <button
-              type="button"
-              onClick={onOpenPatientRegister}
-              disabled={loading}
-              style={{
-                backgroundColor: "#ffffff",
-                color: "#115e59",
-                border: "1.5px solid #115e59",
-                padding: "10px 16px",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: 700,
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                width: "100%",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#f0fdfa"; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = "#ffffff"; }}
-            >
-              Register as Patient
+            <div className="portal-remember-row">
+              <input
+                id="docRememberMe"
+                type="checkbox"
+                checked={docRememberMe}
+                onChange={(e) => setDocRememberMe(e.target.checked)}
+                disabled={docLoading || patLoading}
+                className="portal-checkbox"
+              />
+              <label htmlFor="docRememberMe">
+                Remember Me on this device
+              </label>
+            </div>
+
+            <button type="submit" className="portal-submit-btn doctor-btn" disabled={docLoading || patLoading}>
+              {docLoading ? "Authenticating Doctor..." : "Login as Doctor"}
             </button>
+          </form>
+
+          <div className="portal-footer-register">
+            <span>New clinical provider?</span>
             <button
               type="button"
+              className="portal-register-link-btn"
               onClick={onOpenDoctorRegister}
-              disabled={loading}
-              style={{
-                backgroundColor: "#115e59",
-                color: "#ffffff",
-                border: "none",
-                padding: "10px 16px",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: 700,
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                width: "100%",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#0d4d49"; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = "#115e59"; }}
+              disabled={docLoading || patLoading}
             >
               Register as Doctor
             </button>
           </div>
-        </div>
+        </section>
+
+        {/* RIGHT SECTION: Patient Portal */}
+        <section className="login-portal-section patient-portal">
+          <div className="portal-header">
+            <div className="portal-icon-wrapper patient-color">
+              👤
+            </div>
+            <h2>Patient Portal</h2>
+            <p>Submit health logs, track clinical trends, and view insights</p>
+          </div>
+
+          <form onSubmit={handlePatientSubmit} className="portal-form">
+            {patError && <div className="portal-error-alert" role="alert">{patError}</div>}
+
+            <div className="portal-form-group">
+              <label htmlFor="pat-username">Patient ID or Email</label>
+              <input
+                id="pat-username"
+                type="text"
+                className="portal-input"
+                value={patUsername}
+                onChange={(e) => setPatUsername(e.target.value)}
+                placeholder="e.g. PAT-101 or patient@email.com"
+                required
+                disabled={docLoading || patLoading}
+                autoComplete="username"
+              />
+            </div>
+
+            <div className="portal-form-group">
+              <div className="portal-password-header">
+                <label htmlFor="pat-password">Password</label>
+                <a
+                  href="#forgot-password"
+                  className="portal-forgot-link"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onOpenForgotPassword();
+                  }}
+                >
+                  Forgot Password?
+                </a>
+              </div>
+
+              <div className="portal-input-with-icon">
+                <input
+                  id="pat-password"
+                  type={patShowPassword ? "text" : "password"}
+                  className="portal-input password-padding"
+                  value={patPassword}
+                  onChange={(e) => setPatPassword(e.target.value)}
+                  placeholder="Enter your patient password"
+                  required
+                  disabled={docLoading || patLoading}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setPatShowPassword(!patShowPassword)}
+                  aria-label={patShowPassword ? "Hide password" : "Show password"}
+                  className="portal-eye-toggle"
+                >
+                  {patShowPassword ? "🙈" : "👁"}
+                </button>
+              </div>
+            </div>
+
+            <div className="portal-remember-row">
+              <input
+                id="patRememberMe"
+                type="checkbox"
+                checked={patRememberMe}
+                onChange={(e) => setPatRememberMe(e.target.checked)}
+                disabled={docLoading || patLoading}
+                className="portal-checkbox"
+              />
+              <label htmlFor="patRememberMe">
+                Remember Me on this device
+              </label>
+            </div>
+
+            <button type="submit" className="portal-submit-btn patient-btn" disabled={docLoading || patLoading}>
+              {patLoading ? "Authenticating Patient..." : "Login as Patient"}
+            </button>
+          </form>
+
+          <div className="portal-footer-register">
+            <span>Accessing the platform first time?</span>
+            <button
+              type="button"
+              className="portal-register-link-btn"
+              onClick={onOpenPatientRegister}
+              disabled={docLoading || patLoading}
+            >
+              Register as Patient
+            </button>
+          </div>
+        </section>
+
       </div>
     </div>
   );
