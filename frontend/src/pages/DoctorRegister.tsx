@@ -11,11 +11,12 @@ const DoctorRegister: React.FC<DoctorRegisterProps> = ({ onBackToLogin, onRegist
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
-  const [medicalRegistrationNumber, setMedicalRegistrationNumber] = useState("");
   const [hospitalClinicName, setHospitalClinicName] = useState("");
   const [specialization, setSpecialization] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [errors, setErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,7 +30,6 @@ const DoctorRegister: React.FC<DoctorRegisterProps> = ({ onBackToLogin, onRegist
     if (!fullName.trim()) clientErrors.push("Full Name is required.");
     if (!email.trim()) clientErrors.push("Email is required.");
     if (!mobileNumber.trim()) clientErrors.push("Mobile Number is required.");
-    if (!medicalRegistrationNumber.trim()) clientErrors.push("Medical Registration Number is required.");
     if (!hospitalClinicName.trim()) clientErrors.push("Hospital/Clinic Name is required.");
     if (!specialization.trim()) clientErrors.push("Specialization is required.");
     if (password !== confirmPassword) clientErrors.push("Passwords do not match.");
@@ -49,7 +49,6 @@ const DoctorRegister: React.FC<DoctorRegisterProps> = ({ onBackToLogin, onRegist
         fullName: fullName.trim(),
         email: email.trim(),
         mobileNumber: mobileNumber.trim(),
-        medicalRegistrationNumber: medicalRegistrationNumber.trim(),
         hospitalClinicName: hospitalClinicName.trim(),
         specialization: specialization.trim(),
         password,
@@ -137,22 +136,6 @@ const DoctorRegister: React.FC<DoctorRegisterProps> = ({ onBackToLogin, onRegist
             </div>
 
             <div className="auth-form-group">
-              <label htmlFor="medRegNum">Medical Registration Number</label>
-              <input
-                id="medRegNum"
-                type="text"
-                className="auth-input"
-                placeholder="e.g. MED-89745-NY"
-                value={medicalRegistrationNumber}
-                onChange={(e) => setMedicalRegistrationNumber(e.target.value)}
-                disabled={loading}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="auth-form-row">
-            <div className="auth-form-group">
               <label htmlFor="hospitalName">Hospital / Clinic Name</label>
               <input
                 id="hospitalName"
@@ -165,7 +148,9 @@ const DoctorRegister: React.FC<DoctorRegisterProps> = ({ onBackToLogin, onRegist
                 required
               />
             </div>
+          </div>
 
+          <div className="auth-form-row">
             <div className="auth-form-group">
               <label htmlFor="specialization">Specialization</label>
               <input
@@ -184,32 +169,82 @@ const DoctorRegister: React.FC<DoctorRegisterProps> = ({ onBackToLogin, onRegist
           <div className="auth-form-row">
             <div className="auth-form-group">
               <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                className="auth-input"
-                placeholder="Minimum 8 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-                required
-                autoComplete="new-password"
-              />
+              <div style={{ position: "relative" }}>
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  className="auth-input"
+                  style={{ paddingRight: "40px" }}
+                  placeholder="Minimum 8 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  required
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "16px",
+                    color: "#627d98",
+                    padding: "4px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {showPassword ? "🙈" : "👁"}
+                </button>
+              </div>
             </div>
 
             <div className="auth-form-group">
               <label htmlFor="confirmPassword">Confirm Password</label>
-              <input
-                id="confirmPassword"
-                type="password"
-                className="auth-input"
-                placeholder="Re-enter password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={loading}
-                required
-                autoComplete="new-password"
-              />
+              <div style={{ position: "relative" }}>
+                <input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  className="auth-input"
+                  style={{ paddingRight: "40px" }}
+                  placeholder="Re-enter password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={loading}
+                  required
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "16px",
+                    color: "#627d98",
+                    padding: "4px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {showConfirmPassword ? "🙈" : "👁"}
+                </button>
+              </div>
             </div>
           </div>
 

@@ -14,14 +14,17 @@ import { calculateParameterStats } from "../utils/stats";
 import { type User } from "../App";
 import "./Dashboard.css";
 
+import ProfileView from "./ProfileView";
+
 interface DashboardProps {
   user: User;
   onLogout: () => void;
+  onProfileUpdate: (updatedUser: User) => void;
 }
 
-export type TabType = "dashboard" | "trends" | "ai-insights" | "settings";
+export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "settings";
 
-const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -135,6 +138,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             isTrendLoading={isTrendLoading}
             hasTrendError={hasTrendError}
             trend={trend}
+          />
+        );
+      case "profile":
+        return (
+          <ProfileView
+            user={user}
+            onProfileUpdate={onProfileUpdate}
           />
         );
       case "settings":

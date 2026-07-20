@@ -5,6 +5,7 @@ import crypto from "crypto";
 import User from "../models/User";
 import { MOCK_USERS } from "../utils/mockUsers";
 import { mailService } from "../services/mailService";
+import { AuthenticatedRequest } from "../utils/authMiddleware";
 import {
   validatePatientRegistration,
   validateDoctorRegistration,
@@ -185,6 +186,263 @@ export const registerPatient = async (req: Request, res: Response) => {
 };
 
 /**
+ * Endpoint: Get Profile Info
+ */
+export const getProfile = async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+  if (!authReq.user) {
+    return res.status(401).json({ success: false, message: "Unauthorized." });
+  }
+
+  const { username } = authReq.user;
+
+  if (process.env.USE_MOCK_DATA === "true") {
+    const user = dynamicMockUsers.find((u) => u.username === username);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+    return res.status(200).json({
+      success: true,
+      profile: {
+        username: user.username,
+        role: user.role,
+        patientId: user.patientId,
+        fullName: user.fullName,
+        email: user.email,
+        mobileNumber: user.mobileNumber,
+        dob: user.dob,
+        gender: user.gender,
+        hospitalClinicName: user.hospitalClinicName,
+        specialization: user.specialization,
+        yearsOfExperience: (user as any).yearsOfExperience || "",
+        address: (user as any).address || "",
+        emergencyContact: (user as any).emergencyContact || "",
+      },
+    });
+  }
+
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+    return res.status(200).json({
+      success: true,
+      profile: {
+        username: user.username,
+        role: user.role,
+        patientId: user.patientId,
+        fullName: user.fullName,
+        email: user.email,
+        mobileNumber: user.mobileNumber,
+        dob: user.dob,
+        gender: user.gender,
+        hospitalClinicName: user.hospitalClinicName,
+        specialization: user.specialization,
+        yearsOfExperience: (user as any).yearsOfExperience || "",
+        address: (user as any).address || "",
+        emergencyContact: (user as any).emergencyContact || "",
+      },
+    });
+  } catch (error) {
+    console.error("Get profile error:", error);
+    return res.status(500).json({ success: false, message: "Server error fetching profile." });
+  }
+};
+
+/**
+ * Endpoint: Update Profile Info
+ */
+export const updateProfile = async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+  if (!authReq.user) {
+    return res.status(401).json({ success: false, message: "Unauthorized." });
+  }
+
+  const { username, role } = authReq.user;
+  const {
+    fullName,
+    email,
+    mobileNumber,
+    dob,
+    gender,
+    address,
+    emergencyContact,
+    hospitalClinicName,
+    specialization,
+    yearsOfExperience,
+    oldPassword,
+    newPassword,
+  } = req.body;
+
+  // 1. Password change validation if requested
+  let newPasswordHash: string | undefined = undefined;
+
+  if (oldPassword || newPassword) {
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Both current password and new password are required to change password.",
+      });
+    }
+
+    if (!isStrongPassword(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be at least 8 characters long, with 1 uppercase, 1 lowercase, 1 number, and 1 special character.",
+      });
+    }
+
+    // Verify current password
+    if (process.env.USE_MOCK_DATA === "true") {
+      const user = dynamicMockUsers.find((u) => u.username === username);
+      if (!user) {
+        return res.status(404).json({ success: false, message: "User not found." });
+      }
+      const isMatch = bcrypt.compareSync(oldPassword, user.passwordHash);
+      if (!isMatch) {
+        return res.status(400).json({ success: false, message: "Current password is incorrect." });
+      }
+      const salt = bcrypt.genSaltSync(10);
+      newPasswordHash = bcrypt.hashSync(newPassword, salt);
+    } else {
+      try {
+        const user = await User.findOne({ username });
+        if (!user) {
+          return res.status(404).json({ success: false, message: "User not found." });
+        }
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isMatch) {
+          return res.status(400).json({ success: false, message: "Current password is incorrect." });
+        }
+        const salt = bcrypt.genSaltSync(10);
+        newPasswordHash = bcrypt.hashSync(newPassword, salt);
+      } catch (err) {
+        console.error("Password update error:", err);
+        return res.status(500).json({ success: false, message: "Server error verifying password." });
+      }
+    }
+  }
+
+  // 2. Perform updates
+  if (process.env.USE_MOCK_DATA === "true") {
+    const user = dynamicMockUsers.find((u) => u.username === username);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+
+    // Check unique email if email was updated
+    if (email && email.trim().toLowerCase() !== user.email?.toLowerCase()) {
+      const emailExists = dynamicMockUsers.some(
+        (u) => u.username !== username && u.email && u.email.toLowerCase() === email.trim().toLowerCase()
+      );
+      if (emailExists) {
+        return res.status(400).json({ success: false, message: "An account with this email address already exists." });
+      }
+    }
+
+    user.fullName = fullName !== undefined ? fullName : user.fullName;
+    user.email = email !== undefined ? email.trim().toLowerCase() : user.email;
+    user.mobileNumber = mobileNumber !== undefined ? mobileNumber : user.mobileNumber;
+
+    if (role === "patient") {
+      user.dob = dob !== undefined ? dob : user.dob;
+      user.gender = gender !== undefined ? gender : user.gender;
+      (user as any).address = address !== undefined ? address : (user as any).address;
+      (user as any).emergencyContact = emergencyContact !== undefined ? emergencyContact : (user as any).emergencyContact;
+    } else if (role === "doctor") {
+      user.hospitalClinicName = hospitalClinicName !== undefined ? hospitalClinicName : user.hospitalClinicName;
+      user.specialization = specialization !== undefined ? specialization : user.specialization;
+      (user as any).yearsOfExperience = yearsOfExperience !== undefined ? yearsOfExperience : (user as any).yearsOfExperience;
+    }
+
+    if (newPasswordHash) {
+      user.passwordHash = newPasswordHash;
+      user.refreshTokens = []; // Revoke active sessions for security
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully.",
+      user: {
+        username: user.username,
+        role: user.role,
+        patientId: user.patientId,
+        isEmailVerified: user.isEmailVerified,
+        email: user.email,
+        fullName: user.fullName,
+      },
+    });
+  }
+
+  // DB UPDATE
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+
+    // Check unique email if email was updated
+    if (email && email.trim().toLowerCase() !== user.email?.toLowerCase()) {
+      const emailExists = await User.findOne({
+        username: { $ne: username },
+        email: { $regex: new RegExp(`^${email.trim()}$`, "i") },
+      });
+      if (emailExists) {
+        return res.status(400).json({ success: false, message: "An account with this email address already exists." });
+      }
+    }
+
+    const updates: any = {};
+    if (fullName !== undefined) updates.fullName = fullName;
+    if (email !== undefined) updates.email = email.trim().toLowerCase();
+    if (mobileNumber !== undefined) updates.mobileNumber = mobileNumber;
+
+    if (role === "patient") {
+      if (dob !== undefined) updates.dob = dob;
+      if (gender !== undefined) updates.gender = gender;
+      if (address !== undefined) updates.address = address;
+      if (emergencyContact !== undefined) updates.emergencyContact = emergencyContact;
+    } else if (role === "doctor") {
+      if (hospitalClinicName !== undefined) updates.hospitalClinicName = hospitalClinicName;
+      if (specialization !== undefined) updates.specialization = specialization;
+      if (yearsOfExperience !== undefined) updates.yearsOfExperience = yearsOfExperience;
+    }
+
+    if (newPasswordHash) {
+      updates.password = newPasswordHash;
+      updates.refreshTokens = []; // Revoke active sessions for security
+    }
+
+    const updatedUser = await User.findOneAndUpdate(
+      { username },
+      { $set: updates },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: "User update failed." });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully.",
+      user: {
+        username: updatedUser.username,
+        role: updatedUser.role,
+        patientId: updatedUser.patientId,
+        isEmailVerified: updatedUser.isEmailVerified,
+        email: updatedUser.email,
+        fullName: updatedUser.fullName,
+      },
+    });
+  } catch (error) {
+    console.error("Profile update error:", error);
+    return res.status(500).json({ success: false, message: "Server error during profile update." });
+  }
+};
+
+/**
  * Endpoint: Doctor Registration
  */
 export const registerDoctor = async (req: Request, res: Response) => {
@@ -197,7 +455,6 @@ export const registerDoctor = async (req: Request, res: Response) => {
     fullName,
     email,
     mobileNumber,
-    medicalRegistrationNumber,
     hospitalClinicName,
     specialization,
     password,
@@ -238,7 +495,7 @@ export const registerDoctor = async (req: Request, res: Response) => {
       emailVerificationTokenExpires: verificationExpires,
       passwordResetToken: undefined,
       passwordResetTokenExpires: undefined,
-      medicalRegistrationNumber,
+      medicalRegistrationNumber: undefined,
       hospitalClinicName,
       specialization,
     };
@@ -278,7 +535,7 @@ export const registerDoctor = async (req: Request, res: Response) => {
       fullName,
       email: email.trim().toLowerCase(),
       mobileNumber: mobileNumber.trim(),
-      medicalRegistrationNumber,
+      medicalRegistrationNumber: undefined,
       hospitalClinicName,
       specialization,
       isEmailVerified: false,

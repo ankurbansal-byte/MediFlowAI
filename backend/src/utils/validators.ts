@@ -93,7 +93,6 @@ export interface DoctorRegistrationInput {
   fullName?: string;
   email?: string;
   mobileNumber?: string;
-  medicalRegistrationNumber?: string;
   hospitalClinicName?: string;
   specialization?: string;
   password?: string;
@@ -117,10 +116,6 @@ export const validateDoctorRegistration = (input: DoctorRegistrationInput): stri
     errors.push("Mobile Number is required.");
   } else if (!isValidMobile(input.mobileNumber)) {
     errors.push("Mobile Number must be a valid format (8-15 digits).");
-  }
-
-  if (!input.medicalRegistrationNumber || !input.medicalRegistrationNumber.trim()) {
-    errors.push("Medical Registration Number is required.");
   }
 
   if (!input.hospitalClinicName || !input.hospitalClinicName.trim()) {
