@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import HealthRecord from "./models/HealthRecord";
 import User from "./models/User";
+import Hospital from "./models/Hospital";
 import { generateDemoRecords } from "./utils/demoData";
 import { MOCK_USERS } from "./utils/mockUsers";
 
@@ -34,6 +35,26 @@ async function runSeeder() {
     const insertResult = await HealthRecord.insertMany(demoRecords);
     console.log(`✅ Successfully seeded ${insertResult.length} health records!`);
 
+    console.log("🧹 Cleaning up existing hospitals...");
+    await Hospital.deleteMany({ hospitalId: "HOSP-001" });
+
+    console.log("🌱 Seeding demo hospital...");
+    await Hospital.create({
+      hospitalId: "HOSP-001",
+      hospitalName: "MediFlow Hospital",
+      address: "123 Healthcare Ave",
+      city: "Metro City",
+      state: "State",
+      country: "Country",
+      pincode: "123456",
+      phone: "+15550199",
+      email: "info@mediflowhospital.com",
+      website: "https://mediflowhospital.com",
+      logo: "https://mediflowhospital.com/logo.png",
+      status: "active",
+    });
+    console.log("✅ Demo hospital seeded successfully!");
+
     console.log("🧹 Cleaning up existing users...");
     const userUsernames = MOCK_USERS.map((u) => u.username);
     await User.deleteMany({ username: { $in: userUsernames } });
@@ -44,6 +65,7 @@ async function runSeeder() {
       password: u.passwordHash,
       role: u.role,
       patientId: u.patientId || null,
+      hospitalId: "HOSP-001",
     }));
     const userInsertResult = await User.insertMany(usersToInsert);
     console.log(`✅ Successfully seeded ${userInsertResult.length} users!`);

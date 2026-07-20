@@ -24,6 +24,11 @@ const userSchema = new mongoose.Schema(
       required: false,
       default: null,
     },
+    hospitalId: {
+      type: String,
+      required: false,
+      default: null,
+    },
     // New Profile Fields
     fullName: {
       type: String,
