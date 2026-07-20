@@ -15,6 +15,7 @@ import { type User } from "../App";
 import "./Dashboard.css";
 
 import ProfileView from "./ProfileView";
+import HospitalView from "./HospitalView";
 
 interface DashboardProps {
   user: User;
@@ -22,7 +23,7 @@ interface DashboardProps {
   onProfileUpdate: (updatedUser: User) => void;
 }
 
-export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "settings";
+export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "settings" | "hospital";
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -138,6 +139,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
             isTrendLoading={isTrendLoading}
             hasTrendError={hasTrendError}
             trend={trend}
+          />
+        );
+      case "hospital":
+        return (
+          <HospitalView
+            user={user}
           />
         );
       case "profile":

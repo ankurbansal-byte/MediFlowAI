@@ -10,6 +10,7 @@ type NavigationItem = {
 const navigationItems: NavigationItem[] = [
   { label: "Dashboard", icon: "▦", tab: "dashboard" },
   { label: "Patients", icon: "♙", tab: "patients" },
+  { label: "Hospital", icon: "🏥", tab: "hospital" },
   { label: "Trends", icon: "↗", tab: "trends" },
   { label: "AI Insights", icon: "✦", tab: "ai-insights" },
   { label: "Profile", icon: "👤", tab: "profile" },
@@ -18,7 +19,7 @@ const navigationItems: NavigationItem[] = [
 
 interface SidebarProps {
   onLogout?: () => void;
-  userRole?: "doctor" | "patient";
+  userRole?: "doctor" | "patient" | "admin";
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
   isCollapsed?: boolean;
@@ -33,9 +34,15 @@ const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed = false,
   onToggleCollapse,
 }) => {
-  const filteredNavigationItems = userRole === "patient"
-    ? navigationItems.filter(item => item.tab !== "patients")
-    : navigationItems;
+  const filteredNavigationItems = navigationItems.filter(item => {
+    if (item.tab === "patients") {
+      return userRole === "doctor";
+    }
+    if (item.tab === "hospital") {
+      return userRole === "admin";
+    }
+    return true;
+  });
 
   const handleItemClick = (tab: TabType | "patients") => {
     if (tab === "patients") {
