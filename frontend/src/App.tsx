@@ -9,7 +9,7 @@ import VerifyEmail from "./pages/VerifyEmail";
 
 export interface User {
   username: string;
-  role: "doctor" | "patient";
+  role: "doctor" | "patient" | "admin";
   patientId?: string;
   isEmailVerified?: boolean;
   email?: string;

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-export type UserRole = "doctor" | "patient";
+export type UserRole = "doctor" | "patient" | "admin";
 
 const userSchema = new mongoose.Schema(
   {
@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ["doctor", "patient"],
+      enum: ["doctor", "patient", "admin"],
     },
     patientId: {
       type: String,

@@ -22,7 +22,7 @@ export let dynamicMockUsers = [...MOCK_USERS].map((user) => ({
   role: user.role,
   patientId: user.patientId,
   hospitalId: "HOSP-001",
-  fullName: user.role === "doctor" ? "Dr. Demo" : `Patient ${user.username}`,
+  fullName: user.role === "doctor" ? "Dr. Demo" : user.role === "admin" ? "Hospital Admin" : `Patient ${user.username}`,
   email: `${user.username.toLowerCase()}@mediflow.com`,
   mobileNumber: "+1234567890",
   isEmailVerified: true, // Seeded users are pre-verified
