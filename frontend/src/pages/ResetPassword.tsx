@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import api from "../api/axios";
 import "./Auth.css";
 
+// Refactored ResetPassword component for Enterprise Blue SaaS Redesign
 interface ResetPasswordProps {
   tokenParam?: string;
   onBackToLogin: () => void;

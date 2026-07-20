@@ -59,11 +59,11 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBackToLogin }) => {
             <div className="auth-success" role="alert">
               <strong>{successMsg}</strong>
               {testResetLink && (
-                <div style={{ marginTop: "12px", borderTop: "1px solid rgba(0, 102, 83, 0.2)", paddingTop: "10px" }}>
-                  <p style={{ margin: "0 0 6px 0", fontWeight: "bold" }}>🔧 Dev Testing Link:</p>
+                <div style={{ marginTop: "12px", borderTop: "1px solid rgba(0, 128, 255, 0.2)", paddingTop: "10px" }}>
+                  <p style={{ margin: "0 0 6px 0", fontWeight: "bold", color: "#0080ff" }}>🔧 Dev Testing Link:</p>
                   <a
                     href={testResetLink}
-                    style={{ color: "#006653", fontWeight: "bold", wordBreak: "break-all" }}
+                    style={{ color: "#0066cc", fontWeight: "bold", wordBreak: "break-all" }}
                     onClick={(e) => {
                       e.preventDefault();
                       // Redirect to the view manually

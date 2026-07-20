@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import api from "../api/axios";
 import "./Auth.css";
 
+// Refactored DoctorRegister component for Enterprise Blue SaaS Redesign
 interface DoctorRegisterProps {
   onBackToLogin: () => void;
   onRegisterSuccess: (message: string, verificationToken?: string) => void;
@@ -249,7 +250,7 @@ const DoctorRegister: React.FC<DoctorRegisterProps> = ({ onBackToLogin, onRegist
           </div>
 
           <button type="submit" className="auth-submit-btn" disabled={loading}>
-            {loading ? "Registering Doctor Account..." : "Create Doctor Account"}
+            {loading ? "Registering Doctor..." : "Create Doctor Account"}
           </button>
 
           <button type="button" className="auth-cancel-btn" onClick={onBackToLogin} disabled={loading}>
