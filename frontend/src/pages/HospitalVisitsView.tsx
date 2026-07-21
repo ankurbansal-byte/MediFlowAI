@@ -60,6 +60,102 @@ const HospitalVisitsView: React.FC<HospitalVisitsViewProps> = ({ user }) => {
   // Modal View state for a single encounter
   const [viewingEncounter, setViewingEncounter] = useState<EncounterData | null>(null);
 
+  // Vitals record states within encounter detail/modal
+  const [, setVitalsMap] = useState<Record<string, { value: string | number; unit: string }>>({});
+  const [isVitalsLoading, setIsVitalsLoading] = useState(false);
+  const [vitalsSaving, setVitalsSaving] = useState(false);
+  const [vitalsError, setVitalsError] = useState("");
+  const [vitalsSuccess, setVitalsSuccess] = useState("");
+
+  const [inputBloodSugar, setInputBloodSugar] = useState("");
+  const [inputSystolic, setInputSystolic] = useState("");
+  const [inputDiastolic, setInputDiastolic] = useState("");
+  const [inputHeartRate, setInputHeartRate] = useState("");
+  const [inputBodyTemperature, setInputBodyTemperature] = useState("");
+  const [inputSpo2, setInputSpo2] = useState("");
+  const [inputRespiratoryRate, setInputRespiratoryRate] = useState("");
+  const [inputWeight, setInputWeight] = useState("");
+  const [inputHeight, setInputHeight] = useState("");
+
+  const loadEncounterVitals = async (encId: string) => {
+    setIsVitalsLoading(true);
+    setInputBloodSugar("");
+    setInputSystolic("");
+    setInputDiastolic("");
+    setInputHeartRate("");
+    setInputBodyTemperature("");
+    setInputSpo2("");
+    setInputRespiratoryRate("");
+    setInputWeight("");
+    setInputHeight("");
+    try {
+      const response = await api.get(`/encounter/vitals/${encId}`);
+      if (response.data.success) {
+        const vitals = response.data.vitals || {};
+        setVitalsMap(vitals);
+        if (vitals.blood_sugar) setInputBloodSugar(vitals.blood_sugar.value.toString());
+        if (vitals.blood_pressure) {
+          const parts = vitals.blood_pressure.value.toString().split("/");
+          if (parts.length === 2) {
+            setInputSystolic(parts[0]);
+            setInputDiastolic(parts[1]);
+          }
+        }
+        if (vitals.heart_rate) setInputHeartRate(vitals.heart_rate.value.toString());
+        if (vitals.body_temperature) setInputBodyTemperature(vitals.body_temperature.value.toString());
+        if (vitals.spo2) setInputSpo2(vitals.spo2.value.toString());
+        if (vitals.respiratory_rate) setInputRespiratoryRate(vitals.respiratory_rate.value.toString());
+        if (vitals.weight) setInputWeight(vitals.weight.value.toString());
+        if (vitals.height) setInputHeight(vitals.height.value.toString());
+      }
+    } catch (err) {
+      console.error("Error loading encounter vitals:", err);
+    } finally {
+      setIsVitalsLoading(false);
+    }
+  };
+
+  const handleSaveVitals = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!viewingEncounter) return;
+
+    setVitalsError("");
+    setVitalsSuccess("");
+    setVitalsSaving(true);
+
+    const payload: Record<string, string> = {};
+    if (inputBloodSugar) payload.blood_sugar = inputBloodSugar;
+    if (inputSystolic && inputDiastolic) {
+      payload.blood_pressure = `${inputSystolic.trim()}/${inputDiastolic.trim()}`;
+    } else if (inputSystolic || inputDiastolic) {
+      setVitalsError("Both Systolic and Diastolic values are required for Blood Pressure.");
+      setVitalsSaving(false);
+      return;
+    }
+    if (inputHeartRate) payload.heart_rate = inputHeartRate;
+    if (inputBodyTemperature) payload.body_temperature = inputBodyTemperature;
+    if (inputSpo2) payload.spo2 = inputSpo2;
+    if (inputRespiratoryRate) payload.respiratory_rate = inputRespiratoryRate;
+    if (inputWeight) payload.weight = inputWeight;
+    if (inputHeight) payload.height = inputHeight;
+
+    try {
+      const response = await api.post(`/encounter/vitals/${viewingEncounter.encounterId}`, payload);
+      if (response.data.success) {
+        setVitalsSuccess("Structured vitals recorded successfully!");
+        await loadEncounterVitals(viewingEncounter.encounterId);
+      } else {
+        setVitalsError(response.data.message || "Failed to save vitals.");
+      }
+    } catch (err) {
+      console.error("Error saving vitals:", err);
+      const errMessage = (err as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to record vitals.";
+      setVitalsError(errMessage);
+    } finally {
+      setVitalsSaving(false);
+    }
+  };
+
   const fetchEncounters = async () => {
     try {
       const response = await api.get("/encounter/hospital");
@@ -165,6 +261,8 @@ const HospitalVisitsView: React.FC<HospitalVisitsViewProps> = ({ user }) => {
 
   const handleOpenDetail = async (encId: string) => {
     setError("");
+    setVitalsError("");
+    setVitalsSuccess("");
     try {
       const response = await api.get(`/encounter/detail/${encId}`);
       if (response.data.success) {
@@ -174,6 +272,7 @@ const HospitalVisitsView: React.FC<HospitalVisitsViewProps> = ({ user }) => {
           doctorName: response.data.doctorName,
         };
         setViewingEncounter(fullEnc);
+        await loadEncounterVitals(encId);
       } else {
         setError(response.data.message || "Failed to fetch details.");
       }
@@ -679,83 +778,270 @@ const HospitalVisitsView: React.FC<HospitalVisitsViewProps> = ({ user }) => {
               </button>
             </div>
 
-            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px", maxHeight: "70vh", overflowY: "auto" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Patient</span>
-                  <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 700 }}>{viewingEncounter.patientName} ({viewingEncounter.patientId})</span>
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px", maxHeight: "80vh", overflowY: "auto" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1.1fr", gap: "24px" }}>
+                {/* Left side: Clinical Encounter file summary */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Patient</span>
+                      <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 700 }}>{viewingEncounter.patientName} ({viewingEncounter.patientId})</span>
+                    </div>
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Doctor</span>
+                      <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 700 }}>{viewingEncounter.doctorName.startsWith("Dr.") ? viewingEncounter.doctorName : `Dr. ${viewingEncounter.doctorName}`} ({viewingEncounter.doctorId})</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Visit Date</span>
+                      <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>
+                        {new Date(viewingEncounter.visitDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </span>
+                    </div>
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Visit Type</span>
+                      <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>{viewingEncounter.visitType}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Encounter Status</span>
+                    <span style={{
+                      display: "inline-block",
+                      background: viewingEncounter.status === "completed" ? "#e2fbf0" : "#fffbeb",
+                      color: viewingEncounter.status === "completed" ? "#10b981" : "#d97706",
+                      border: viewingEncounter.status === "completed" ? "1px solid #a7f3d0" : "1px solid #fde68a",
+                      borderRadius: "12px",
+                      padding: "2px 8px",
+                      fontSize: "0.75rem",
+                      fontWeight: 750,
+                      textTransform: "uppercase",
+                      marginTop: "4px"
+                    }}>{viewingEncounter.status}</span>
+                  </div>
+
+                  <div style={{ borderTop: "1px solid var(--line, #e4e7eb)", paddingTop: "12px" }}>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Chief Complaint</span>
+                    <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                      {viewingEncounter.chiefComplaint || "No chief complaint recorded."}
+                    </p>
+                  </div>
+
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Symptoms / Clinical Notes</span>
+                    <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                      {viewingEncounter.symptoms || "No symptoms/clinical notes recorded."}
+                    </p>
+                  </div>
+
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Provisional Diagnosis</span>
+                    <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                      {viewingEncounter.provisionalDiagnosis || "No diagnosis documented yet."}
+                    </p>
+                  </div>
+
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Doctor's Consult Notes</span>
+                    <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                      {viewingEncounter.doctorNotes || "No medical recommendations documented."}
+                    </p>
+                  </div>
+
+                  {viewingEncounter.followUpDate && (
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Recommended Follow-up</span>
+                      <span style={{ fontSize: "0.9rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>
+                        {new Date(viewingEncounter.followUpDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Doctor</span>
-                  <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 700 }}>{viewingEncounter.doctorName.startsWith("Dr.") ? viewingEncounter.doctorName : `Dr. ${viewingEncounter.doctorName}`} ({viewingEncounter.doctorId})</span>
+
+                {/* Right side: Record Vitals Portal */}
+                <div style={{ borderLeft: "1px solid var(--line, #e4e7eb)", paddingLeft: "24px" }}>
+                  <h4 style={{ margin: "0 0 12px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800 }}>
+                    Record Vitals / Clinical Measurements
+                  </h4>
+
+                  {isVitalsLoading ? (
+                    <div style={{ padding: "20px 0", textAlign: "center", color: "var(--muted)" }}>Loading encounter vitals...</div>
+                  ) : (
+                    <form onSubmit={handleSaveVitals} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {vitalsError && <div className="auth-error" style={{ fontSize: "0.82rem", padding: "6px" }}>{vitalsError}</div>}
+                      {vitalsSuccess && <div className="auth-success" style={{ fontSize: "0.82rem", padding: "6px" }}>{vitalsSuccess}</div>}
+
+                      {/* Blood Glucose */}
+                      <div className="auth-form-group" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                        <div style={{ flex: 1 }}>
+                          <label htmlFor="vit-glucose" style={{ display: "block", fontSize: "0.7rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "2px" }}>Blood Glucose (mg/dL)</label>
+                          <input
+                            id="vit-glucose"
+                            type="number"
+                            className="auth-input"
+                            style={{ padding: "6px 10px" }}
+                            value={inputBloodSugar}
+                            onChange={(e) => setInputBloodSugar(e.target.value)}
+                            disabled={vitalsSaving || viewingEncounter.status === "completed"}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Blood Pressure (Systolic & Diastolic) */}
+                      <div className="auth-form-group" style={{ display: "flex", gap: "10px" }}>
+                        <div style={{ flex: 1 }}>
+                          <label htmlFor="vit-bp-sys" style={{ display: "block", fontSize: "0.7rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "2px" }}>BP Systolic (mmHg)</label>
+                          <input
+                            id="vit-bp-sys"
+                            type="number"
+                            className="auth-input"
+                            style={{ padding: "6px 10px" }}
+                            value={inputSystolic}
+                            onChange={(e) => setInputSystolic(e.target.value)}
+                            disabled={vitalsSaving || viewingEncounter.status === "completed"}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label htmlFor="vit-bp-dia" style={{ display: "block", fontSize: "0.7rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "2px" }}>BP Diastolic (mmHg)</label>
+                          <input
+                            id="vit-bp-dia"
+                            type="number"
+                            className="auth-input"
+                            style={{ padding: "6px 10px" }}
+                            value={inputDiastolic}
+                            onChange={(e) => setInputDiastolic(e.target.value)}
+                            disabled={vitalsSaving || viewingEncounter.status === "completed"}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Heart Rate & Body Temp */}
+                      <div className="auth-form-group" style={{ display: "flex", gap: "10px" }}>
+                        <div style={{ flex: 1 }}>
+                          <label htmlFor="vit-hr" style={{ display: "block", fontSize: "0.7rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "2px" }}>Heart Rate (bpm)</label>
+                          <input
+                            id="vit-hr"
+                            type="number"
+                            className="auth-input"
+                            style={{ padding: "6px 10px" }}
+                            value={inputHeartRate}
+                            onChange={(e) => setInputHeartRate(e.target.value)}
+                            disabled={vitalsSaving || viewingEncounter.status === "completed"}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label htmlFor="vit-temp" style={{ display: "block", fontSize: "0.7rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "2px" }}>Body Temp (°C)</label>
+                          <input
+                            id="vit-temp"
+                            type="number"
+                            step="0.1"
+                            className="auth-input"
+                            style={{ padding: "6px 10px" }}
+                            value={inputBodyTemperature}
+                            onChange={(e) => setInputBodyTemperature(e.target.value)}
+                            disabled={vitalsSaving || viewingEncounter.status === "completed"}
+                          />
+                        </div>
+                      </div>
+
+                      {/* SpO2 & Respiratory Rate */}
+                      <div className="auth-form-group" style={{ display: "flex", gap: "10px" }}>
+                        <div style={{ flex: 1 }}>
+                          <label htmlFor="vit-spo2" style={{ display: "block", fontSize: "0.7rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "2px" }}>Oxygen Saturation SpO2 (%)</label>
+                          <input
+                            id="vit-spo2"
+                            type="number"
+                            className="auth-input"
+                            style={{ padding: "6px 10px" }}
+                            value={inputSpo2}
+                            onChange={(e) => setInputSpo2(e.target.value)}
+                            disabled={vitalsSaving || viewingEncounter.status === "completed"}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label htmlFor="vit-rr" style={{ display: "block", fontSize: "0.7rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "2px" }}>Resp Rate (breaths/m)</label>
+                          <input
+                            id="vit-rr"
+                            type="number"
+                            className="auth-input"
+                            style={{ padding: "6px 10px" }}
+                            value={inputRespiratoryRate}
+                            onChange={(e) => setInputRespiratoryRate(e.target.value)}
+                            disabled={vitalsSaving || viewingEncounter.status === "completed"}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Weight & Height */}
+                      <div className="auth-form-group" style={{ display: "flex", gap: "10px" }}>
+                        <div style={{ flex: 1 }}>
+                          <label htmlFor="vit-weight" style={{ display: "block", fontSize: "0.7rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "2px" }}>Weight (kg)</label>
+                          <input
+                            id="vit-weight"
+                            type="number"
+                            step="0.1"
+                            className="auth-input"
+                            style={{ padding: "6px 10px" }}
+                            value={inputWeight}
+                            onChange={(e) => setInputWeight(e.target.value)}
+                            disabled={vitalsSaving || viewingEncounter.status === "completed"}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label htmlFor="vit-height" style={{ display: "block", fontSize: "0.7rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "2px" }}>Height (cm)</label>
+                          <input
+                            id="vit-height"
+                            type="number"
+                            className="auth-input"
+                            style={{ padding: "6px 10px" }}
+                            value={inputHeight}
+                            onChange={(e) => setInputHeight(e.target.value)}
+                            disabled={vitalsSaving || viewingEncounter.status === "completed"}
+                          />
+                        </div>
+                      </div>
+
+                      {viewingEncounter.status !== "completed" ? (
+                        <button
+                          type="submit"
+                          id="btn-save-vitals"
+                          className="auth-submit-btn"
+                          style={{
+                            marginTop: "10px",
+                            padding: "10px",
+                            fontSize: "0.85rem",
+                            fontWeight: 750,
+                            borderRadius: "6px",
+                            background: "#0080ff",
+                            color: "#ffffff",
+                            border: "none",
+                            cursor: "pointer"
+                          }}
+                          disabled={vitalsSaving}
+                        >
+                          {vitalsSaving ? "Recording Vitals..." : "Save Vitals"}
+                        </button>
+                      ) : (
+                        <div style={{
+                          marginTop: "10px",
+                          padding: "10px",
+                          background: "#f1f5f9",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "6px",
+                          fontSize: "0.8rem",
+                          fontWeight: 750,
+                          color: "var(--muted)",
+                          textAlign: "center"
+                        }}>
+                          🔒 Vitals locked (Completed Encounter)
+                        </div>
+                      )}
+                    </form>
+                  )}
                 </div>
               </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Visit Date</span>
-                  <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>
-                    {new Date(viewingEncounter.visitDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                  </span>
-                </div>
-                <div>
-                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Visit Type</span>
-                  <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>{viewingEncounter.visitType}</span>
-                </div>
-              </div>
-
-              <div>
-                <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Encounter Status</span>
-                <span style={{
-                  display: "inline-block",
-                  background: viewingEncounter.status === "completed" ? "#e2fbf0" : "#fffbeb",
-                  color: viewingEncounter.status === "completed" ? "#10b981" : "#d97706",
-                  border: viewingEncounter.status === "completed" ? "1px solid #a7f3d0" : "1px solid #fde68a",
-                  borderRadius: "12px",
-                  padding: "2px 8px",
-                  fontSize: "0.75rem",
-                  fontWeight: 750,
-                  textTransform: "uppercase",
-                  marginTop: "4px"
-                }}>{viewingEncounter.status}</span>
-              </div>
-
-              <div style={{ borderTop: "1px solid var(--line, #e4e7eb)", paddingTop: "12px" }}>
-                <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Chief Complaint</span>
-                <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
-                  {viewingEncounter.chiefComplaint || "No chief complaint recorded."}
-                </p>
-              </div>
-
-              <div>
-                <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Symptoms / Clinical Notes</span>
-                <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
-                  {viewingEncounter.symptoms || "No symptoms/clinical notes recorded."}
-                </p>
-              </div>
-
-              <div>
-                <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Provisional Diagnosis</span>
-                <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
-                  {viewingEncounter.provisionalDiagnosis || "No diagnosis documented yet."}
-                </p>
-              </div>
-
-              <div>
-                <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Doctor's Consult Notes</span>
-                <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
-                  {viewingEncounter.doctorNotes || "No medical recommendations documented."}
-                </p>
-              </div>
-
-              {viewingEncounter.followUpDate && (
-                <div>
-                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Recommended Follow-up</span>
-                  <span style={{ fontSize: "0.9rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>
-                    {new Date(viewingEncounter.followUpDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                  </span>
-                </div>
-              )}
             </div>
 
             <div style={{

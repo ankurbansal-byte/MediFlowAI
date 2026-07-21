@@ -22,7 +22,7 @@ type PatientDiscoveryResult = {
 const demoRecords = generateDemoRecords();
 
 // Group by patientId
-const MOCK_RECORDS: Record<string, any[]> = {};
+export const MOCK_RECORDS: Record<string, any[]> = {};
 for (const r of demoRecords) {
   if (!MOCK_RECORDS[r.patientId]) {
     MOCK_RECORDS[r.patientId] = [];
@@ -976,7 +976,7 @@ export const getPatientTimeline = async (
         recordedAt: -1,
       })
       .select(
-        "-_id parameter value unit recordedAt source confidence originalMessage"
+        "-_id parameter value unit recordedAt source confidence originalMessage encounterId hospitalId doctorId recordedBy"
       );
 
     return res.status(200).json({

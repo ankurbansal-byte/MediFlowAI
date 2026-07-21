@@ -143,6 +143,41 @@ async function runSeeder() {
     await Encounter.insertMany(encountersToInsert);
     console.log("✅ Successfully seeded 2 encounters!");
 
+    console.log("🌱 Seeding some encounter-linked vitals...");
+    await HealthRecord.create([
+      {
+        patientId: "PAT-101",
+        parameter: "blood_sugar",
+        value: 125,
+        unit: "mg/dL",
+        recordedAt: pastDate1,
+        source: "clinical",
+        confidence: 1.0,
+        originalMessage: "Seeded initial vital for encounter ENC-10001",
+        whatsappMessageId: "seed_enc_10001_sugar",
+        encounterId: "ENC-10001",
+        hospitalId: "HOSP-001",
+        doctorId: "DOC-101",
+        recordedBy: "admin",
+      },
+      {
+        patientId: "PAT-101",
+        parameter: "blood_pressure",
+        value: "130/85",
+        unit: "mmHg",
+        recordedAt: pastDate1,
+        source: "clinical",
+        confidence: 1.0,
+        originalMessage: "Seeded initial vital for encounter ENC-10001",
+        whatsappMessageId: "seed_enc_10001_bp",
+        encounterId: "ENC-10001",
+        hospitalId: "HOSP-001",
+        doctorId: "DOC-101",
+        recordedBy: "admin",
+      }
+    ]);
+    console.log("✅ Seeded encounter-linked vitals for ENC-10001.");
+
     console.log("🎉 Seeding completed successfully!");
   } catch (error) {
     console.error("❌ Seeding failed with an error:", error);

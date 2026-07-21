@@ -779,160 +779,6 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
 
         </div>
 
-        {/* Viewing Encounter Detail Modal */}
-        {viewingEncounterInModal && (
-          <div style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(10, 37, 64, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: "20px"
-          }}>
-            <div style={{
-              background: "#ffffff",
-              borderRadius: "14px",
-              width: "100%",
-              maxWidth: "600px",
-              boxShadow: "0 20px 60px rgba(10, 37, 64, 0.15)",
-              overflow: "hidden"
-            }}>
-              <div style={{
-                background: "#f4f8fc",
-                padding: "20px 24px",
-                borderBottom: "1px solid var(--line, #e4e7eb)",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center"
-              }}>
-                <h3 style={{ margin: 0, color: "var(--navy, #0a2540)", fontWeight: 850 }}>
-                  Clinical Encounter File ({viewingEncounterInModal.encounterId})
-                </h3>
-                <button
-                  onClick={() => setViewingEncounterInModal(null)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: "1.2rem",
-                    color: "var(--muted, #486581)",
-                    cursor: "pointer",
-                    fontWeight: 800
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px", maxHeight: "70vh", overflowY: "auto" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <div>
-                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Patient ID</span>
-                    <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 700 }}>{viewingEncounterInModal.patientId}</span>
-                  </div>
-                  <div>
-                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Doctor</span>
-                    <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 700 }}>{viewingEncounterInModal.doctorName.startsWith("Dr.") ? viewingEncounterInModal.doctorName : `Dr. ${viewingEncounterInModal.doctorName}`} ({viewingEncounterInModal.doctorId})</span>
-                  </div>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <div>
-                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Visit Date</span>
-                    <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>
-                      {new Date(viewingEncounterInModal.visitDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </span>
-                  </div>
-                  <div>
-                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Visit Type</span>
-                    <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>{viewingEncounterInModal.visitType}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Encounter Status</span>
-                  <span style={{
-                    display: "inline-block",
-                    background: viewingEncounterInModal.status === "completed" ? "#e2fbf0" : "#fffbeb",
-                    color: viewingEncounterInModal.status === "completed" ? "#10b981" : "#d97706",
-                    border: viewingEncounterInModal.status === "completed" ? "1px solid #a7f3d0" : "1px solid #fde68a",
-                    borderRadius: "12px",
-                    padding: "2px 8px",
-                    fontSize: "0.75rem",
-                    fontWeight: 750,
-                    textTransform: "uppercase",
-                    marginTop: "4px"
-                  }}>{viewingEncounterInModal.status}</span>
-                </div>
-
-                <div style={{ borderTop: "1px solid var(--line, #e4e7eb)", paddingTop: "12px" }}>
-                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Chief Complaint</span>
-                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
-                    {viewingEncounterInModal.chiefComplaint || "No chief complaint recorded."}
-                  </p>
-                </div>
-
-                <div>
-                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Symptoms / Clinical Notes</span>
-                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
-                    {viewingEncounterInModal.symptoms || "No symptoms/clinical notes recorded."}
-                  </p>
-                </div>
-
-                <div>
-                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Provisional Diagnosis</span>
-                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
-                    {viewingEncounterInModal.provisionalDiagnosis || "No diagnosis documented yet."}
-                  </p>
-                </div>
-
-                <div>
-                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Doctor's Consult Notes</span>
-                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
-                    {viewingEncounterInModal.doctorNotes || "No medical recommendations documented."}
-                  </p>
-                </div>
-
-                {viewingEncounterInModal.followUpDate && (
-                  <div>
-                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Recommended Follow-up</span>
-                    <span style={{ fontSize: "0.9rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>
-                      {new Date(viewingEncounterInModal.followUpDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div style={{
-                background: "#f8fafc",
-                padding: "16px 24px",
-                borderTop: "1px solid var(--line, #e4e7eb)",
-                display: "flex",
-                justifyContent: "flex-end"
-              }}>
-                <button
-                  onClick={() => setViewingEncounterInModal(null)}
-                  style={{
-                    background: "#0080ff",
-                    color: "#ffffff",
-                    border: "none",
-                    borderRadius: "6px",
-                    padding: "10px 20px",
-                    fontSize: "0.9rem",
-                    fontWeight: 700,
-                    cursor: "pointer"
-                  }}
-                >
-                  Close File
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   };
@@ -1248,10 +1094,13 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
                   ? "Medical History"
                   : tab.charAt(0).toUpperCase() + tab.slice(1);
 
+                // Define robust IDs for tab buttons to avoid any E2E selector ambiguity with sidebar
+                const tabId = tab === "careteam" ? "tab-care-team" : `tab-${tab}`;
+
                 return (
                   <button
                     key={tab}
-                    id={tab === "careteam" ? "tab-care-team" : undefined}
+                    id={tabId}
                     type="button"
                     onClick={() => setActiveSubTab(tab)}
                     style={{
@@ -1628,7 +1477,21 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
                             <td style={{ padding: "12px 6px" }}>
                               <button
                                 type="button"
-                                onClick={() => setViewingEncounterInModal(enc)}
+                                onClick={async () => {
+                                  // Fetch encounter specific vitals first, then open
+                                  try {
+                                    const response = await api.get(`/encounter/vitals/${enc.encounterId}`);
+                                    const modalVitals = response.data.vitals || {};
+                                    const withVitals = {
+                                      ...enc,
+                                      vitals: modalVitals
+                                    };
+                                    setViewingEncounterInModal(withVitals as unknown as EncounterData);
+                                  } catch (err) {
+                                    console.error("Error loading specific vitals:", err);
+                                    setViewingEncounterInModal(enc);
+                                  }
+                                }}
                                 style={{
                                   background: "#0080ff",
                                   color: "#ffffff",
@@ -1687,18 +1550,69 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
 
               {activeSubTab === "vitals" && (
                 <div style={{
-                  padding: "60px 24px",
-                  textAlign: "center",
                   background: "#ffffff",
-                  border: "1px dashed var(--line, #e4e7eb)",
+                  border: "1px solid var(--line, #e4e7eb)",
                   borderRadius: "14px",
-                  boxShadow: "0 10px 30px rgba(10, 37, 64, 0.02)"
+                  padding: "24px",
+                  boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
                 }}>
-                  <div style={{ fontSize: "3rem", marginBottom: "16px" }}>📈</div>
-                  <h3 style={{ margin: "0 0 8px 0", color: "var(--navy, #0a2540)", fontWeight: 800 }}>Advanced Vitals Charting</h3>
-                  <p style={{ margin: 0, color: "var(--muted, #486581)", fontSize: "0.92rem", maxWidth: "450px", marginLeft: "auto", marginRight: "auto" }}>
-                    Historical diagnostic graphs and multi-variable vitals panels will be rendered in a future workspace release.
-                  </p>
+                  <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.15rem", fontWeight: 800 }}>
+                    Historical Structured Vitals Log
+                  </h3>
+
+                  {(!timelineData || timelineData.length === 0) ? (
+                    <div style={{
+                      padding: "48px",
+                      textAlign: "center",
+                      border: "1px dashed var(--line, #e4e7eb)",
+                      borderRadius: "10px",
+                      color: "var(--muted, #486581)"
+                    }}>
+                      No vitals records exist in this patient's clinical history.
+                    </div>
+                  ) : (
+                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Measurement Date</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Parameter</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Value</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Source</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Encounter ID</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Doctor Name</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {timelineData.map((record, index) => {
+                          const dateStr = new Date(record.recordedAt).toLocaleString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit"
+                          });
+                          const displayParam = record.parameter.toUpperCase().replace("_", " ");
+                          const itemWithMetadata = record as { encounterId?: string; doctorId?: string };
+                          return (
+                            <tr key={index} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                              <td style={{ padding: "12px 6px", fontWeight: 600, color: "var(--navy)" }}>{dateStr}</td>
+                              <td style={{ padding: "12px 6px", fontWeight: 700, color: "#0080ff" }}>{displayParam}</td>
+                              <td style={{ padding: "12px 6px", fontWeight: 750, color: "var(--navy)" }}>
+                                {record.value} <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--muted)" }}>{record.unit}</span>
+                              </td>
+                              <td style={{ padding: "12px 6px", color: "var(--muted)", textTransform: "capitalize" }}>{record.source}</td>
+                              <td style={{ padding: "12px 6px", fontFamily: "monospace", fontWeight: 700, color: itemWithMetadata.encounterId ? "#0080ff" : "var(--muted)" }}>
+                                {itemWithMetadata.encounterId || "—"}
+                              </td>
+                              <td style={{ padding: "12px 6px", fontWeight: 600, color: "var(--navy)" }}>
+                                {itemWithMetadata.doctorId ? (itemWithMetadata.doctorId === "DOC-101" ? "Dr. Demo" : `Dr. ${itemWithMetadata.doctorId}`) : "—"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               )}
             </div>
@@ -1709,11 +1623,193 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
     );
   };
 
-  if (selectedPatientIdForProfile) {
-    return renderPatientProfile();
-  }
+  return (
+    <>
+      {selectedPatientIdForProfile ? renderPatientProfile() : renderPatientsDirectory()}
+      {/* Viewing Encounter Detail Modal */}
+      {viewingEncounterInModal && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(10, 37, 64, 0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1000,
+          padding: "20px"
+        }}>
+          <div style={{
+            background: "#ffffff",
+            borderRadius: "14px",
+            width: "100%",
+            maxWidth: "600px",
+            boxShadow: "0 20px 60px rgba(10, 37, 64, 0.15)",
+            overflow: "hidden"
+          }}>
+            <div style={{
+              background: "#f4f8fc",
+              padding: "20px 24px",
+              borderBottom: "1px solid var(--line, #e4e7eb)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
+              <h3 style={{ margin: 0, color: "var(--navy, #0a2540)", fontWeight: 850 }}>
+                Clinical Encounter File ({viewingEncounterInModal.encounterId})
+              </h3>
+              <button
+                onClick={() => setViewingEncounterInModal(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "1.2rem",
+                  color: "var(--muted, #486581)",
+                  cursor: "pointer",
+                  fontWeight: 800
+                }}
+              >
+                ✕
+              </button>
+            </div>
 
-  return renderPatientsDirectory();
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px", maxHeight: "80vh", overflowY: "auto" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: "24px" }}>
+                {/* Left Column: Encounter Details */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Patient ID</span>
+                      <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 700 }}>{viewingEncounterInModal.patientId}</span>
+                    </div>
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Doctor</span>
+                      <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 700 }}>{viewingEncounterInModal.doctorName.startsWith("Dr.") ? viewingEncounterInModal.doctorName : `Dr. ${viewingEncounterInModal.doctorName}`} ({viewingEncounterInModal.doctorId})</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Visit Date</span>
+                      <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>
+                        {new Date(viewingEncounterInModal.visitDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </span>
+                    </div>
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Visit Type</span>
+                      <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>{viewingEncounterInModal.visitType}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Encounter Status</span>
+                    <span style={{
+                      display: "inline-block",
+                      background: viewingEncounterInModal.status === "completed" ? "#e2fbf0" : "#fffbeb",
+                      color: viewingEncounterInModal.status === "completed" ? "#10b981" : "#d97706",
+                      border: viewingEncounterInModal.status === "completed" ? "1px solid #a7f3d0" : "1px solid #fde68a",
+                      borderRadius: "12px",
+                      padding: "2px 8px",
+                      fontSize: "0.75rem",
+                      fontWeight: 750,
+                      textTransform: "uppercase",
+                      marginTop: "4px"
+                    }}>{viewingEncounterInModal.status}</span>
+                  </div>
+
+                  <div style={{ borderTop: "1px solid var(--line, #e4e7eb)", paddingTop: "12px" }}>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Chief Complaint</span>
+                    <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                      {viewingEncounterInModal.chiefComplaint || "No chief complaint recorded."}
+                    </p>
+                  </div>
+
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Symptoms / Clinical Notes</span>
+                    <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                      {viewingEncounterInModal.symptoms || "No symptoms/clinical notes recorded."}
+                    </p>
+                  </div>
+
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Provisional Diagnosis</span>
+                    <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                      {viewingEncounterInModal.provisionalDiagnosis || "No diagnosis documented yet."}
+                    </p>
+                  </div>
+
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Doctor's Consult Notes</span>
+                    <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                      {viewingEncounterInModal.doctorNotes || "No medical recommendations documented."}
+                    </p>
+                  </div>
+
+                  {viewingEncounterInModal.followUpDate && (
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Recommended Follow-up</span>
+                      <span style={{ fontSize: "0.9rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>
+                        {new Date(viewingEncounterInModal.followUpDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Column: Vitals Display */}
+                <div style={{ borderLeft: "1px solid var(--line, #e4e7eb)", paddingLeft: "24px" }}>
+                  <h4 style={{ margin: "0 0 12px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800 }}>
+                    Visit Vitals / Measurements
+                  </h4>
+                  {!(viewingEncounterInModal as EncounterData & { vitals?: Record<string, { value: string | number; unit: string }> }).vitals || Object.keys((viewingEncounterInModal as EncounterData & { vitals?: Record<string, { value: string | number; unit: string }> }).vitals || {}).length === 0 ? (
+                    <p style={{ margin: 0, color: "var(--muted)", fontSize: "0.85rem" }}>No vitals recorded for this visit.</p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      {Object.entries((viewingEncounterInModal as EncounterData & { vitals?: Record<string, { value: string | number; unit: string }> }).vitals || {}).map(([key, item]) => (
+                        <div key={key} style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
+                          <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--muted)", textTransform: "capitalize" }}>
+                            {key.replace("_", " ")}:
+                          </span>
+                          <strong style={{ fontSize: "0.92rem", color: "var(--navy)" }}>
+                            {item.value} {item.unit}
+                          </strong>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              background: "#f8fafc",
+              padding: "16px 24px",
+              borderTop: "1px solid var(--line, #e4e7eb)",
+              display: "flex",
+              justifyContent: "flex-end"
+            }}>
+              <button
+                onClick={() => setViewingEncounterInModal(null)}
+                style={{
+                  background: "#0080ff",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "6px",
+                  padding: "10px 20px",
+                  fontSize: "0.9rem",
+                  fontWeight: 700,
+                  cursor: "pointer"
+                }}
+              >
+                Close File
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 };
 
 export default PatientsView;

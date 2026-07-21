@@ -119,7 +119,7 @@ def run_sprint18_flow():
 
         # Open Visits tab
         page.click("#tab-care-team") # Wait, tab-care-team is there, let's look for visits tab text
-        page.click("button:has-text('Visits')")
+        page.click("#tab-visits")
         page.wait_for_selector("text=Clinical Outpatient Visit History")
         page.wait_for_selector("text=completed")
         page.screenshot(path="/home/jules/verification/admin_patient_visits_history.png")
@@ -127,7 +127,7 @@ def run_sprint18_flow():
 
         # Click View on the completed visit to open detail modal
         print("🔍 12. Opening permitted completed encounter file details modal...")
-        page.click("tr:has-text('completed') button:has-text('View')")
+        page.click("tr:has-text('COMPLETED') button:has-text('View')")
         page.wait_for_selector("text=Clinical Encounter File (")
         page.screenshot(path="/home/jules/verification/admin_patient_visit_modal_detail.png")
         print("📸 Captured admin_patient_visit_modal_detail.png!")
