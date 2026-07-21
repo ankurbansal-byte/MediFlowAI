@@ -72,8 +72,8 @@ export const getCurrentHospital = async (req: AuthenticatedRequest, res: Respons
  * Updates the hospital details of the currently logged-in user.
  */
 export const updateCurrentHospital = async (req: AuthenticatedRequest, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({ success: false, message: "Unauthorized." });
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ success: false, message: "Forbidden. Admin access required." });
   }
 
   const { username } = req.user;
@@ -206,6 +206,24 @@ export const getHospitalById = async (req: AuthenticatedRequest, res: Response) 
 
   if (!hospitalId) {
     return res.status(400).json({ success: false, message: "Hospital ID is required." });
+  }
+
+  // Multi-tenant check: user can only fetch their own hospital details
+  let userHospitalId = "";
+  if (process.env.USE_MOCK_DATA === "true") {
+    const matched = dynamicMockUsers.find((u) => u.username === req.user?.username);
+    userHospitalId = matched ? matched.hospitalId : "";
+  } else {
+    try {
+      const matched = await User.findOne({ username: req.user?.username });
+      userHospitalId = matched ? matched.hospitalId || "" : "";
+    } catch (err) {
+      console.error("Error fetching user hospitalId in getHospitalById:", err);
+    }
+  }
+
+  if (userHospitalId !== hospitalId) {
+    return res.status(403).json({ success: false, message: "Forbidden. Hospital is not in your tenancy." });
   }
 
   // Mock Fallback Mode

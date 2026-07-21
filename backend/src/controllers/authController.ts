@@ -586,6 +586,10 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, message: "Invalid credentials." });
     }
 
+    if (user.status === "inactive") {
+      return res.status(403).json({ success: false, message: "Account is inactive or deactivated. Access denied." });
+    }
+
     const token = jwt.sign(
       { username: user.username, role: user.role, patientId: user.patientId, doctorId: (user as any).doctorId },
       JWT_SECRET,
@@ -639,6 +643,10 @@ export const login = async (req: Request, res: Response) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: "Invalid credentials." });
+    }
+
+    if (user.status === "inactive") {
+      return res.status(403).json({ success: false, message: "Account is inactive or deactivated. Access denied." });
     }
 
     const token = jwt.sign(
@@ -702,6 +710,10 @@ export const refreshToken = async (req: Request, res: Response) => {
         return res.status(401).json({ success: false, message: "Invalid or revoked refresh token." });
       }
 
+      if (user.status === "inactive") {
+        return res.status(403).json({ success: false, message: "Account is inactive or deactivated. Access denied." });
+      }
+
       // Rotate Refresh Token
       user.refreshTokens = user.refreshTokens.filter((t: string) => t !== refreshToken);
 
@@ -730,6 +742,10 @@ export const refreshToken = async (req: Request, res: Response) => {
     const user = await User.findOne({ username: decoded.username });
     if (!user || !user.refreshTokens || !user.refreshTokens.includes(refreshToken)) {
       return res.status(401).json({ success: false, message: "Invalid or revoked refresh token." });
+    }
+
+    if (user.status === "inactive") {
+      return res.status(403).json({ success: false, message: "Account is inactive or deactivated. Access denied." });
     }
 
     // Rotate Refresh Token

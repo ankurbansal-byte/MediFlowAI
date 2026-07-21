@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import User from "../models/User";
+import { dynamicMockUsers } from "./mockUsers";
 
 const JWT_SECRET = process.env.JWT_SECRET || "mediflow_secret_key_change_me_in_production";
 
@@ -11,7 +13,7 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-export const authMiddleware = (
+export const authMiddleware = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
@@ -33,6 +35,27 @@ export const authMiddleware = (
       role: "doctor" | "patient";
       patientId?: string;
     };
+
+    // Verify user is active/not deactivated
+    let userStatus = "active";
+    if (process.env.USE_MOCK_DATA === "true") {
+      const matched = dynamicMockUsers.find((u) => u.username === decoded.username);
+      if (matched) {
+        userStatus = matched.status || "active";
+      }
+    } else {
+      const matched = await User.findOne({ username: decoded.username });
+      if (matched) {
+        userStatus = matched.status || "active";
+      }
+    }
+
+    if (userStatus === "inactive") {
+      return res.status(403).json({
+        success: false,
+        message: "Account is inactive or deactivated. Access denied.",
+      });
+    }
 
     req.user = decoded;
     next();
