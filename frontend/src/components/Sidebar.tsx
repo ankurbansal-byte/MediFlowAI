@@ -38,17 +38,20 @@ const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
 }) => {
   const filteredNavigationItems = navigationItems.filter(item => {
+    if (userRole === "doctor") {
+      return item.tab === "doctor-visits" || item.tab === "profile" || item.tab === "settings";
+    }
     if (item.tab === "patients") {
-      return userRole === "doctor" || userRole === "admin";
+      return userRole === "admin";
     }
     if (item.tab === "doctors" || item.tab === "hospital" || item.tab === "visits-admin") {
       return userRole === "admin";
     }
     if (item.tab === "doctor-visits") {
-      return userRole === "doctor";
+      return false;
     }
     if (item.tab === "trends" || item.tab === "ai-insights" || item.tab === "dashboard") {
-      return userRole === "doctor" || userRole === "patient";
+      return userRole === "patient";
     }
     return true;
   });
