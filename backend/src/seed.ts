@@ -4,6 +4,7 @@ import HealthRecord from "./models/HealthRecord";
 import User from "./models/User";
 import Hospital from "./models/Hospital";
 import Assignment from "./models/Assignment";
+import Encounter from "./models/Encounter";
 import { generateDemoRecords } from "./utils/demoData";
 import { MOCK_USERS } from "./utils/mockUsers";
 
@@ -99,6 +100,48 @@ async function runSeeder() {
     }));
     await Assignment.insertMany(assignmentsToInsert);
     console.log(`✅ Successfully seeded ${assignmentsToInsert.length} active doctor-patient assignments!`);
+
+    console.log("🧹 Cleaning up existing encounters...");
+    await Encounter.deleteMany({ hospitalId: "HOSP-001" });
+
+    console.log("🌱 Seeding encounters...");
+    const now = new Date();
+    const pastDate1 = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000); // 2 days ago
+    const pastDate2 = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000); // 5 days ago
+
+    const encountersToInsert = [
+      {
+        encounterId: "ENC-10001",
+        hospitalId: "HOSP-001",
+        patientId: "PAT-101",
+        doctorId: "DOC-101",
+        visitDate: pastDate1,
+        visitType: "OPD Consultation",
+        chiefComplaint: "Routine diabetes checkup and slight fatigue",
+        symptoms: "Minor thirst, feeling tired in the mornings",
+        provisionalDiagnosis: "Type 2 Diabetes Mellitus - Under Control",
+        doctorNotes: "Patient's fasting blood sugar is improving. Keep up the diet and exercise.",
+        followUpDate: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000), // 14 days later
+        status: "completed",
+        createdBy: "admin",
+      },
+      {
+        encounterId: "ENC-10002",
+        hospitalId: "HOSP-001",
+        patientId: "PAT-102",
+        doctorId: "DOC-101",
+        visitDate: pastDate2,
+        visitType: "Specialist OPD",
+        chiefComplaint: "Fluctuation in blood sugar, occasional dry mouth",
+        symptoms: "Excessive thirst, increased urination at night",
+        provisionalDiagnosis: "Uncontrolled Hyperglycemia",
+        doctorNotes: "Observed rising blood sugar patterns. Advised regular glucose logging.",
+        status: "draft",
+        createdBy: "admin",
+      },
+    ];
+    await Encounter.insertMany(encountersToInsert);
+    console.log("✅ Successfully seeded 2 encounters!");
 
     console.log("🎉 Seeding completed successfully!");
   } catch (error) {

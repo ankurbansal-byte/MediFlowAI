@@ -10,6 +10,8 @@ type NavigationItem = {
 const navigationItems: NavigationItem[] = [
   { label: "Dashboard", icon: "▦", tab: "dashboard" },
   { label: "Patients", icon: "♙", tab: "patients" },
+  { label: "OPD / Visits", icon: "📆", tab: "visits-admin" },
+  { label: "Visits / Consultations", icon: "📆", tab: "doctor-visits" },
   { label: "Doctors", icon: "🩺", tab: "doctors" },
   { label: "Hospital", icon: "🏥", tab: "hospital" },
   { label: "Trends", icon: "↗", tab: "trends" },
@@ -39,8 +41,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     if (item.tab === "patients") {
       return userRole === "doctor" || userRole === "admin";
     }
-    if (item.tab === "doctors" || item.tab === "hospital") {
+    if (item.tab === "doctors" || item.tab === "hospital" || item.tab === "visits-admin") {
       return userRole === "admin";
+    }
+    if (item.tab === "doctor-visits") {
+      return userRole === "doctor";
     }
     if (item.tab === "trends" || item.tab === "ai-insights" || item.tab === "dashboard") {
       return userRole === "doctor" || userRole === "patient";
