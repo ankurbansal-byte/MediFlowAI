@@ -18,6 +18,8 @@ import ProfileView from "./ProfileView";
 import HospitalView from "./HospitalView";
 import PatientsView from "./PatientsView";
 import DoctorsView from "./DoctorsView";
+import HospitalVisitsView from "./HospitalVisitsView";
+import DoctorVisitsView from "./DoctorVisitsView";
 
 interface DashboardProps {
   user: User;
@@ -25,7 +27,7 @@ interface DashboardProps {
   onProfileUpdate: (updatedUser: User) => void;
 }
 
-export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "settings" | "hospital" | "patients" | "doctors";
+export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "settings" | "hospital" | "patients" | "doctors" | "visits-admin" | "doctor-visits";
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -160,6 +162,18 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
       case "doctors":
         return (
           <DoctorsView
+            user={user}
+          />
+        );
+      case "visits-admin":
+        return (
+          <HospitalVisitsView
+            user={user}
+          />
+        );
+      case "doctor-visits":
+        return (
+          <DoctorVisitsView
             user={user}
           />
         );

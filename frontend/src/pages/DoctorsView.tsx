@@ -7,6 +7,25 @@ interface DoctorsViewProps {
   user: User;
 }
 
+interface EncounterData {
+  encounterId: string;
+  hospitalId: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  visitDate: string;
+  visitType: string;
+  chiefComplaint: string;
+  symptoms: string;
+  provisionalDiagnosis: string;
+  doctorNotes: string;
+  followUpDate?: string;
+  status: "draft" | "completed";
+  createdBy: string;
+  createdAt: string;
+}
+
 interface DoctorData {
   doctorId: string;
   fullName: string;
@@ -92,8 +111,12 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
+  // Doctor master encounters states
+  const [doctorEncounters, setDoctorEncounters] = useState<EncounterData[]>([]);
+  const [viewingEncounterInModal, setViewingEncounterInModal] = useState<EncounterData | null>(null);
+
   // Doctor Assignments tab states
-  const [activeDoctorTab, setActiveDoctorTab] = useState<"overview" | "patients">("overview");
+  const [activeDoctorTab, setActiveDoctorTab] = useState<"overview" | "patients" | "visits">("overview");
   const [assignedPatients, setAssignedPatients] = useState<AssignedPatient[]>([]);
   const [availablePatients, setAvailablePatients] = useState<AvailablePatient[]>([]);
   const [assignedLoading, setAssignedLoading] = useState(false);
@@ -267,6 +290,12 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
 
         // Fetch assignment info
         await fetchDoctorAssignmentsData(dId);
+
+        // Fetch master encounters info of this doctor
+        const encRes = await api.get(`/encounter/doctor/${dId}`);
+        if (encRes.data.success) {
+          setDoctorEncounters(encRes.data.encounters || []);
+        }
       } else {
         setError(detailRes.data.message || "Failed to load doctor profile details.");
       }
@@ -1209,9 +1238,108 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
               >
                 Assigned Patients
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveDoctorTab("visits")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  borderBottom: activeDoctorTab === "visits" ? "3px solid #0080ff" : "3px solid transparent",
+                  color: activeDoctorTab === "visits" ? "#0080ff" : "var(--muted, #486581)",
+                  fontWeight: 750,
+                  padding: "10px 0",
+                  fontSize: "0.92rem",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  transition: "all 0.15s ease",
+                  marginBottom: "-2px"
+                }}
+              >
+                Consultations History
+              </button>
             </div>
 
             {/* Tab Contents */}
+            {activeDoctorTab === "visits" && (
+              <div style={{
+                background: "var(--surface, #ffffff)",
+                border: "1px solid var(--line, #e4e7eb)",
+                borderRadius: "14px",
+                padding: "24px",
+                boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
+              }}>
+                <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.15rem", fontWeight: 800 }}>
+                  Doctor OPD Consultation Logs
+                </h3>
+
+                {doctorEncounters.length === 0 ? (
+                  <p style={{ margin: 0, color: "var(--muted, #486581)", fontSize: "0.9rem" }}>
+                    No OPD clinical consultations recorded for Dr. {doctorDetail.fullName} in this hospital.
+                  </p>
+                ) : (
+                  <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Visit ID</th>
+                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Patient ID</th>
+                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Patient Name</th>
+                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Visit Date</th>
+                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Type</th>
+                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Status</th>
+                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {doctorEncounters.map((enc) => (
+                        <tr key={enc.encounterId} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          <td style={{ padding: "12px 6px", fontWeight: 800, color: "#0080ff", fontFamily: "monospace" }}>{enc.encounterId}</td>
+                          <td style={{ padding: "12px 6px", fontWeight: 600, color: "var(--muted)" }}>{enc.patientId}</td>
+                          <td style={{ padding: "12px 6px", fontWeight: 700, color: "var(--navy)" }}>{enc.patientName}</td>
+                          <td style={{ padding: "12px 6px", fontWeight: 600, color: "var(--navy)" }}>
+                            {new Date(enc.visitDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                          </td>
+                          <td style={{ padding: "12px 6px", color: "var(--muted)" }}>{enc.visitType}</td>
+                          <td style={{ padding: "12px 6px" }}>
+                            <span style={{
+                              display: "inline-block",
+                              background: enc.status === "completed" ? "#e2fbf0" : "#fffbeb",
+                              color: enc.status === "completed" ? "#10b981" : "#d97706",
+                              border: enc.status === "completed" ? "1px solid #a7f3d0" : "1px solid #fde68a",
+                              borderRadius: "10px",
+                              padding: "2px 6px",
+                              fontSize: "0.7rem",
+                              fontWeight: 750,
+                              textTransform: "uppercase"
+                            }}>
+                              {enc.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: "12px 6px" }}>
+                            <button
+                              type="button"
+                              onClick={() => setViewingEncounterInModal(enc)}
+                              style={{
+                                background: "#0080ff",
+                                color: "#ffffff",
+                                border: "none",
+                                borderRadius: "4px",
+                                padding: "4px 8px",
+                                fontSize: "0.78rem",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                              }}
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+
             {activeDoctorTab === "overview" && (
               <div style={{
                 background: "var(--surface, #ffffff)",
@@ -1395,7 +1523,166 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
   };
 
   if (selectedDoctorIdForProfile) {
-    return renderDoctorProfile();
+    const profileViewElement = renderDoctorProfile();
+    return (
+      <>
+        {profileViewElement}
+        {/* Viewing Encounter Detail Modal */}
+        {viewingEncounterInModal && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(10, 37, 64, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "20px"
+          }}>
+            <div style={{
+              background: "#ffffff",
+              borderRadius: "14px",
+              width: "100%",
+              maxWidth: "600px",
+              boxShadow: "0 20px 60px rgba(10, 37, 64, 0.15)",
+              overflow: "hidden"
+            }}>
+              <div style={{
+                background: "#f4f8fc",
+                padding: "20px 24px",
+                borderBottom: "1px solid var(--line, #e4e7eb)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center"
+              }}>
+                <h3 style={{ margin: 0, color: "var(--navy, #0a2540)", fontWeight: 850 }}>
+                  Clinical Encounter File ({viewingEncounterInModal.encounterId})
+                </h3>
+                <button
+                  onClick={() => setViewingEncounterInModal(null)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    fontSize: "1.2rem",
+                    color: "var(--muted, #486581)",
+                    cursor: "pointer",
+                    fontWeight: 800
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px", maxHeight: "70vh", overflowY: "auto" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Patient ID</span>
+                    <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 700 }}>{viewingEncounterInModal.patientId}</span>
+                  </div>
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Doctor</span>
+                    <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 700 }}>{(viewingEncounterInModal.doctorName || doctorDetail?.fullName || "").startsWith("Dr.") ? (viewingEncounterInModal.doctorName || doctorDetail?.fullName || "") : `Dr. ${viewingEncounterInModal.doctorName || doctorDetail?.fullName || ""}`} ({viewingEncounterInModal.doctorId})</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Visit Date</span>
+                    <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>
+                      {new Date(viewingEncounterInModal.visitDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Visit Type</span>
+                    <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>{viewingEncounterInModal.visitType}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Encounter Status</span>
+                  <span style={{
+                    display: "inline-block",
+                    background: viewingEncounterInModal.status === "completed" ? "#e2fbf0" : "#fffbeb",
+                    color: viewingEncounterInModal.status === "completed" ? "#10b981" : "#d97706",
+                    border: viewingEncounterInModal.status === "completed" ? "1px solid #a7f3d0" : "1px solid #fde68a",
+                    borderRadius: "12px",
+                    padding: "2px 8px",
+                    fontSize: "0.75rem",
+                    fontWeight: 750,
+                    textTransform: "uppercase",
+                    marginTop: "4px"
+                  }}>{viewingEncounterInModal.status}</span>
+                </div>
+
+                <div style={{ borderTop: "1px solid var(--line, #e4e7eb)", paddingTop: "12px" }}>
+                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Chief Complaint</span>
+                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                    {viewingEncounterInModal.chiefComplaint || "No chief complaint recorded."}
+                  </p>
+                </div>
+
+                <div>
+                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Symptoms / Clinical Notes</span>
+                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                    {viewingEncounterInModal.symptoms || "No symptoms/clinical notes recorded."}
+                  </p>
+                </div>
+
+                <div>
+                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Provisional Diagnosis</span>
+                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                    {viewingEncounterInModal.provisionalDiagnosis || "No diagnosis documented yet."}
+                  </p>
+                </div>
+
+                <div>
+                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Doctor's Consult Notes</span>
+                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                    {viewingEncounterInModal.doctorNotes || "No medical recommendations documented."}
+                  </p>
+                </div>
+
+                {viewingEncounterInModal.followUpDate && (
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Recommended Follow-up</span>
+                    <span style={{ fontSize: "0.9rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>
+                      {new Date(viewingEncounterInModal.followUpDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div style={{
+                background: "#f8fafc",
+                padding: "16px 24px",
+                borderTop: "1px solid var(--line, #e4e7eb)",
+                display: "flex",
+                justifyContent: "flex-end"
+              }}>
+                <button
+                  onClick={() => setViewingEncounterInModal(null)}
+                  style={{
+                    background: "#0080ff",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "10px 20px",
+                    fontSize: "0.9rem",
+                    fontWeight: 700,
+                    cursor: "pointer"
+                  }}
+                >
+                  Close File
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
   }
 
   return renderDoctorsDirectory();

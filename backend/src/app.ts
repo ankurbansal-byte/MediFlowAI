@@ -7,6 +7,7 @@ import patientRoutes from "./routes/patientRoutes";
 import hospitalRoutes from "./routes/hospitalRoutes";
 import doctorRoutes from "./routes/doctorRoutes";
 import assignmentRoutes from "./routes/assignmentRoutes";
+import encounterRoutes from "./routes/encounterRoutes";
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use("/api/patient", patientRoutes);
 app.use("/api/hospital", hospitalRoutes);
 app.use("/api/doctor", doctorRoutes);
 app.use("/api/assignment", assignmentRoutes);
+app.use("/api/encounter", encounterRoutes);
 
 app.get("/", (req, res) => {
   res.send("🚀 MediFlow AI Backend Running...");

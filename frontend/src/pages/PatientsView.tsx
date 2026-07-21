@@ -74,6 +74,25 @@ interface AvailableDoctor {
   specialization: string;
 }
 
+interface EncounterData {
+  encounterId: string;
+  hospitalId: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  visitDate: string;
+  visitType: string;
+  chiefComplaint: string;
+  symptoms: string;
+  provisionalDiagnosis: string;
+  doctorNotes: string;
+  followUpDate?: string;
+  status: "draft" | "completed";
+  createdBy: string;
+  createdAt: string;
+}
+
 const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
   const [patients, setPatients] = useState<PatientData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -106,6 +125,10 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
   const [activeSubTab, setActiveSubTab] = useState<"overview" | "careteam" | "history" | "visits" | "prescriptions" | "reports" | "vitals" >("overview");
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+
+  // Encounter list states
+  const [patientEncounters, setPatientEncounters] = useState<EncounterData[]>([]);
+  const [viewingEncounterInModal, setViewingEncounterInModal] = useState<EncounterData | null>(null);
 
   // Care Team state integration
   const [assignedDoctors, setAssignedDoctors] = useState<AssignedDoctor[]>([]);
@@ -279,6 +302,12 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
       const timelineRes = await api.get(`/patient/timeline/${pId}`);
       if (timelineRes.data.success) {
         setTimelineData(timelineRes.data.records);
+      }
+
+      // 5. Fetch clinical encounter history
+      const encRes = await api.get(`/encounter/patient/${pId}`);
+      if (encRes.data.success) {
+        setPatientEncounters(encRes.data.encounters || []);
       }
     } catch (err) {
       console.error("Error loading patient detail:", err);
@@ -749,6 +778,161 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
           </div>
 
         </div>
+
+        {/* Viewing Encounter Detail Modal */}
+        {viewingEncounterInModal && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(10, 37, 64, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "20px"
+          }}>
+            <div style={{
+              background: "#ffffff",
+              borderRadius: "14px",
+              width: "100%",
+              maxWidth: "600px",
+              boxShadow: "0 20px 60px rgba(10, 37, 64, 0.15)",
+              overflow: "hidden"
+            }}>
+              <div style={{
+                background: "#f4f8fc",
+                padding: "20px 24px",
+                borderBottom: "1px solid var(--line, #e4e7eb)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center"
+              }}>
+                <h3 style={{ margin: 0, color: "var(--navy, #0a2540)", fontWeight: 850 }}>
+                  Clinical Encounter File ({viewingEncounterInModal.encounterId})
+                </h3>
+                <button
+                  onClick={() => setViewingEncounterInModal(null)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    fontSize: "1.2rem",
+                    color: "var(--muted, #486581)",
+                    cursor: "pointer",
+                    fontWeight: 800
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px", maxHeight: "70vh", overflowY: "auto" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Patient ID</span>
+                    <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 700 }}>{viewingEncounterInModal.patientId}</span>
+                  </div>
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Doctor</span>
+                    <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 700 }}>{viewingEncounterInModal.doctorName.startsWith("Dr.") ? viewingEncounterInModal.doctorName : `Dr. ${viewingEncounterInModal.doctorName}`} ({viewingEncounterInModal.doctorId})</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Visit Date</span>
+                    <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>
+                      {new Date(viewingEncounterInModal.visitDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Visit Type</span>
+                    <span style={{ fontSize: "0.95rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>{viewingEncounterInModal.visitType}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Encounter Status</span>
+                  <span style={{
+                    display: "inline-block",
+                    background: viewingEncounterInModal.status === "completed" ? "#e2fbf0" : "#fffbeb",
+                    color: viewingEncounterInModal.status === "completed" ? "#10b981" : "#d97706",
+                    border: viewingEncounterInModal.status === "completed" ? "1px solid #a7f3d0" : "1px solid #fde68a",
+                    borderRadius: "12px",
+                    padding: "2px 8px",
+                    fontSize: "0.75rem",
+                    fontWeight: 750,
+                    textTransform: "uppercase",
+                    marginTop: "4px"
+                  }}>{viewingEncounterInModal.status}</span>
+                </div>
+
+                <div style={{ borderTop: "1px solid var(--line, #e4e7eb)", paddingTop: "12px" }}>
+                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Chief Complaint</span>
+                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                    {viewingEncounterInModal.chiefComplaint || "No chief complaint recorded."}
+                  </p>
+                </div>
+
+                <div>
+                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Symptoms / Clinical Notes</span>
+                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                    {viewingEncounterInModal.symptoms || "No symptoms/clinical notes recorded."}
+                  </p>
+                </div>
+
+                <div>
+                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Provisional Diagnosis</span>
+                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                    {viewingEncounterInModal.provisionalDiagnosis || "No diagnosis documented yet."}
+                  </p>
+                </div>
+
+                <div>
+                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "4px" }}>Doctor's Consult Notes</span>
+                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--navy, #0a2540)", whiteSpace: "pre-wrap", background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                    {viewingEncounterInModal.doctorNotes || "No medical recommendations documented."}
+                  </p>
+                </div>
+
+                {viewingEncounterInModal.followUpDate && (
+                  <div>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Recommended Follow-up</span>
+                    <span style={{ fontSize: "0.9rem", color: "var(--navy, #0a2540)", fontWeight: 600 }}>
+                      {new Date(viewingEncounterInModal.followUpDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div style={{
+                background: "#f8fafc",
+                padding: "16px 24px",
+                borderTop: "1px solid var(--line, #e4e7eb)",
+                display: "flex",
+                justifyContent: "flex-end"
+              }}>
+                <button
+                  onClick={() => setViewingEncounterInModal(null)}
+                  style={{
+                    background: "#0080ff",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "10px 20px",
+                    fontSize: "0.9rem",
+                    fontWeight: 700,
+                    cursor: "pointer"
+                  }}
+                >
+                  Close File
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -1378,18 +1562,92 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
 
               {activeSubTab === "visits" && (
                 <div style={{
-                  padding: "60px 24px",
-                  textAlign: "center",
-                  background: "#ffffff",
-                  border: "1px dashed var(--line, #e4e7eb)",
+                  background: "var(--surface, #ffffff)",
+                  border: "1px solid var(--line, #e4e7eb)",
                   borderRadius: "14px",
-                  boxShadow: "0 10px 30px rgba(10, 37, 64, 0.02)"
+                  padding: "24px",
+                  boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
                 }}>
-                  <div style={{ fontSize: "3rem", marginBottom: "16px" }}>📆</div>
-                  <h3 style={{ margin: "0 0 8px 0", color: "var(--navy, #0a2540)", fontWeight: 800 }}>Visits & Appointments</h3>
-                  <p style={{ margin: 0, color: "var(--muted, #486581)", fontSize: "0.92rem", maxWidth: "450px", marginLeft: "auto", marginRight: "auto" }}>
-                    No clinical outpatient visits, consultations, or admissions recorded in this sprint foundation.
-                  </p>
+                  <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.15rem", fontWeight: 800 }}>
+                    Clinical Outpatient Visit History
+                  </h3>
+
+                  {patientEncounters.length === 0 ? (
+                    <div style={{
+                      padding: "48px 12px",
+                      textAlign: "center",
+                      background: "#ffffff",
+                      border: "1px dashed var(--line, #e4e7eb)",
+                      borderRadius: "10px",
+                      color: "var(--muted, #486581)"
+                    }}>
+                      <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>📆</div>
+                      <h4 style={{ margin: "0 0 4px 0", color: "var(--navy)", fontWeight: 750 }}>No Visits Found</h4>
+                      <p style={{ margin: 0, fontSize: "0.85rem" }}>No clinical consultations recorded in this foundation.</p>
+                    </div>
+                  ) : (
+                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Visit ID</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Consult Date</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Practitioner</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Visit Type</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Status</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Chief Complaint</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {patientEncounters.map((enc) => (
+                          <tr key={enc.encounterId} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                            <td style={{ padding: "12px 6px", fontWeight: 800, color: "#0080ff", fontFamily: "monospace" }}>{enc.encounterId}</td>
+                            <td style={{ padding: "12px 6px", fontWeight: 600, color: "var(--navy)" }}>
+                              {new Date(enc.visitDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                            </td>
+                            <td style={{ padding: "12px 6px", fontWeight: 700 }}>{enc.doctorName.startsWith("Dr.") ? enc.doctorName : `Dr. ${enc.doctorName}`}</td>
+                            <td style={{ padding: "12px 6px", color: "var(--muted)" }}>{enc.visitType}</td>
+                            <td style={{ padding: "12px 6px" }}>
+                              <span style={{
+                                display: "inline-block",
+                                background: enc.status === "completed" ? "#e2fbf0" : "#fffbeb",
+                                color: enc.status === "completed" ? "#10b981" : "#d97706",
+                                border: enc.status === "completed" ? "1px solid #a7f3d0" : "1px solid #fde68a",
+                                borderRadius: "10px",
+                                padding: "2px 6px",
+                                fontSize: "0.7rem",
+                                fontWeight: 750,
+                                textTransform: "uppercase"
+                              }}>
+                                {enc.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: "12px 6px", color: "var(--navy)", fontStyle: "italic", maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {enc.chiefComplaint || "—"}
+                            </td>
+                            <td style={{ padding: "12px 6px" }}>
+                              <button
+                                type="button"
+                                onClick={() => setViewingEncounterInModal(enc)}
+                                style={{
+                                  background: "#0080ff",
+                                  color: "#ffffff",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  padding: "4px 8px",
+                                  fontSize: "0.78rem",
+                                  fontWeight: 700,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                View
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               )}
 
