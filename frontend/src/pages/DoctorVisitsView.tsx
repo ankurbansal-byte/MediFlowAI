@@ -53,6 +53,24 @@ const DoctorVisitsView: React.FC<DoctorVisitsViewProps> = ({ user }) => {
   const [patientSummary, setPatientSummary] = useState<PatientSummaryMap | null>(null);
   const [contextLoading, setContextLoading] = useState(false);
 
+  // Encounter-specific vitals states
+  const [encounterVitals, setEncounterVitals] = useState<Record<string, { value: string | number; unit: string }>>({});
+  const [isVitalsLoading, setIsVitalsLoading] = useState(false);
+
+  const fetchEncounterVitals = async (encId: string) => {
+    setIsVitalsLoading(true);
+    try {
+      const response = await api.get(`/encounter/vitals/${encId}`);
+      if (response.data.success) {
+        setEncounterVitals(response.data.vitals || {});
+      }
+    } catch (err) {
+      console.error("Error fetching encounter vitals in doctor view:", err);
+    } finally {
+      setIsVitalsLoading(false);
+    }
+  };
+
   // Form input states
   const [chiefComplaint, setChiefComplaint] = useState("");
   const [symptoms, setSymptoms] = useState("");
@@ -125,11 +143,14 @@ const DoctorVisitsView: React.FC<DoctorVisitsViewProps> = ({ user }) => {
     } finally {
       setContextLoading(false);
     }
+
+    await fetchEncounterVitals(enc.encounterId);
   };
 
   const handleCloseWorkspace = () => {
     setSelectedEncounter(null);
     setPatientSummary(null);
+    setEncounterVitals({});
     setError("");
     setSuccess("");
   };
@@ -330,6 +351,111 @@ const DoctorVisitsView: React.FC<DoctorVisitsViewProps> = ({ user }) => {
               </div>
             </div>
 
+            {/* Encounter Vitals Panel */}
+            <div style={{
+              background: "var(--surface, #ffffff)",
+              border: "1px solid var(--line, #e4e7eb)",
+              borderRadius: "14px",
+              padding: "24px",
+              boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
+            }}>
+              <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800, borderBottom: "1px solid var(--line, #e4e7eb)", paddingBottom: "10px" }}>
+                Encounter Recorded Vitals
+              </h3>
+
+              {isVitalsLoading ? (
+                <div style={{ padding: "20px 0", textAlign: "center", color: "var(--muted, #486581)" }}>
+                  Loading encounter vitals...
+                </div>
+              ) : Object.keys(encounterVitals).length === 0 ? (
+                <p style={{ margin: 0, color: "var(--muted, #486581)", fontSize: "0.85rem" }}>
+                  No structured vitals recorded during this OPD visit yet.
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {/* Blood Sugar */}
+                  {encounterVitals.blood_sugar && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
+                      <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--muted, #486581)" }}>🩸 Blood Sugar:</span>
+                      <strong style={{ fontSize: "0.92rem", color: "var(--navy, #0a2540)" }}>
+                        {encounterVitals.blood_sugar.value} {encounterVitals.blood_sugar.unit}
+                      </strong>
+                    </div>
+                  )}
+
+                  {/* Blood Pressure */}
+                  {encounterVitals.blood_pressure && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
+                      <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--muted, #486581)" }}>🩺 Blood Pressure:</span>
+                      <strong style={{ fontSize: "0.92rem", color: "var(--navy, #0a2540)" }}>
+                        {encounterVitals.blood_pressure.value} {encounterVitals.blood_pressure.unit}
+                      </strong>
+                    </div>
+                  )}
+
+                  {/* Heart Rate */}
+                  {encounterVitals.heart_rate && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
+                      <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--muted, #486581)" }}>❤️ Heart Rate:</span>
+                      <strong style={{ fontSize: "0.92rem", color: "var(--navy, #0a2540)" }}>
+                        {encounterVitals.heart_rate.value} {encounterVitals.heart_rate.unit}
+                      </strong>
+                    </div>
+                  )}
+
+                  {/* Temperature */}
+                  {encounterVitals.body_temperature && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
+                      <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--muted, #486581)" }}>🌡️ Temperature:</span>
+                      <strong style={{ fontSize: "0.92rem", color: "var(--navy, #0a2540)" }}>
+                        {encounterVitals.body_temperature.value} {encounterVitals.body_temperature.unit}
+                      </strong>
+                    </div>
+                  )}
+
+                  {/* SpO2 */}
+                  {encounterVitals.spo2 && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
+                      <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--muted, #486581)" }}>🫁 SpO2:</span>
+                      <strong style={{ fontSize: "0.92rem", color: "var(--navy, #0a2540)" }}>
+                        {encounterVitals.spo2.value} {encounterVitals.spo2.unit}
+                      </strong>
+                    </div>
+                  )}
+
+                  {/* Respiratory Rate */}
+                  {encounterVitals.respiratory_rate && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
+                      <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--muted, #486581)" }}>🌬️ Respiratory Rate:</span>
+                      <strong style={{ fontSize: "0.92rem", color: "var(--navy, #0a2540)" }}>
+                        {encounterVitals.respiratory_rate.value} {encounterVitals.respiratory_rate.unit}
+                      </strong>
+                    </div>
+                  )}
+
+                  {/* Weight */}
+                  {encounterVitals.weight && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
+                      <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--muted, #486581)" }}>⚖️ Weight:</span>
+                      <strong style={{ fontSize: "0.92rem", color: "var(--navy, #0a2540)" }}>
+                        {encounterVitals.weight.value} {encounterVitals.weight.unit}
+                      </strong>
+                    </div>
+                  )}
+
+                  {/* Height */}
+                  {encounterVitals.height && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "4px" }}>
+                      <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--muted, #486581)" }}>📏 Height:</span>
+                      <strong style={{ fontSize: "0.92rem", color: "var(--navy, #0a2540)" }}>
+                        {encounterVitals.height.value} {encounterVitals.height.unit}
+                      </strong>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Vitals Summary Card */}
             <div style={{
               background: "var(--surface, #ffffff)",
@@ -339,7 +465,7 @@ const DoctorVisitsView: React.FC<DoctorVisitsViewProps> = ({ user }) => {
               boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
             }}>
               <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800, borderBottom: "1px solid var(--line, #e4e7eb)", paddingBottom: "10px" }}>
-                Latest Clinical Vitals Summary
+                Latest Clinical Vitals Summary (All-Time)
               </h3>
 
               {contextLoading ? (

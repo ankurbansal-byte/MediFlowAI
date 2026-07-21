@@ -56,3 +56,43 @@ export let dynamicMockEncounters: EncounterMock[] = [
     updatedAt: pastDate2,
   },
 ];
+
+import { MOCK_RECORDS } from "../controllers/patientController";
+// Seed mock in-memory records with some encounter-linked vitals
+if (MOCK_RECORDS) {
+  if (!MOCK_RECORDS["PAT-101"]) {
+    MOCK_RECORDS["PAT-101"] = [];
+  }
+  MOCK_RECORDS["PAT-101"].push(
+    {
+      patientId: "PAT-101",
+      parameter: "blood_sugar",
+      value: 125,
+      unit: "mg/dL",
+      recordedAt: pastDate1,
+      source: "clinical",
+      confidence: 1.0,
+      originalMessage: "Seeded initial vital for encounter ENC-10001",
+      whatsappMessageId: "mock_seed_enc_10001_sugar",
+      encounterId: "ENC-10001",
+      hospitalId: "HOSP-001",
+      doctorId: "DOC-101",
+      recordedBy: "admin",
+    },
+    {
+      patientId: "PAT-101",
+      parameter: "blood_pressure",
+      value: "130/85",
+      unit: "mmHg",
+      recordedAt: pastDate1,
+      source: "clinical",
+      confidence: 1.0,
+      originalMessage: "Seeded initial vital for encounter ENC-10001",
+      whatsappMessageId: "mock_seed_enc_10001_bp",
+      encounterId: "ENC-10001",
+      hospitalId: "HOSP-001",
+      doctorId: "DOC-101",
+      recordedBy: "admin",
+    }
+  );
+}

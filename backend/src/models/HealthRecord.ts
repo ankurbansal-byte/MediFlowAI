@@ -48,6 +48,26 @@ whatsappMessageId: {
   unique: true,
 },
 
+    encounterId: {
+      type: String,
+      required: false,
+    },
+
+    hospitalId: {
+      type: String,
+      required: false,
+    },
+
+    doctorId: {
+      type: String,
+      required: false,
+    },
+
+    recordedBy: {
+      type: String,
+      required: false,
+    },
+
   },
   {
     timestamps: true,
@@ -55,5 +75,6 @@ whatsappMessageId: {
 );
 
 healthRecordSchema.index({ patientId: 1, recordedAt: -1 });
+healthRecordSchema.index({ encounterId: 1 });
 
 export default mongoose.model("HealthRecord", healthRecordSchema);

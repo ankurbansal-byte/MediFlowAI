@@ -630,3 +630,294 @@ export const completeEncounter = async (req: AuthenticatedRequest, res: Response
     return res.status(500).json({ success: false, message: "Failed to close clinical encounter." });
   }
 };
+
+/**
+ * POST /api/encounter/vitals/:encounterId
+ * Records or updates the structured clinical vitals associated with a specific OPD visit.
+ * Restricted to Hospital Admin (same hospital) or Doctor (assigned to encounter).
+ * Forbidden if encounter is completed/finalized.
+ */
+import HealthRecord from "../models/HealthRecord";
+import { MOCK_RECORDS } from "./patientController";
+
+export const recordEncounterVitals = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: "Unauthorized." });
+  }
+
+  const { encounterId } = req.params;
+  const vitalsInput = req.body; // Expects an object mapping parameters to values, e.g., { blood_sugar: 120, blood_pressure: "120/80", ... }
+
+  try {
+    const { hospitalId: userHospitalId, doctorId: userDoctorId } = await getUserHospitalAndDoctorId(req.user.username);
+    if (!userHospitalId) {
+      return res.status(403).json({ success: false, message: "Forbidden. User has no hospital associated." });
+    }
+
+    // 1. Retrieve encounter
+    let encounter: any = null;
+    if (process.env.USE_MOCK_DATA === "true") {
+      encounter = dynamicMockEncounters.find((e) => e.encounterId === encounterId);
+    } else {
+      encounter = await Encounter.findOne({ encounterId });
+    }
+
+    if (!encounter) {
+      return res.status(404).json({ success: false, message: "Encounter not found." });
+    }
+
+    // 2. Strict authorization checks
+    if (encounter.hospitalId !== userHospitalId) {
+      return res.status(403).json({ success: false, message: "Forbidden. Encounter belongs to a different hospital." });
+    }
+
+    if (req.user.role === "doctor") {
+      if (encounter.doctorId !== userDoctorId) {
+        return res.status(403).json({ success: false, message: "Forbidden. You are not authorized for this encounter's vitals." });
+      }
+    } else if (req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Forbidden. Only admins and assigned doctors can record vitals." });
+    }
+
+    // 3. Completed encounter protection
+    if (encounter.status === "completed") {
+      return res.status(400).json({ success: false, message: "Cannot modify clinical information for a completed encounter." });
+    }
+
+    // 4. Validate input parameters and format
+    const validParams = [
+      "blood_sugar",
+      "blood_pressure",
+      "weight",
+      "heart_rate",
+      "body_temperature",
+      "spo2",
+      "respiratory_rate",
+      "height"
+    ];
+
+    const inputKeys = Object.keys(vitalsInput);
+    for (const key of inputKeys) {
+      if (!validParams.includes(key)) {
+        return res.status(400).json({ success: false, message: `Invalid vital parameter: ${key}` });
+      }
+
+      const val = vitalsInput[key];
+      if (val === undefined || val === null || val === "") continue;
+
+      if (key === "blood_pressure") {
+        const bpStr = String(val).trim();
+        const parts = bpStr.split("/");
+        if (parts.length !== 2) {
+          return res.status(400).json({ success: false, message: "Blood pressure must be in 'systolic/diastolic' format (e.g. 120/80)." });
+        }
+        const sys = Number(parts[0]);
+        const dia = Number(parts[1]);
+        if (isNaN(sys) || sys <= 30 || sys >= 300 || isNaN(dia) || dia <= 10 || dia >= 200) {
+          return res.status(400).json({ success: false, message: "Physiologically unreasonable Blood Pressure values." });
+        }
+      } else {
+        const num = Number(val);
+        if (isNaN(num) || num <= 0) {
+          return res.status(400).json({ success: false, message: `${key.replace("_", " ")} must be a positive number.` });
+        }
+
+        // Physiological bounds validation
+        if (key === "blood_sugar" && (num < 10 || num > 1000)) {
+          return res.status(400).json({ success: false, message: "Physiologically unreasonable Blood Sugar value." });
+        }
+        if (key === "weight" && (num < 1 || num > 500)) {
+          return res.status(400).json({ success: false, message: "Physiologically unreasonable Weight value." });
+        }
+        if (key === "height" && (num < 10 || num > 300)) {
+          return res.status(400).json({ success: false, message: "Physiologically unreasonable Height value." });
+        }
+        if (key === "heart_rate" && (num < 20 || num > 300)) {
+          return res.status(400).json({ success: false, message: "Physiologically unreasonable Heart Rate value." });
+        }
+        if (key === "body_temperature" && (num < 20 || num > 50)) {
+          return res.status(400).json({ success: false, message: "Physiologically unreasonable Body Temperature value." });
+        }
+        if (key === "spo2" && (num < 10 || num > 100)) {
+          return res.status(400).json({ success: false, message: "Physiologically unreasonable SpO2 value." });
+        }
+        if (key === "respiratory_rate" && (num < 1 || num > 100)) {
+          return res.status(400).json({ success: false, message: "Physiologically unreasonable Respiratory Rate value." });
+        }
+      }
+    }
+
+    // 5. Save or Update in HealthRecord collection/mock
+    const parameterUnits: Record<string, string> = {
+      blood_sugar: "mg/dL",
+      blood_pressure: "mmHg",
+      weight: "kg",
+      heart_rate: "bpm",
+      body_temperature: "°C",
+      spo2: "%",
+      respiratory_rate: "breaths/min",
+      height: "cm"
+    };
+
+    const savedRecords: any[] = [];
+
+    for (const key of validParams) {
+      const val = vitalsInput[key];
+      // If parameter is omitted or empty, skip it. But we should also clean up/remove if they previously had it? Or just allow updates of existing.
+      if (val === undefined || val === null || val === "") continue;
+
+      const cleanVal = key === "blood_pressure" ? String(val).trim() : Number(val);
+      const unit = parameterUnits[key] || "";
+
+      if (process.env.USE_MOCK_DATA === "true") {
+        if (!MOCK_RECORDS[encounter.patientId]) {
+          MOCK_RECORDS[encounter.patientId] = [];
+        }
+
+        // Find existing record for this encounter and parameter
+        let existing = MOCK_RECORDS[encounter.patientId].find(
+          (r: any) => r.encounterId === encounterId && r.parameter === key
+        );
+
+        if (existing) {
+          existing.value = cleanVal;
+          existing.recordedAt = new Date();
+          existing.recordedBy = req.user.username;
+          savedRecords.push(existing);
+        } else {
+          const newRec = {
+            patientId: encounter.patientId,
+            parameter: key,
+            value: cleanVal,
+            unit,
+            recordedAt: new Date(),
+            source: "clinical",
+            confidence: 1.0,
+            originalMessage: `Recorded during OPD encounter ${encounterId} by ${req.user.username}`,
+            whatsappMessageId: `enc_${encounterId}_${key}_${Date.now()}`,
+            encounterId,
+            hospitalId: encounter.hospitalId,
+            doctorId: encounter.doctorId,
+            recordedBy: req.user.username,
+          };
+          MOCK_RECORDS[encounter.patientId].push(newRec);
+          savedRecords.push(newRec);
+        }
+      } else {
+        let existing = await HealthRecord.findOne({ encounterId, parameter: key });
+        if (existing) {
+          existing.value = cleanVal;
+          existing.recordedAt = new Date();
+          existing.recordedBy = req.user.username;
+          await existing.save();
+          savedRecords.push(existing);
+        } else {
+          const newRec = await HealthRecord.create({
+            patientId: encounter.patientId,
+            parameter: key,
+            value: cleanVal,
+            unit,
+            recordedAt: new Date(),
+            source: "clinical",
+            confidence: 1.0,
+            originalMessage: `Recorded during OPD encounter ${encounterId} by ${req.user.username}`,
+            whatsappMessageId: `enc_${encounterId}_${key}_${Date.now()}`,
+            encounterId,
+            hospitalId: encounter.hospitalId,
+            doctorId: encounter.doctorId,
+            recordedBy: req.user.username,
+          });
+          savedRecords.push(newRec);
+        }
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Encounter vitals saved successfully.",
+      vitals: savedRecords,
+    });
+
+  } catch (error) {
+    console.error("Record encounter vitals error:", error);
+    return res.status(500).json({ success: false, message: "Failed to record encounter vitals." });
+  }
+};
+
+/**
+ * GET /api/encounter/vitals/:encounterId
+ * Fetches the structured clinical vitals associated with a specific OPD visit.
+ * Validates that the requesting user belongs to the same hospital and is authorized.
+ */
+export const getEncounterVitals = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: "Unauthorized." });
+  }
+
+  const { encounterId } = req.params;
+
+  try {
+    const { hospitalId: userHospitalId, doctorId: userDoctorId } = await getUserHospitalAndDoctorId(req.user.username);
+    if (!userHospitalId) {
+      return res.status(403).json({ success: false, message: "Forbidden. User has no hospital associated." });
+    }
+
+    // 1. Retrieve encounter
+    let encounter: any = null;
+    if (process.env.USE_MOCK_DATA === "true") {
+      encounter = dynamicMockEncounters.find((e) => e.encounterId === encounterId);
+    } else {
+      encounter = await Encounter.findOne({ encounterId });
+    }
+
+    if (!encounter) {
+      return res.status(404).json({ success: false, message: "Encounter not found." });
+    }
+
+    // 2. Multi-tenant isolation
+    if (encounter.hospitalId !== userHospitalId) {
+      return res.status(403).json({ success: false, message: "Forbidden. Encounter belongs to a different hospital." });
+    }
+
+    // 3. Authorization check
+    if (req.user.role === "doctor") {
+      if (encounter.doctorId !== userDoctorId) {
+        return res.status(403).json({ success: false, message: "Forbidden. You are not authorized for this encounter." });
+      }
+    } else if (req.user.role === "patient") {
+      if (encounter.patientId !== req.user.patientId) {
+        return res.status(403).json({ success: false, message: "Forbidden. You cannot access another patient's records." });
+      }
+    } else if (req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Forbidden." });
+    }
+
+    // 4. Retrieve Vitals linked to encounterId
+    let records: any[] = [];
+    if (process.env.USE_MOCK_DATA === "true") {
+      records = (MOCK_RECORDS[encounter.patientId] || []).filter((r: any) => r.encounterId === encounterId);
+    } else {
+      records = await HealthRecord.find({ encounterId });
+    }
+
+    // Format output as a key-value mapping of parameters to records for easy frontend consumption
+    const vitalsMap: Record<string, any> = {};
+    for (const r of records) {
+      vitalsMap[r.parameter] = {
+        value: r.value,
+        unit: r.unit,
+        recordedAt: r.recordedAt,
+        recordedBy: r.recordedBy,
+      };
+    }
+
+    return res.status(200).json({
+      success: true,
+      vitals: vitalsMap,
+    });
+
+  } catch (error) {
+    console.error("Get encounter vitals error:", error);
+    return res.status(500).json({ success: false, message: "Failed to fetch encounter vitals." });
+  }
+};
