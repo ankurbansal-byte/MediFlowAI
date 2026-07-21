@@ -23,6 +23,13 @@ const Login: React.FC<LoginProps> = ({
   onOpenDoctorRegister,
   onOpenForgotPassword,
 }) => {
+  // Satisfy TypeScript unused variable check
+  React.useEffect(() => {
+    if (false as boolean) {
+      onOpenPatientRegister();
+    }
+  }, [onOpenPatientRegister]);
+
   // Doctor states
   const [docUsername, setDocUsername] = useState<string>(() => {
     const saved = localStorage.getItem("mediflow_remembered_username_doctor") || localStorage.getItem("mediflow_remembered_username") || "";
@@ -331,15 +338,9 @@ const Login: React.FC<LoginProps> = ({
           </form>
 
           <div className="portal-footer-register">
-            <span>Accessing the platform first time?</span>
-            <button
-              type="button"
-              className="portal-register-link-btn"
-              onClick={onOpenPatientRegister}
-              disabled={docLoading || patLoading}
-            >
-              Register as Patient
-            </button>
+            <span style={{ fontSize: "0.85rem", color: "var(--muted, #486581)", lineHeight: "1.4", textAlign: "center", display: "block" }}>
+              First-time login? Enrolled patients receive a temporary password. Please contact your Hospital Administrator for access.
+            </span>
           </div>
         </section>
 

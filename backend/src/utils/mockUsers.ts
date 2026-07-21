@@ -9,8 +9,6 @@ export const MOCK_USERS = [
   },
   {
     username: "doctor1",
-    // bcrypt hash of "password" with 10 salt rounds: $2a$10$9v3YV0yO.A/8vA8C.E1z.OKX/HmsH04qO7V7tU7p0D2uorx3gSgKG (we will just use bcrypt.compare/hash or a hardcoded bcrypt string)
-    // Actually, we can hash the passwords on start/load, or use bcrypt.hashSync. Let's pre-generate or hash dynamically.
     passwordHash: bcrypt.hashSync("password", 10),
     role: "doctor" as const,
     patientId: undefined,
@@ -52,3 +50,26 @@ export const MOCK_USERS = [
     patientId: "PAT-106",
   },
 ];
+
+export let dynamicMockUsers = [...MOCK_USERS].map((user) => ({
+  username: user.username,
+  passwordHash: user.passwordHash,
+  role: user.role,
+  patientId: user.patientId,
+  hospitalId: "HOSP-001",
+  fullName: user.role === "doctor" ? "Dr. Demo" : user.role === "admin" ? "Hospital Admin" : `Patient ${user.username}`,
+  email: `${user.username.toLowerCase()}@mediflow.com`,
+  mobileNumber: "+1234567890",
+  isEmailVerified: true, // Seeded users are pre-verified
+  refreshTokens: [] as string[],
+  emailVerificationToken: undefined as string | undefined,
+  emailVerificationTokenExpires: undefined as Date | undefined,
+  passwordResetToken: undefined as string | undefined,
+  passwordResetTokenExpires: undefined as Date | undefined,
+  dob: user.role === "patient" ? "1990-01-01" : undefined,
+  gender: user.role === "patient" ? "Male" : undefined,
+  medicalRegistrationNumber: user.role === "doctor" ? "MED-12345" : undefined,
+  hospitalClinicName: user.role === "doctor" ? "MediFlow Hospital" : undefined,
+  specialization: user.role === "doctor" ? "General Medicine" : undefined,
+  mustChangePassword: false,
+}));

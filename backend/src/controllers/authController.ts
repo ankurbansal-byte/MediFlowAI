@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import User from "../models/User";
-import { MOCK_USERS } from "../utils/mockUsers";
+import { MOCK_USERS, dynamicMockUsers } from "../utils/mockUsers";
 import { mailService } from "../services/mailService";
 import { AuthenticatedRequest } from "../utils/authMiddleware";
 import {
@@ -14,29 +14,6 @@ import {
 
 const JWT_SECRET = process.env.JWT_SECRET || "mediflow_secret_key_change_me_in_production";
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "mediflow_refresh_key_change_me_in_production";
-
-// Initialize in-memory dynamic mock database synced from the original MOCK_USERS array
-export let dynamicMockUsers = [...MOCK_USERS].map((user) => ({
-  username: user.username,
-  passwordHash: user.passwordHash,
-  role: user.role,
-  patientId: user.patientId,
-  hospitalId: "HOSP-001",
-  fullName: user.role === "doctor" ? "Dr. Demo" : user.role === "admin" ? "Hospital Admin" : `Patient ${user.username}`,
-  email: `${user.username.toLowerCase()}@mediflow.com`,
-  mobileNumber: "+1234567890",
-  isEmailVerified: true, // Seeded users are pre-verified
-  refreshTokens: [] as string[],
-  emailVerificationToken: undefined as string | undefined,
-  emailVerificationTokenExpires: undefined as Date | undefined,
-  passwordResetToken: undefined as string | undefined,
-  passwordResetTokenExpires: undefined as Date | undefined,
-  dob: user.role === "patient" ? "1990-01-01" : undefined,
-  gender: user.role === "patient" ? "Male" : undefined,
-  medicalRegistrationNumber: user.role === "doctor" ? "MED-12345" : undefined,
-  hospitalClinicName: user.role === "doctor" ? "MediFlow Hospital" : undefined,
-  specialization: user.role === "doctor" ? "General Medicine" : undefined,
-}));
 
 /**
  * Utility to calculate next available Patient ID
@@ -124,6 +101,7 @@ export const registerPatient = async (req: Request, res: Response) => {
       medicalRegistrationNumber: undefined,
       hospitalClinicName: undefined,
       specialization: undefined,
+      mustChangePassword: false,
     };
 
     dynamicMockUsers.push(newMockUser);
@@ -364,6 +342,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     if (newPasswordHash) {
       user.passwordHash = newPasswordHash;
       user.refreshTokens = []; // Revoke active sessions for security
+      (user as any).mustChangePassword = false;
     }
 
     return res.status(200).json({
@@ -376,6 +355,7 @@ export const updateProfile = async (req: Request, res: Response) => {
         isEmailVerified: user.isEmailVerified,
         email: user.email,
         fullName: user.fullName,
+        mustChangePassword: (user as any).mustChangePassword || false,
       },
     });
   }
@@ -417,6 +397,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     if (newPasswordHash) {
       updates.password = newPasswordHash;
       updates.refreshTokens = []; // Revoke active sessions for security
+      updates.mustChangePassword = false;
     }
 
     const updatedUser = await User.findOneAndUpdate(
@@ -504,6 +485,7 @@ export const registerDoctor = async (req: Request, res: Response) => {
       medicalRegistrationNumber: undefined,
       hospitalClinicName,
       specialization,
+      mustChangePassword: false,
     };
 
     dynamicMockUsers.push(newMockUser);
@@ -613,6 +595,10 @@ export const login = async (req: Request, res: Response) => {
 
     user.refreshTokens.push(refreshToken);
 
+    console.log("=========================================");
+    console.log("Mock login user object in authController:", user);
+    console.log("=========================================");
+
     return res.status(200).json({
       success: true,
       token,
@@ -624,6 +610,7 @@ export const login = async (req: Request, res: Response) => {
         isEmailVerified: user.isEmailVerified,
         email: user.email,
         fullName: user.fullName,
+        mustChangePassword: (user as any).mustChangePassword || false,
       },
     });
   }
@@ -675,6 +662,7 @@ export const login = async (req: Request, res: Response) => {
         isEmailVerified: user.isEmailVerified,
         email: user.email,
         fullName: user.fullName,
+        mustChangePassword: (user as any).mustChangePassword || false,
       },
     });
   } catch (error) {

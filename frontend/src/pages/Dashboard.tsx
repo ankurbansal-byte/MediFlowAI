@@ -16,6 +16,7 @@ import "./Dashboard.css";
 
 import ProfileView from "./ProfileView";
 import HospitalView from "./HospitalView";
+import PatientsView from "./PatientsView";
 
 interface DashboardProps {
   user: User;
@@ -23,11 +24,13 @@ interface DashboardProps {
   onProfileUpdate: (updatedUser: User) => void;
 }
 
-export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "settings" | "hospital";
+export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "settings" | "hospital" | "patients";
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>("dashboard");
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    return user.role === "admin" ? "patients" : "dashboard";
+  });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -144,6 +147,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
       case "hospital":
         return (
           <HospitalView
+            user={user}
+          />
+        );
+      case "patients":
+        return (
+          <PatientsView
             user={user}
           />
         );

@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "mediflow_secret_key_change_me_in_p
 export interface AuthenticatedRequest extends Request {
   user?: {
     username: string;
-    role: "doctor" | "patient";
+    role: "doctor" | "patient" | "admin";
     patientId?: string;
   };
 }
