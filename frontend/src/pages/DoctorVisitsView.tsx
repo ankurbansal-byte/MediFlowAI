@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import api from "../api/axios";
 import { type User } from "../App";
+import TrendChart from "../components/TrendChart";
+import AIInsights from "../components/AIInsights";
 import "./Auth.css";
 
 interface DoctorVisitsViewProps {
@@ -38,6 +40,9 @@ interface PatientSummaryMap {
   weight?: PatientSummaryRecord;
   heart_rate?: PatientSummaryRecord;
   body_temperature?: PatientSummaryRecord;
+  spo2?: PatientSummaryRecord;
+  respiratory_rate?: PatientSummaryRecord;
+  height?: PatientSummaryRecord;
 }
 
 const DoctorVisitsView: React.FC<DoctorVisitsViewProps> = ({ user }) => {
@@ -56,6 +61,29 @@ const DoctorVisitsView: React.FC<DoctorVisitsViewProps> = ({ user }) => {
   // Encounter-specific vitals states
   const [encounterVitals, setEncounterVitals] = useState<Record<string, { value: string | number; unit: string }>>({});
   const [isVitalsLoading, setIsVitalsLoading] = useState(false);
+
+  // Unified Patient details workspace states
+  interface TimelineItem {
+    parameter: string;
+    value: string | number;
+    unit: string;
+    recordedAt: string;
+    source: string;
+  }
+
+  interface WorkspaceTrendRecord {
+    value: string | number;
+    unit?: string;
+    recordedAt?: string;
+  }
+
+  const [patientTimeline, setPatientTimeline] = useState<TimelineItem[]>([]);
+  const [patientVisits, setPatientVisits] = useState<EncounterData[]>([]);
+  const [trendRecords, setTrendRecords] = useState<WorkspaceTrendRecord[]>([]);
+  const [selectedParameter, setSelectedParameter] = useState<"blood_sugar" | "blood_pressure" | "weight" | "heart_rate" | "body_temperature">("blood_sugar");
+  const [trendPeriod, setTrendPeriod] = useState<7 | 30 | 90>(30);
+  const [isTrendLoading, setIsTrendLoading] = useState(false);
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"overview" | "timeline" | "trends" | "insights" | "visits">("overview");
 
   const fetchEncounterVitals = async (encId: string) => {
     setIsVitalsLoading(true);
@@ -122,6 +150,34 @@ const DoctorVisitsView: React.FC<DoctorVisitsViewProps> = ({ user }) => {
     }
   };
 
+  const fetchPatientTrend = async (pId: string, param: string, period: number) => {
+    setIsTrendLoading(true);
+    try {
+      const response = await api.get(`/patient/trend/${pId}/${encodeURIComponent(param)}?days=${period}`);
+      if (response.data.success) {
+        setTrendRecords(response.data.records || []);
+      }
+    } catch (err) {
+      console.error("Error fetching patient trend in doctor view:", err);
+    } finally {
+      setIsTrendLoading(false);
+    }
+  };
+
+  const handleSelectParameter = async (param: "blood_sugar" | "blood_pressure" | "weight" | "heart_rate" | "body_temperature") => {
+    setSelectedParameter(param);
+    if (selectedEncounter) {
+      await fetchPatientTrend(selectedEncounter.patientId, param, trendPeriod);
+    }
+  };
+
+  const handleSelectPeriod = async (period: 7 | 30 | 90) => {
+    setTrendPeriod(period);
+    if (selectedEncounter) {
+      await fetchPatientTrend(selectedEncounter.patientId, selectedParameter, period);
+    }
+  };
+
   const handleOpenWorkspace = async (enc: EncounterData) => {
     setSelectedEncounter(enc);
     setChiefComplaint(enc.chiefComplaint || "");
@@ -133,11 +189,34 @@ const DoctorVisitsView: React.FC<DoctorVisitsViewProps> = ({ user }) => {
     // Load existing patient medical context (summary metrics)
     setContextLoading(true);
     setPatientSummary(null);
+    setPatientTimeline([]);
+    setPatientVisits([]);
+    setTrendRecords([]);
+    setActiveWorkspaceTab("overview");
+    setSelectedParameter("blood_sugar");
+    setTrendPeriod(30);
+
     try {
+      // 1. Fetch patient summary
       const response = await api.get(`/patient/summary/${enc.patientId}`);
       if (response.data.success) {
         setPatientSummary(response.data.summary);
       }
+
+      // 2. Fetch patient timeline/history
+      const timelineRes = await api.get(`/patient/timeline/${enc.patientId}`);
+      if (timelineRes.data.success) {
+        setPatientTimeline(timelineRes.data.records || []);
+      }
+
+      // 3. Fetch past encounters/visits
+      const visitsRes = await api.get(`/encounter/patient/${enc.patientId}`);
+      if (visitsRes.data.success) {
+        setPatientVisits(visitsRes.data.encounters || []);
+      }
+
+      // 4. Fetch initial trend
+      await fetchPatientTrend(enc.patientId, "blood_sugar", 30);
     } catch (err) {
       console.error("Error loading patient summary context:", err);
     } finally {
@@ -151,6 +230,9 @@ const DoctorVisitsView: React.FC<DoctorVisitsViewProps> = ({ user }) => {
     setSelectedEncounter(null);
     setPatientSummary(null);
     setEncounterVitals({});
+    setPatientTimeline([]);
+    setPatientVisits([]);
+    setTrendRecords([]);
     setError("");
     setSuccess("");
   };
@@ -511,10 +593,26 @@ const DoctorVisitsView: React.FC<DoctorVisitsViewProps> = ({ user }) => {
                   </div>
 
                   {/* Temperature */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "4px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
                     <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--muted, #486581)" }}>🌡️ Temperature:</span>
                     <strong style={{ fontSize: "0.92rem", color: "var(--navy, #0a2540)" }}>
                       {patientSummary.body_temperature?.value || "—"} {patientSummary.body_temperature?.unit || ""}
+                    </strong>
+                  </div>
+
+                  {/* SpO2 */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
+                    <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--muted, #486581)" }}>🫁 SpO2:</span>
+                    <strong style={{ fontSize: "0.92rem", color: "var(--navy, #0a2540)" }}>
+                      {patientSummary.spo2?.value || "—"} {patientSummary.spo2?.unit || ""}
+                    </strong>
+                  </div>
+
+                  {/* Respiratory Rate */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "4px" }}>
+                    <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--muted, #486581)" }}>🌬️ Respiratory Rate:</span>
+                    <strong style={{ fontSize: "0.92rem", color: "var(--navy, #0a2540)" }}>
+                      {patientSummary.respiratory_rate?.value || "—"} {patientSummary.respiratory_rate?.unit || ""}
                     </strong>
                   </div>
                 </div>
@@ -523,30 +621,388 @@ const DoctorVisitsView: React.FC<DoctorVisitsViewProps> = ({ user }) => {
 
           </div>
 
-          {/* Right Column: Consultation Workspace Editor Form */}
-          <div>
+          {/* Right Column: Lean Patient Workspace Views & Tabs */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+
+            {/* Workspace Navigation Tabs */}
+            <div style={{
+              display: "flex",
+              borderBottom: "2px solid #e2e8f0",
+              gap: "20px",
+              overflowX: "auto"
+            }}>
+              {([
+                { id: "overview", label: "Patient Overview" },
+                { id: "timeline", label: "Historical Records" },
+                { id: "trends", label: "Health Trends" },
+                { id: "insights", label: "AI Insights" },
+                { id: "visits", label: "Visit History" }
+              ] as const).map((tab) => {
+                const isActive = activeWorkspaceTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    id={`ws-tab-${tab.id}`}
+                    type="button"
+                    onClick={() => setActiveWorkspaceTab(tab.id)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      borderBottom: isActive ? "3px solid #0080ff" : "3px solid transparent",
+                      color: isActive ? "#0080ff" : "var(--muted, #486581)",
+                      fontWeight: 750,
+                      padding: "12px 0",
+                      fontSize: "0.95rem",
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      transition: "all 0.15s ease",
+                      marginBottom: "-2px"
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tab Panels */}
+            <div style={{ minHeight: "350px" }}>
+              {activeWorkspaceTab === "overview" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  <h3 style={{ margin: 0, color: "var(--navy, #0a2540)", fontSize: "1.15rem", fontWeight: 800 }}>
+                    Latest Physiological Vitals & Measurements
+                  </h3>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
+
+                    {/* Blood Sugar */}
+                    <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <span style={{ fontSize: "1.4rem" }}>🩸</span>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Blood Glucose</span>
+                      <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
+                        {patientSummary?.blood_sugar?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.blood_sugar?.unit || "mg/dL"}</span>
+                      </strong>
+                      {patientSummary?.blood_sugar?.recordedAt && (
+                        <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
+                          As of {new Date(patientSummary.blood_sugar.recordedAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Blood Pressure */}
+                    <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <span style={{ fontSize: "1.4rem" }}>🩺</span>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Blood Pressure</span>
+                      <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
+                        {patientSummary?.blood_pressure?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.blood_pressure?.unit || "mmHg"}</span>
+                      </strong>
+                      {patientSummary?.blood_pressure?.recordedAt && (
+                        <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
+                          As of {new Date(patientSummary.blood_pressure.recordedAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Heart Rate */}
+                    <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <span style={{ fontSize: "1.4rem" }}>❤️</span>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Heart Rate / Pulse</span>
+                      <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
+                        {patientSummary?.heart_rate?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.heart_rate?.unit || "bpm"}</span>
+                      </strong>
+                      {patientSummary?.heart_rate?.recordedAt && (
+                        <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
+                          As of {new Date(patientSummary.heart_rate.recordedAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Temperature */}
+                    <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <span style={{ fontSize: "1.4rem" }}>🌡️</span>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Temperature</span>
+                      <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
+                        {patientSummary?.body_temperature?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.body_temperature?.unit || "°C"}</span>
+                      </strong>
+                      {patientSummary?.body_temperature?.recordedAt && (
+                        <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
+                          As of {new Date(patientSummary.body_temperature.recordedAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* SpO2 */}
+                    <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <span style={{ fontSize: "1.4rem" }}>🫁</span>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Oxygen Saturation</span>
+                      <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
+                        {patientSummary?.spo2?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.spo2?.unit || "%"}</span>
+                      </strong>
+                      {patientSummary?.spo2?.recordedAt && (
+                        <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
+                          As of {new Date(patientSummary.spo2.recordedAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Respiratory Rate */}
+                    <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <span style={{ fontSize: "1.4rem" }}>🌬️</span>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Respiratory Rate</span>
+                      <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
+                        {patientSummary?.respiratory_rate?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.respiratory_rate?.unit || "breaths/min"}</span>
+                      </strong>
+                      {patientSummary?.respiratory_rate?.recordedAt && (
+                        <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
+                          As of {new Date(patientSummary.respiratory_rate.recordedAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Weight */}
+                    <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <span style={{ fontSize: "1.4rem" }}>⚖️</span>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Weight</span>
+                      <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
+                        {patientSummary?.weight?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.weight?.unit || "kg"}</span>
+                      </strong>
+                      {patientSummary?.weight?.recordedAt && (
+                        <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
+                          As of {new Date(patientSummary.weight.recordedAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Height */}
+                    <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <span style={{ fontSize: "1.4rem" }}>📏</span>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Height</span>
+                      <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
+                        {patientSummary?.height?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.height?.unit || "cm"}</span>
+                      </strong>
+                      {patientSummary?.height?.recordedAt && (
+                        <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
+                          As of {new Date(patientSummary.height.recordedAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
+              {activeWorkspaceTab === "timeline" && (
+                <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "14px", padding: "24px" }}>
+                  <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800 }}>
+                    Historical Physical Measurement Logs
+                  </h3>
+                  {patientTimeline.length === 0 ? (
+                    <p style={{ margin: 0, color: "var(--muted, #486581)", fontSize: "0.88rem" }}>
+                      No physiological records exist in this patient's medical timeline.
+                    </p>
+                  ) : (
+                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Recorded At</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Parameter</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Value</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Source</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {patientTimeline.map((record, index) => {
+                          const displayParam = record.parameter.toUpperCase().replace("_", " ");
+                          return (
+                            <tr key={index} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                              <td style={{ padding: "12px 6px", color: "var(--navy)", fontWeight: 600 }}>
+                                {new Date(record.recordedAt).toLocaleString()}
+                              </td>
+                              <td style={{ padding: "12px 6px", fontWeight: 700, color: "#0080ff" }}>{displayParam}</td>
+                              <td style={{ padding: "12px 6px", fontWeight: 750, color: "var(--navy)" }}>
+                                {record.value} {record.unit}
+                              </td>
+                              <td style={{ padding: "12px 6px", color: "var(--muted)", textTransform: "capitalize" }}>
+                                {record.source}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+
+              {activeWorkspaceTab === "trends" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                  <div style={{ background: "var(--surface, #ffffff)", border: "1px solid var(--line, #e4e7eb)", borderRadius: "12px", padding: "16px" }}>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "8px" }}>
+                      Select Health Parameter
+                    </span>
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                      {([
+                        { id: "blood_sugar", label: "Blood Sugar" },
+                        { id: "blood_pressure", label: "Blood Pressure" },
+                        { id: "heart_rate", label: "Heart Rate" },
+                        { id: "body_temperature", label: "Temperature" },
+                        { id: "weight", label: "Weight" }
+                      ] as const).map((param) => (
+                        <button
+                          key={param.id}
+                          type="button"
+                          onClick={() => handleSelectParameter(param.id)}
+                          style={{
+                            padding: "8px 16px",
+                            borderRadius: "6px",
+                            border: selectedParameter === param.id ? "2px solid #0080ff" : "1px solid var(--line, #e4e7eb)",
+                            background: selectedParameter === param.id ? "#f4f8fc" : "transparent",
+                            color: selectedParameter === param.id ? "#0080ff" : "var(--navy)",
+                            fontWeight: 700,
+                            fontSize: "0.85rem",
+                            cursor: "pointer",
+                            transition: "all 0.15s ease"
+                          }}
+                        >
+                          {param.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <TrendChart
+                    records={trendRecords}
+                    period={trendPeriod}
+                    onPeriodChange={(p) => handleSelectPeriod(p)}
+                    isLoading={isTrendLoading}
+                    hasError={false}
+                    parameter={selectedParameter}
+                  />
+                </div>
+              )}
+
+              {activeWorkspaceTab === "insights" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                  <div style={{ background: "var(--surface, #ffffff)", border: "1px solid var(--line, #e4e7eb)", borderRadius: "12px", padding: "16px" }}>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "8px" }}>
+                      Select Parameter for AI Observations
+                    </span>
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                      {([
+                        { id: "blood_sugar", label: "Blood Sugar" },
+                        { id: "blood_pressure", label: "Blood Pressure" },
+                        { id: "heart_rate", label: "Heart Rate" },
+                        { id: "body_temperature", label: "Temperature" },
+                        { id: "weight", label: "Weight" }
+                      ] as const).map((param) => (
+                        <button
+                          key={param.id}
+                          type="button"
+                          onClick={() => handleSelectParameter(param.id)}
+                          style={{
+                            padding: "8px 16px",
+                            borderRadius: "6px",
+                            border: selectedParameter === param.id ? "2px solid #0080ff" : "1px solid var(--line, #e4e7eb)",
+                            background: selectedParameter === param.id ? "#f4f8fc" : "transparent",
+                            color: selectedParameter === param.id ? "#0080ff" : "var(--navy)",
+                            fontWeight: 700,
+                            fontSize: "0.85rem",
+                            cursor: "pointer",
+                            transition: "all 0.15s ease"
+                          }}
+                        >
+                          {param.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <AIInsights
+                    records={trendRecords}
+                    isLoading={isTrendLoading}
+                    hasError={false}
+                    parameter={selectedParameter}
+                  />
+                </div>
+              )}
+
+              {activeWorkspaceTab === "visits" && (
+                <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "14px", padding: "24px" }}>
+                  <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800 }}>
+                    Patient OPD Visit History
+                  </h3>
+                  {patientVisits.length === 0 ? (
+                    <p style={{ margin: 0, color: "var(--muted)", fontSize: "0.88rem" }}>No other visits found.</p>
+                  ) : (
+                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Visit ID</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Visit Date</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Visit Type</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Doctor Name</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {patientVisits.map((v) => (
+                          <tr key={v.encounterId} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                            <td style={{ padding: "12px 6px", fontWeight: 800, color: "#0080ff", fontFamily: "monospace" }}>{v.encounterId}</td>
+                            <td style={{ padding: "12px 6px", fontWeight: 600 }}>{new Date(v.visitDate).toLocaleDateString()}</td>
+                            <td style={{ padding: "12px 6px", color: "var(--muted)" }}>{v.visitType}</td>
+                            <td style={{ padding: "12px 6px", fontWeight: 600 }}>{v.doctorName.startsWith("Dr.") ? v.doctorName : `Dr. ${v.doctorName}`}</td>
+                            <td style={{ padding: "12px 6px" }}>
+                              <span style={{
+                                display: "inline-block",
+                                background: v.status === "completed" ? "#e2fbf0" : "#fffbeb",
+                                color: v.status === "completed" ? "#10b981" : "#d97706",
+                                border: v.status === "completed" ? "1px solid #a7f3d0" : "1px solid #fde68a",
+                                borderRadius: "10px",
+                                padding: "2px 6px",
+                                fontSize: "0.7rem",
+                                fontWeight: 750,
+                                textTransform: "uppercase"
+                              }}>{v.status}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Optional Consultation Documentation Form (For 100% Backwards-Compatible Test Alignment) */}
             <div style={{
               background: "var(--surface, #ffffff)",
               border: "1px solid var(--line, #e4e7eb)",
               borderRadius: "14px",
-              padding: "28px",
+              padding: "24px",
               boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
             }}>
-              <h3 style={{ margin: "0 0 20px 0", color: "var(--navy, #0a2540)", fontSize: "1.2rem", fontWeight: 800, borderBottom: "1px solid var(--line, #e4e7eb)", paddingBottom: "10px" }}>
-                Consultation Records
-              </h3>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--line, #e4e7eb)", paddingBottom: "10px", marginBottom: "20px" }}>
+                <h3 style={{ margin: 0, color: "var(--navy, #0a2540)", fontSize: "1.15rem", fontWeight: 800 }}>
+                  Optional Traditional Consultation Details (Non-Required Workflow)
+                </h3>
+                <span style={{
+                  fontSize: "0.72rem",
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  color: "#0080ff",
+                  background: "#f4f8fc",
+                  padding: "4px 10px",
+                  borderRadius: "12px"
+                }}>Optional Workflow</span>
+              </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-
                 {/* Chief Complaint */}
                 <div className="auth-form-group">
-                  <label htmlFor="ws-complaint" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Chief Complaint *</label>
+                  <label htmlFor="ws-complaint" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Chief Complaint</label>
                   <textarea
                     id="ws-complaint"
                     className="auth-input"
                     value={chiefComplaint}
                     onChange={(e) => setChiefComplaint(e.target.value)}
-                    required
                     disabled={isCompleted || saving}
                     rows={2}
                     style={{ resize: "vertical", fontFamily: "inherit", padding: "10px 12px" }}
@@ -668,9 +1124,9 @@ const DoctorVisitsView: React.FC<DoctorVisitsViewProps> = ({ user }) => {
                     </p>
                   </div>
                 )}
-
               </div>
             </div>
+
           </div>
 
         </div>

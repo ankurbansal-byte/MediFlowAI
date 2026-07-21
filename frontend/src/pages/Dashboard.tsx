@@ -32,7 +32,9 @@ export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "sett
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(() => {
-    return user.role === "admin" ? "patients" : "dashboard";
+    if (user.role === "admin") return "patients";
+    if (user.role === "doctor") return "doctor-visits";
+    return "dashboard";
   });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
