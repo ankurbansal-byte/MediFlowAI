@@ -36,19 +36,26 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const filteredNavigationItems = navigationItems.filter(item => {
     if (item.tab === "patients") {
-      return userRole === "doctor";
+      return userRole === "doctor" || userRole === "admin";
     }
     if (item.tab === "hospital") {
       return userRole === "admin";
+    }
+    if (item.tab === "trends" || item.tab === "ai-insights" || item.tab === "dashboard") {
+      return userRole === "doctor" || userRole === "patient";
     }
     return true;
   });
 
   const handleItemClick = (tab: TabType | "patients") => {
     if (tab === "patients") {
-      onTabChange("dashboard");
+      if (userRole === "doctor") {
+        onTabChange("dashboard");
+      } else {
+        onTabChange("patients");
+      }
     } else {
-      onTabChange(tab);
+      onTabChange(tab as TabType);
     }
   };
 
@@ -88,7 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {filteredNavigationItems.map(({ label, icon, tab }) => {
           // If tab is "patients", it highlights when activeTab is "dashboard" and doctor is in dashboard view (or we can highlight if tab matches activeTab).
           const isItemActive = tab === "patients"
-            ? (activeTab === "dashboard" && userRole === "doctor")
+            ? (activeTab === "patients" || (activeTab === "dashboard" && userRole === "doctor"))
             : activeTab === tab;
 
           return (

@@ -6,6 +6,7 @@ import DoctorRegister from "./pages/DoctorRegister";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
+import ForcePasswordChange from "./pages/ForcePasswordChange";
 
 export interface User {
   username: string;
@@ -14,6 +15,7 @@ export interface User {
   isEmailVerified?: boolean;
   email?: string;
   fullName?: string;
+  mustChangePassword?: boolean;
 }
 
 type ActiveView = "login" | "patient-register" | "doctor-register" | "forgot-password" | "reset-password" | "verify-email";
@@ -100,6 +102,19 @@ function App() {
 
   // Guard routing
   if (user) {
+    if (user.mustChangePassword) {
+      return (
+        <ForcePasswordChange
+          user={user}
+          onPasswordChanged={() => {
+            const updatedUser = { ...user, mustChangePassword: false };
+            setUser(updatedUser);
+            localStorage.setItem("mediflow_user", JSON.stringify(updatedUser));
+          }}
+          onLogout={handleLogout}
+        />
+      );
+    }
     // If user is logged in, check if email is verified
     // We treat user.isEmailVerified === false as unverified. (Old seeded users don't have this field or have it undefined/true, so they bypass verification)
     if (user.isEmailVerified === false) {

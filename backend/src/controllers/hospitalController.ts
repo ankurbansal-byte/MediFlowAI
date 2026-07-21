@@ -2,7 +2,7 @@ import { Response } from "express";
 import { AuthenticatedRequest } from "../utils/authMiddleware";
 import Hospital from "../models/Hospital";
 import User from "../models/User";
-import { dynamicMockUsers } from "./authController";
+import { dynamicMockUsers } from "../utils/mockUsers";
 import { dynamicMockHospitals } from "../utils/mockHospitals";
 
 /**
@@ -18,7 +18,7 @@ export const getCurrentHospital = async (req: AuthenticatedRequest, res: Respons
 
   // Mock Fallback Mode
   if (process.env.USE_MOCK_DATA === "true") {
-    const user = dynamicMockUsers.find((u) => u.username === username);
+    const user = dynamicMockUsers.find((u: any) => u.username === username);
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found." });
     }
@@ -101,7 +101,7 @@ export const updateCurrentHospital = async (req: AuthenticatedRequest, res: Resp
 
   // Mock Fallback Mode
   if (process.env.USE_MOCK_DATA === "true") {
-    const user = dynamicMockUsers.find((u) => u.username === username);
+    const user = dynamicMockUsers.find((u: any) => u.username === username);
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found." });
     }

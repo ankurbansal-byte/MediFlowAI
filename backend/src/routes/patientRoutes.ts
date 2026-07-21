@@ -8,12 +8,20 @@ import {
   getParameterTrend,
   getParameterStatistics,
   addHealthRecord,
+  createPatientByAdmin,
+  listPatientsByAdmin,
+  searchPatientsByAdmin,
 } from "../controllers/patientController";
 
 const router = Router();
 
 // Apply authMiddleware to protect all patient routes
 router.use(authMiddleware);
+
+// Admin-only patient management routes (authMiddleware protects them, roles are checked inside controllers)
+router.post("/admin/create", createPatientByAdmin);
+router.get("/admin/list", listPatientsByAdmin);
+router.get("/admin/search", searchPatientsByAdmin);
 
 router.get("/", getPatients);
 

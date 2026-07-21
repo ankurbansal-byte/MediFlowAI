@@ -95,6 +95,11 @@ const userSchema = new mongoose.Schema(
       required: true,
       default: false,
     },
+    mustChangePassword: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
     emailVerificationToken: {
       type: String,
       required: false,
