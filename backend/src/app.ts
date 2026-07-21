@@ -6,6 +6,7 @@ import webhookRoutes from "./routes/webhookRoutes";
 import patientRoutes from "./routes/patientRoutes";
 import hospitalRoutes from "./routes/hospitalRoutes";
 import doctorRoutes from "./routes/doctorRoutes";
+import assignmentRoutes from "./routes/assignmentRoutes";
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use("/webhook", webhookRoutes);
 app.use("/api/patient", patientRoutes);
 app.use("/api/hospital", hospitalRoutes);
 app.use("/api/doctor", doctorRoutes);
+app.use("/api/assignment", assignmentRoutes);
 
 app.get("/", (req, res) => {
   res.send("🚀 MediFlow AI Backend Running...");

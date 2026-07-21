@@ -78,3 +78,55 @@ export let dynamicMockUsers: any[] = [...MOCK_USERS].map((user) => ({
   yearsOfExperience: user.role === "doctor" ? "10" : undefined,
   mustChangePassword: false,
 }));
+
+// Mock assignments array for process.env.USE_MOCK_DATA === "true"
+export let dynamicMockAssignments: any[] = [
+  {
+    hospitalId: "HOSP-001",
+    doctorId: "DOC-101",
+    patientId: "PAT-101",
+    status: "active",
+    assignedAt: new Date(),
+    assignedBy: "admin"
+  },
+  {
+    hospitalId: "HOSP-001",
+    doctorId: "DOC-101",
+    patientId: "PAT-102",
+    status: "active",
+    assignedAt: new Date(),
+    assignedBy: "admin"
+  },
+  {
+    hospitalId: "HOSP-001",
+    doctorId: "DOC-101",
+    patientId: "PAT-103",
+    status: "active",
+    assignedAt: new Date(),
+    assignedBy: "admin"
+  },
+  {
+    hospitalId: "HOSP-001",
+    doctorId: "DOC-101",
+    patientId: "PAT-104",
+    status: "active",
+    assignedAt: new Date(),
+    assignedBy: "admin"
+  },
+  {
+    hospitalId: "HOSP-001",
+    doctorId: "DOC-101",
+    patientId: "PAT-105",
+    status: "active",
+    assignedAt: new Date(),
+    assignedBy: "admin"
+  },
+  {
+    hospitalId: "HOSP-001",
+    doctorId: "DOC-101",
+    patientId: "PAT-106",
+    status: "active",
+    assignedAt: new Date(),
+    assignedBy: "admin"
+  }
+];

@@ -282,7 +282,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
               <h1>Patients unavailable</h1>
               <p>Please check the connection and try again.</p>
             </div>
-          ) : !effectivePatientId ? (
+          ) : (!effectivePatientId && activeTab === "dashboard") ? (
             <div className="dashboard__state-card" style={{ margin: "40px auto" }}>
               <h1>No patients found</h1>
               <p>Health records will appear here once a patient has submitted a measurement.</p>

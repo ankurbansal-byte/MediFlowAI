@@ -57,6 +57,23 @@ interface TimelineRecord {
   confidence: number;
 }
 
+interface AssignedDoctor {
+  doctorId: string;
+  fullName: string;
+  department: string;
+  specialization: string;
+  qualification: string;
+  status: string;
+  assignedAt: string;
+}
+
+interface AvailableDoctor {
+  doctorId: string;
+  fullName: string;
+  department: string;
+  specialization: string;
+}
+
 const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
   const [patients, setPatients] = useState<PatientData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,9 +103,16 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
   const [hospitalNameForProfile, setHospitalNameForProfile] = useState("");
   const [summaryData, setSummaryData] = useState<HealthSummaryData | null>(null);
   const [timelineData, setTimelineData] = useState<TimelineRecord[] | null>(null);
-  const [activeSubTab, setActiveSubTab] = useState<"overview" | "history" | "visits" | "prescriptions" | "reports" | "vitals">("overview");
+  const [activeSubTab, setActiveSubTab] = useState<"overview" | "careteam" | "history" | "visits" | "prescriptions" | "reports" | "vitals" >("overview");
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+
+  // Care Team state integration
+  const [assignedDoctors, setAssignedDoctors] = useState<AssignedDoctor[]>([]);
+  const [availableDoctors, setAvailableDoctors] = useState<AvailableDoctor[]>([]);
+  const [careTeamLoading, setCareTeamLoading] = useState(false);
+  const [selectedDoctorToAssign, setSelectedDoctorToAssign] = useState("");
+  const [assigningDoctor, setAssigningDoctor] = useState(false);
 
   // Profile Edit states
   const [editFullName, setEditFullName] = useState("");
@@ -196,6 +220,25 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
     }
   };
 
+  const fetchCareTeamData = async (pId: string) => {
+    setCareTeamLoading(true);
+    try {
+      const listRes = await api.get(`/assignment/patient/${pId}/doctors`);
+      if (listRes.data.success) {
+        setAssignedDoctors(listRes.data.doctors || []);
+      }
+
+      const availableRes = await api.get(`/assignment/available-doctors?patientId=${pId}`);
+      if (availableRes.data.success) {
+        setAvailableDoctors(availableRes.data.doctors || []);
+      }
+    } catch (err) {
+      console.error("Error fetching care team data:", err);
+    } finally {
+      setCareTeamLoading(false);
+    }
+  };
+
   const handleViewPatient = async (pId: string) => {
     setSelectedPatientIdForProfile(pId);
     setIsDetailLoading(true);
@@ -203,6 +246,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
     setError("");
     setSuccess("");
     setActiveSubTab("overview");
+    setSelectedDoctorToAssign("");
     try {
       // 1. Fetch details
       const detailRes = await api.get(`/patient/admin/detail/${pId}`);
@@ -218,17 +262,20 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
         setEditDob(pd.dob || "");
         setEditGender(pd.gender || "");
         setEditStatus(pd.status || "active");
+
+        // 2. Fetch care team details
+        await fetchCareTeamData(pId);
       } else {
         setError(detailRes.data.message || "Failed to load patient profile details.");
       }
 
-      // 2. Fetch summary (vitals)
+      // 3. Fetch summary (vitals)
       const summaryRes = await api.get(`/patient/summary/${pId}`);
       if (summaryRes.data.success) {
         setSummaryData(summaryRes.data.summary);
       }
 
-      // 3. Fetch timeline
+      // 4. Fetch timeline
       const timelineRes = await api.get(`/patient/timeline/${pId}`);
       if (timelineRes.data.success) {
         setTimelineData(timelineRes.data.records);
@@ -238,6 +285,69 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
       setError("Failed to fetch full patient profile records.");
     } finally {
       setIsDetailLoading(false);
+    }
+  };
+
+  const handleAssignDoctor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDoctorToAssign || !selectedPatientIdForProfile) return;
+
+    setError("");
+    setSuccess("");
+    setAssigningDoctor(true);
+
+    try {
+      const res = await api.post("/assignment/assign", {
+        doctorId: selectedDoctorToAssign,
+        patientId: selectedPatientIdForProfile,
+      });
+
+      if (res.data.success) {
+        setSuccess("Doctor successfully assigned to this patient's care team!");
+        setSelectedDoctorToAssign("");
+        await fetchCareTeamData(selectedPatientIdForProfile);
+      } else {
+        setError(res.data.message || "Failed to assign doctor.");
+      }
+    } catch (err) {
+      console.error("Assign doctor error:", err);
+      const errRes = (err as { response?: { data?: { message?: string } } }).response?.data;
+      setError(errRes?.message || "Failed to assign doctor.");
+    } finally {
+      setAssigningDoctor(false);
+    }
+  };
+
+  const handleRemoveDoctorAssignment = async (doctorId: string) => {
+    if (!selectedPatientIdForProfile) return;
+
+    const confirmed = window.confirm(
+      "Are you sure you want to remove this doctor from the patient's care team? This will revoke the doctor's access to this patient."
+    );
+    if (!confirmed) return;
+
+    setError("");
+    setSuccess("");
+    setCareTeamLoading(true);
+
+    try {
+      const res = await api.post("/assignment/remove", {
+        doctorId,
+        patientId: selectedPatientIdForProfile,
+      });
+
+      if (res.data.success) {
+        setSuccess("Doctor successfully removed from care team.");
+        await fetchCareTeamData(selectedPatientIdForProfile);
+      } else {
+        setError(res.data.message || "Failed to remove assignment.");
+      }
+    } catch (err) {
+      console.error("Remove doctor assignment error:", err);
+      const errRes = (err as { response?: { data?: { message?: string } } }).response?.data;
+      setError(errRes?.message || "Failed to remove assignment.");
+    } finally {
+      setCareTeamLoading(false);
     }
   };
 
@@ -936,12 +1046,28 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
               gap: "20px",
               overflowX: "auto"
             }}>
-              {(["overview", "history", "visits", "prescriptions", "reports", "vitals"] as const).map((tab) => {
+              {([
+                "overview",
+                "careteam",
+                "history",
+                "visits",
+                "prescriptions",
+                "reports",
+                "vitals",
+              ] as const).map((tab) => {
                 const isActive = activeSubTab === tab;
-                const label = tab === "history" ? "Medical History" : tab.charAt(0).toUpperCase() + tab.slice(1);
+                const label = tab === "overview"
+                  ? "Overview"
+                  : tab === "careteam"
+                  ? "Care Team"
+                  : tab === "history"
+                  ? "Medical History"
+                  : tab.charAt(0).toUpperCase() + tab.slice(1);
+
                 return (
                   <button
                     key={tab}
+                    id={tab === "careteam" ? "tab-care-team" : undefined}
                     type="button"
                     onClick={() => setActiveSubTab(tab)}
                     style={{
@@ -1083,6 +1209,153 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
                       })}
                     </div>
                   )}
+                </div>
+              )}
+
+              {activeSubTab === "careteam" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  {/* Assign Doctor form */}
+                  <div style={{
+                    background: "var(--surface, #ffffff)",
+                    border: "1px solid var(--line, #e4e7eb)",
+                    borderRadius: "14px",
+                    padding: "24px",
+                    boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
+                  }}>
+                    <h4 style={{ margin: "0 0 8px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800 }}>
+                      Assign Doctor to Care Team
+                    </h4>
+                    <p style={{ margin: "0 0 16px 0", color: "var(--muted, #486581)", fontSize: "0.85rem", lineHeight: "1.4" }}>
+                      Select an eligible practitioner from this hospital to assign them as part of this patient's multidisciplinary care team.
+                    </p>
+
+                    <form onSubmit={handleAssignDoctor} style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                      <select
+                        id="assign-doctor-select"
+                        value={selectedDoctorToAssign}
+                        onChange={(e) => setSelectedDoctorToAssign(e.target.value)}
+                        required
+                        style={{
+                          flex: 1,
+                          padding: "12px 14px",
+                          border: "1.5px solid #cbd2d9",
+                          borderRadius: "8px",
+                          fontSize: "0.9rem",
+                          fontFamily: "inherit"
+                        }}
+                        disabled={assigningDoctor || careTeamLoading}
+                      >
+                        <option value="">-- Select Doctor --</option>
+                        {availableDoctors.map((d) => (
+                          <option key={d.doctorId} value={d.doctorId}>
+                            {d.fullName} ({d.department} - {d.doctorId})
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="submit"
+                        id="btn-confirm-assign-doctor"
+                        disabled={!selectedDoctorToAssign || assigningDoctor || careTeamLoading}
+                        style={{
+                          background: "#0080ff",
+                          color: "#ffffff",
+                          border: "none",
+                          borderRadius: "8px",
+                          padding: "12px 24px",
+                          fontSize: "0.9rem",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {assigningDoctor ? "Assigning..." : "Assign Doctor"}
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Active Care Team list */}
+                  <div style={{
+                    background: "var(--surface, #ffffff)",
+                    border: "1px solid var(--line, #e4e7eb)",
+                    borderRadius: "14px",
+                    padding: "24px",
+                    boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)",
+                    overflowX: "auto"
+                  }}>
+                    <h4 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800 }}>
+                      Active Care Team Practitioners ({assignedDoctors.length})
+                    </h4>
+
+                    {careTeamLoading ? (
+                      <div style={{ padding: "30px 0", textAlign: "center", color: "var(--muted, #486581)" }}>
+                        Loading care team doctors...
+                      </div>
+                    ) : assignedDoctors.length === 0 ? (
+                      <div style={{ padding: "40px 0", textAlign: "center", color: "var(--muted, #486581)", border: "1px dashed var(--line)", borderRadius: "8px" }}>
+                        No practitioners currently assigned to this patient's care team.
+                      </div>
+                    ) : (
+                      <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem" }}>
+                        <thead>
+                          <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                            <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Doctor ID</th>
+                            <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Doctor Name</th>
+                            <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Specialty / Qualification</th>
+                            <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Assignment Date</th>
+                            <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Status</th>
+                            <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {assignedDoctors.map((ad) => (
+                            <tr key={ad.doctorId} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                              <td style={{ padding: "12px 6px", fontWeight: 800, color: "#0080ff", fontFamily: "monospace" }}>{ad.doctorId}</td>
+                              <td style={{ padding: "12px 6px", fontWeight: 700, color: "var(--navy, #0a2540)" }}>{ad.fullName}</td>
+                              <td style={{ padding: "12px 6px" }}>
+                                <div style={{ fontWeight: 600 }}>{ad.department} ({ad.specialization})</div>
+                                <div style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{ad.qualification}</div>
+                              </td>
+                              <td style={{ padding: "12px 6px", color: "var(--muted, #486581)", fontWeight: 600 }}>
+                                {new Date(ad.assignedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                              </td>
+                              <td style={{ padding: "12px 6px" }}>
+                                <span style={{
+                                  display: "inline-block",
+                                  background: ad.status === "inactive" ? "#fee2e2" : "#e2fbf0",
+                                  color: ad.status === "inactive" ? "#ef4444" : "#10b981",
+                                  borderRadius: "10px",
+                                  padding: "2px 6px",
+                                  fontSize: "0.7rem",
+                                  fontWeight: 750,
+                                  textTransform: "uppercase"
+                                }}>
+                                  {ad.status}
+                                </span>
+                              </td>
+                              <td style={{ padding: "12px 6px" }}>
+                                <button
+                                  type="button"
+                                  className="btn-remove-assignment-doctor"
+                                  onClick={() => handleRemoveDoctorAssignment(ad.doctorId)}
+                                  style={{
+                                    background: "#fee2e2",
+                                    color: "#ef4444",
+                                    border: "1px solid #fca5a5",
+                                    borderRadius: "6px",
+                                    padding: "4px 8px",
+                                    fontSize: "0.78rem",
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  Remove
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
                 </div>
               )}
 

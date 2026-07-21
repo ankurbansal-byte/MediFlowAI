@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import HealthRecord from "./models/HealthRecord";
 import User from "./models/User";
 import Hospital from "./models/Hospital";
+import Assignment from "./models/Assignment";
 import { generateDemoRecords } from "./utils/demoData";
 import { MOCK_USERS } from "./utils/mockUsers";
 
@@ -65,11 +66,39 @@ async function runSeeder() {
       password: u.passwordHash,
       role: u.role,
       patientId: u.patientId || null,
+      doctorId: u.role === "doctor" ? "DOC-101" : null,
       hospitalId: "HOSP-001",
       isEmailVerified: true,
+      fullName: u.role === "doctor" ? "Dr. Demo" : u.role === "admin" ? "Hospital Admin" : `Patient ${u.username}`,
+      email: `${u.username.toLowerCase()}@mediflow.com`,
+      mobileNumber: "+1234567890",
+      status: "active",
+      dob: u.role === "patient" ? "1990-01-01" : "1980-01-01",
+      gender: u.role === "patient" ? "Male" : "Male",
+      medicalRegistrationNumber: u.role === "doctor" ? "MED-12345" : undefined,
+      hospitalClinicName: u.role === "doctor" ? "MediFlow Hospital" : undefined,
+      specialization: u.role === "doctor" ? "General Medicine" : undefined,
+      department: u.role === "doctor" ? "General Medicine" : undefined,
+      qualification: u.role === "doctor" ? "MD, MBBS" : undefined,
+      yearsOfExperience: u.role === "doctor" ? "10" : undefined,
     }));
     const userInsertResult = await User.insertMany(usersToInsert);
     console.log(`✅ Successfully seeded ${userInsertResult.length} users!`);
+
+    console.log("🧹 Cleaning up existing assignments...");
+    await Assignment.deleteMany({ hospitalId: "HOSP-001" });
+
+    console.log("🌱 Seeding active assignments...");
+    const seededPatients = ["PAT-101", "PAT-102", "PAT-103", "PAT-104", "PAT-105", "PAT-106"];
+    const assignmentsToInsert = seededPatients.map((pId) => ({
+      hospitalId: "HOSP-001",
+      doctorId: "DOC-101",
+      patientId: pId,
+      status: "active",
+      assignedBy: "admin"
+    }));
+    await Assignment.insertMany(assignmentsToInsert);
+    console.log(`✅ Successfully seeded ${assignmentsToInsert.length} active doctor-patient assignments!`);
 
     console.log("🎉 Seeding completed successfully!");
   } catch (error) {
