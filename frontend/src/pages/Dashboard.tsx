@@ -20,6 +20,10 @@ import PatientsView from "./PatientsView";
 import DoctorsView from "./DoctorsView";
 import HospitalVisitsView from "./HospitalVisitsView";
 import DoctorVisitsView from "./DoctorVisitsView";
+import DoctorHomeView from "./DoctorHomeView";
+import TodayPatientsView from "./TodayPatientsView";
+import MyPatientsView from "./MyPatientsView";
+import PatientWorkspace from "./PatientWorkspace";
 
 interface DashboardProps {
   user: User;
@@ -27,17 +31,21 @@ interface DashboardProps {
   onProfileUpdate: (updatedUser: User) => void;
 }
 
-export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "settings" | "hospital" | "patients" | "doctors" | "visits-admin" | "doctor-visits";
+export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "settings" | "hospital" | "patients" | "doctors" | "visits-admin" | "doctor-visits" | "today-patients" | "my-patients";
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     if (user.role === "admin") return "patients";
-    if (user.role === "doctor") return "doctor-visits";
+    if (user.role === "doctor") return "dashboard";
     return "dashboard";
   });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // States for Doctor Workspace overlay/subview
+  const [workspacePatientId, setWorkspacePatientId] = useState<string | null>(null);
+  const [workspaceEncounterId, setWorkspaceEncounterId] = useState<string | null>(null);
 
   const {
     patients,
@@ -95,12 +103,25 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
+    setWorkspacePatientId(null);
+    setWorkspaceEncounterId(null);
     setIsMobileMenuOpen(false); // Auto-close drawer on mobile navigation
   };
 
   const renderActiveView = () => {
     switch (activeTab) {
       case "dashboard":
+        if (user.role === "doctor") {
+          return (
+            <DoctorHomeView
+              user={user}
+              onOpenPatient={(pId, encId) => {
+                setWorkspacePatientId(pId);
+                setWorkspaceEncounterId(encId);
+              }}
+            />
+          );
+        }
         return (
           <DashboardView
             user={user}
@@ -123,6 +144,26 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
             setSelectedParameter={setSelectedParameter}
             visibleTimeline={visibleTimeline}
             setIsModalOpen={setIsModalOpen}
+          />
+        );
+      case "today-patients":
+        return (
+          <TodayPatientsView
+            user={user}
+            onOpenPatient={(pId, encId) => {
+              setWorkspacePatientId(pId);
+              setWorkspaceEncounterId(encId);
+            }}
+          />
+        );
+      case "my-patients":
+        return (
+          <MyPatientsView
+            user={user}
+            onOpenPatient={(pId, encId) => {
+              setWorkspacePatientId(pId);
+              setWorkspaceEncounterId(encId);
+            }}
           />
         );
       case "trends":
@@ -198,7 +239,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
     }
   };
 
-  const hasPatientPanel = user.role === "doctor" && activeTab !== "settings";
+  const hasPatientPanel = user.role === "doctor" && activeTab === "doctor-visits";
 
   return (
     <div className={`dashboard-wrapper ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`}>
@@ -273,8 +314,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
 
         {/* Scrollable Content Pane */}
         <main className={`dashboard__content ${user.role === "patient" ? "dashboard__content--patient" : ""}`}>
-          {/* Standard Page Header */}
-          {user.role === "doctor" && (
+          {/* Standard Page Header - shown only when not inside specific Patient Workspace */}
+          {user.role === "doctor" && !workspacePatientId && (
             <div style={{ marginBottom: "28px" }}>
               <DashboardHeader userRole={user.role} username={user.username} />
             </div>
@@ -298,11 +339,20 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
               <h1>Patients unavailable</h1>
               <p>Please check the connection and try again.</p>
             </div>
-          ) : (!effectivePatientId && activeTab === "dashboard") ? (
+          ) : (!effectivePatientId && activeTab === "dashboard" && user.role !== "doctor") ? (
             <div className="dashboard__state-card" style={{ margin: "40px auto" }}>
               <h1>No patients found</h1>
               <p>Health records will appear here once a patient has submitted a measurement.</p>
             </div>
+          ) : workspacePatientId ? (
+            <PatientWorkspace
+              patientId={workspacePatientId}
+              encounterId={workspaceEncounterId}
+              onBack={() => {
+                setWorkspacePatientId(null);
+                setWorkspaceEncounterId(null);
+              }}
+            />
           ) : (
             renderActiveView()
           )}

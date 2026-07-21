@@ -187,22 +187,37 @@ export const removePatientAssignment = async (req: AuthenticatedRequest, res: Re
 
 /**
  * GET /api/assignment/doctor/:doctorId/patients
- * List patients assigned to a specific doctor (Admin only).
+ * List patients assigned to a specific doctor (Admin & authorized Doctor).
  */
 export const listPatientsAssignedToDoctor = async (req: AuthenticatedRequest, res: Response) => {
-  if (!req.user || req.user.role !== "admin") {
-    return res.status(403).json({ success: false, message: "Forbidden. Admin access required." });
+  if (!req.user || (req.user.role !== "admin" && req.user.role !== "doctor")) {
+    return res.status(403).json({ success: false, message: "Forbidden. Admin or Doctor access required." });
   }
 
   const doctorId = req.params.doctorId;
 
   try {
-    const adminHospitalId = await getHospitalIdForUser(req.user.username);
-    if (!adminHospitalId) {
-      return res.status(403).json({ success: false, message: "Forbidden. Admin has no hospital associated." });
+    const userHospitalId = await getHospitalIdForUser(req.user.username);
+    if (!userHospitalId) {
+      return res.status(403).json({ success: false, message: "Forbidden. User has no hospital associated." });
     }
 
-    // Verify doctor belongs to admin's hospital
+    // If requesting user is doctor, ensure they are requesting their own patients
+    if (req.user.role === "doctor") {
+      let reqDoctorId = "";
+      if (process.env.USE_MOCK_DATA === "true") {
+        const matched = dynamicMockUsers.find((u) => u.username === req.user?.username);
+        reqDoctorId = matched ? matched.doctorId : "";
+      } else {
+        const matched = await User.findOne({ username: req.user.username });
+        reqDoctorId = matched ? matched.doctorId || "" : "";
+      }
+      if (!reqDoctorId || reqDoctorId !== doctorId) {
+        return res.status(403).json({ success: false, message: "Forbidden. You can only view your own assigned patients." });
+      }
+    }
+
+    // Verify doctor belongs to user's hospital
     let doctor: any = null;
     if (process.env.USE_MOCK_DATA === "true") {
       doctor = dynamicMockUsers.find((u) => u.doctorId === doctorId && u.role === "doctor");
@@ -210,7 +225,7 @@ export const listPatientsAssignedToDoctor = async (req: AuthenticatedRequest, re
       doctor = await User.findOne({ doctorId, role: "doctor" });
     }
 
-    if (!doctor || doctor.hospitalId !== adminHospitalId) {
+    if (!doctor || doctor.hospitalId !== userHospitalId) {
       return res.status(403).json({ success: false, message: "Forbidden. Doctor does not belong to your hospital." });
     }
 
@@ -218,13 +233,13 @@ export const listPatientsAssignedToDoctor = async (req: AuthenticatedRequest, re
     let activeAssignments: any[] = [];
     if (process.env.USE_MOCK_DATA === "true") {
       activeAssignments = dynamicMockAssignments.filter(
-        (a) => a.doctorId === doctorId && a.status === "active" && a.hospitalId === adminHospitalId
+        (a) => a.doctorId === doctorId && a.status === "active" && a.hospitalId === userHospitalId
       );
     } else {
       activeAssignments = await Assignment.find({
         doctorId,
         status: "active",
-        hospitalId: adminHospitalId,
+        hospitalId: userHospitalId,
       }).sort({ assignedAt: -1 });
     }
 

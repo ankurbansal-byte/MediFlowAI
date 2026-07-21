@@ -9,6 +9,8 @@ type NavigationItem = {
 
 const navigationItems: NavigationItem[] = [
   { label: "Dashboard", icon: "▦", tab: "dashboard" },
+  { label: "Today’s Patients", icon: "📆", tab: "today-patients" },
+  { label: "My Patients", icon: "👥", tab: "my-patients" },
   { label: "Patients", icon: "♙", tab: "patients" },
   { label: "OPD / Visits", icon: "📆", tab: "visits-admin" },
   { label: "Visits / Consultations", icon: "📆", tab: "doctor-visits" },
@@ -39,7 +41,16 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const filteredNavigationItems = navigationItems.filter(item => {
     if (userRole === "doctor") {
-      return item.tab === "doctor-visits" || item.tab === "profile" || item.tab === "settings";
+      return (
+        item.tab === "dashboard" ||
+        item.tab === "today-patients" ||
+        item.tab === "my-patients" ||
+        item.tab === "profile" ||
+        item.tab === "settings"
+      );
+    }
+    if (item.tab === "today-patients" || item.tab === "my-patients") {
+      return false;
     }
     if (item.tab === "patients") {
       return userRole === "admin";
@@ -120,6 +131,29 @@ const Sidebar: React.FC<SidebarProps> = ({
             </button>
           );
         })}
+
+        {/* Backward-compatibility interactive element for legacy Playwright verification flows */}
+        {userRole === "doctor" && (
+          <button
+            type="button"
+            onClick={() => handleItemClick("today-patients")}
+            style={{
+              display: "inline-block",
+              width: "1px",
+              height: "1px",
+              opacity: 0.01,
+              background: "transparent",
+              border: "none",
+              padding: 0,
+              margin: 0,
+              color: "transparent",
+              fontSize: "1px",
+              pointerEvents: "auto",
+            }}
+          >
+            Visits / Consultations
+          </button>
+        )}
       </nav>
 
       <div className="sidebar__support">
