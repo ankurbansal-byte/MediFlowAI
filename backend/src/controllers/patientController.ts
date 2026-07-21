@@ -227,17 +227,17 @@ export const getPatients = async (req: AuthenticatedRequest, res: Response) => {
 
 /**
  * GET /api/patient/admin/detail/:patientId
- * Returns the full details of a patient, including the hospital name.
+ * Returns the full details of a patient, including the hospital name (Admin & authorized Doctor).
  */
 export const getPatientDetailByAdmin = async (req: AuthenticatedRequest, res: Response) => {
-  if (!req.user || req.user.role !== "admin") {
-    return res.status(403).json({ success: false, message: "Forbidden. Admin access required." });
+  if (!req.user || (req.user.role !== "admin" && req.user.role !== "doctor")) {
+    return res.status(403).json({ success: false, message: "Forbidden. Admin or Doctor access required." });
   }
 
   const patientId = req.params.patientId as string;
   const isAllowed = await canAccessPatient(req.user, patientId);
   if (!isAllowed) {
-    return res.status(403).json({ success: false, message: "Forbidden. Patient does not belong to your hospital." });
+    return res.status(403).json({ success: false, message: "Forbidden. You do not have access to this patient." });
   }
 
   // Get patient details
