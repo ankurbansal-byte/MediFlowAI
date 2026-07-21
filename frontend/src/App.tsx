@@ -12,6 +12,7 @@ export interface User {
   username: string;
   role: "doctor" | "patient" | "admin";
   patientId?: string;
+  doctorId?: string;
   isEmailVerified?: boolean;
   email?: string;
   fullName?: string;
