@@ -40,6 +40,24 @@ interface DoctorDetail {
   createdAt: string;
 }
 
+interface AssignedPatient {
+  patientId: string;
+  fullName: string;
+  gender: string;
+  dob: string;
+  email: string;
+  mobileNumber: string;
+  status: string;
+  assignedAt: string;
+}
+
+interface AvailablePatient {
+  patientId: string;
+  fullName: string;
+  email: string;
+  mobileNumber: string;
+}
+
 const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
   const [doctors, setDoctors] = useState<DoctorData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -73,6 +91,14 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
   const [hospitalNameForProfile, setHospitalNameForProfile] = useState("");
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+
+  // Doctor Assignments tab states
+  const [activeDoctorTab, setActiveDoctorTab] = useState<"overview" | "patients">("overview");
+  const [assignedPatients, setAssignedPatients] = useState<AssignedPatient[]>([]);
+  const [availablePatients, setAvailablePatients] = useState<AvailablePatient[]>([]);
+  const [assignedLoading, setAssignedLoading] = useState(false);
+  const [selectedPatientToAssign, setSelectedPatientToAssign] = useState("");
+  const [assigningPatient, setAssigningPatient] = useState(false);
 
   // Profile Edit states
   const [editFullName, setEditFullName] = useState("");
@@ -192,10 +218,31 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
     }
   };
 
+  const fetchDoctorAssignmentsData = async (dId: string) => {
+    setAssignedLoading(true);
+    try {
+      const listRes = await api.get(`/assignment/doctor/${dId}/patients`);
+      if (listRes.data.success) {
+        setAssignedPatients(listRes.data.patients || []);
+      }
+
+      const availableRes = await api.get(`/assignment/available-patients?doctorId=${dId}`);
+      if (availableRes.data.success) {
+        setAvailablePatients(availableRes.data.patients || []);
+      }
+    } catch (err) {
+      console.error("Error fetching doctor assignments info:", err);
+    } finally {
+      setAssignedLoading(false);
+    }
+  };
+
   const handleViewDoctor = async (dId: string) => {
     setSelectedDoctorIdForProfile(dId);
     setIsDetailLoading(true);
     setIsEditingProfile(false);
+    setActiveDoctorTab("overview");
+    setSelectedPatientToAssign("");
     setError("");
     setSuccess("");
     try {
@@ -217,6 +264,9 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
         setEditMedicalRegistrationNumber(dd.medicalRegistrationNumber || "");
         setEditYearsOfExperience(dd.yearsOfExperience || "");
         setEditStatus(dd.status || "active");
+
+        // Fetch assignment info
+        await fetchDoctorAssignmentsData(dId);
       } else {
         setError(detailRes.data.message || "Failed to load doctor profile details.");
       }
@@ -225,6 +275,69 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
       setError("Failed to fetch doctor profile records.");
     } finally {
       setIsDetailLoading(false);
+    }
+  };
+
+  const handleAssignPatient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPatientToAssign || !selectedDoctorIdForProfile) return;
+
+    setError("");
+    setSuccess("");
+    setAssigningPatient(true);
+
+    try {
+      const res = await api.post("/assignment/assign", {
+        doctorId: selectedDoctorIdForProfile,
+        patientId: selectedPatientToAssign,
+      });
+
+      if (res.data.success) {
+        setSuccess("Patient assigned to doctor successfully!");
+        setSelectedPatientToAssign("");
+        await fetchDoctorAssignmentsData(selectedDoctorIdForProfile);
+      } else {
+        setError(res.data.message || "Failed to assign patient.");
+      }
+    } catch (err) {
+      console.error("Assign patient error:", err);
+      const errRes = (err as { response?: { data?: { message?: string } } }).response?.data;
+      setError(errRes?.message || "Failed to assign patient.");
+    } finally {
+      setAssigningPatient(false);
+    }
+  };
+
+  const handleRemoveAssignment = async (patientId: string) => {
+    if (!selectedDoctorIdForProfile) return;
+
+    const confirmed = window.confirm(
+      "Are you sure you want to remove this doctor-patient assignment? This will deactivate the practitioner's access to this patient."
+    );
+    if (!confirmed) return;
+
+    setError("");
+    setSuccess("");
+    setAssignedLoading(true);
+
+    try {
+      const res = await api.post("/assignment/remove", {
+        doctorId: selectedDoctorIdForProfile,
+        patientId,
+      });
+
+      if (res.data.success) {
+        setSuccess("Assignment successfully removed.");
+        await fetchDoctorAssignmentsData(selectedDoctorIdForProfile);
+      } else {
+        setError(res.data.message || "Failed to remove assignment.");
+      }
+    } catch (err) {
+      console.error("Remove assignment error:", err);
+      const errRes = (err as { response?: { data?: { message?: string } } }).response?.data;
+      setError(errRes?.message || "Failed to remove assignment.");
+    } finally {
+      setAssignedLoading(false);
     }
   };
 
@@ -1047,34 +1160,233 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
             </div>
           </div>
 
-          {/* Right Column: Professional timeline / info */}
+          {/* Right Column: Tabbed layout for Overview vs Assigned Patients */}
           <div>
+            {/* Tab navigation */}
             <div style={{
-              background: "var(--surface, #ffffff)",
-              border: "1px solid var(--line, #e4e7eb)",
-              borderRadius: "14px",
-              padding: "28px",
-              boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
+              display: "flex",
+              borderBottom: "2px solid #e2e8f0",
+              marginBottom: "24px",
+              gap: "20px",
+              overflowX: "auto"
             }}>
-              <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.15rem", fontWeight: 800 }}>
-                Clinical Activity Profile
-              </h3>
-              <p style={{ color: "var(--muted, #486581)", fontSize: "0.92rem", lineHeight: "1.6" }}>
-                Dr. {doctorDetail.fullName} is registered as a practitioner of <strong>{doctorDetail.department} ({doctorDetail.specialization})</strong>. They have full authorization to view and update clinical patient records, trends, and diagnostic histories belonging strictly to <strong>{hospitalNameForProfile}</strong>.
-              </p>
-              <div style={{
-                marginTop: "24px",
-                padding: "16px",
-                borderRadius: "8px",
-                background: "#f4f8fc",
-                border: "1.5px solid #cbd5e1"
-              }}>
-                <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#0080ff", textTransform: "uppercase", marginBottom: "8px" }}>Practice Integrity</span>
-                <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--navy, #0a2540)", lineHeight: "1.5" }}>
-                  All clinical decisions, medical histories, vitals summaries, and reports viewed or submitted by this practitioner are subject to HIPAA and GDPR multi-tenant healthcare audit trails.
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setActiveDoctorTab("overview")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  borderBottom: activeDoctorTab === "overview" ? "3px solid #0080ff" : "3px solid transparent",
+                  color: activeDoctorTab === "overview" ? "#0080ff" : "var(--muted, #486581)",
+                  fontWeight: 750,
+                  padding: "10px 0",
+                  fontSize: "0.92rem",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  transition: "all 0.15s ease",
+                  marginBottom: "-2px"
+                }}
+              >
+                Overview
+              </button>
+              <button
+                type="button"
+                id="tab-assigned-patients"
+                onClick={() => setActiveDoctorTab("patients")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  borderBottom: activeDoctorTab === "patients" ? "3px solid #0080ff" : "3px solid transparent",
+                  color: activeDoctorTab === "patients" ? "#0080ff" : "var(--muted, #486581)",
+                  fontWeight: 750,
+                  padding: "10px 0",
+                  fontSize: "0.92rem",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  transition: "all 0.15s ease",
+                  marginBottom: "-2px"
+                }}
+              >
+                Assigned Patients
+              </button>
             </div>
+
+            {/* Tab Contents */}
+            {activeDoctorTab === "overview" && (
+              <div style={{
+                background: "var(--surface, #ffffff)",
+                border: "1px solid var(--line, #e4e7eb)",
+                borderRadius: "14px",
+                padding: "28px",
+                boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
+              }}>
+                <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.15rem", fontWeight: 800 }}>
+                  Clinical Activity Profile
+                </h3>
+                <p style={{ color: "var(--muted, #486581)", fontSize: "0.92rem", lineHeight: "1.6" }}>
+                  Dr. {doctorDetail.fullName} is registered as a practitioner of <strong>{doctorDetail.department} ({doctorDetail.specialization})</strong>. They have full authorization to view and update clinical patient records, trends, and diagnostic histories belonging strictly to <strong>{hospitalNameForProfile}</strong>.
+                </p>
+                <div style={{
+                  marginTop: "24px",
+                  padding: "16px",
+                  borderRadius: "8px",
+                  background: "#f4f8fc",
+                  border: "1.5px solid #cbd5e1"
+                }}>
+                  <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#0080ff", textTransform: "uppercase", marginBottom: "8px" }}>Practice Integrity</span>
+                  <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--navy, #0a2540)", lineHeight: "1.5" }}>
+                    All clinical decisions, medical histories, vitals summaries, and reports viewed or submitted by this practitioner are subject to HIPAA and GDPR multi-tenant healthcare audit trails.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {activeDoctorTab === "patients" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                {/* Assign Patient Box */}
+                <div style={{
+                  background: "var(--surface, #ffffff)",
+                  border: "1px solid var(--line, #e4e7eb)",
+                  borderRadius: "14px",
+                  padding: "24px",
+                  boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
+                }}>
+                  <h4 style={{ margin: "0 0 8px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800 }}>
+                    Assign Patient to Dr. {doctorDetail.fullName}
+                  </h4>
+                  <p style={{ margin: "0 0 16px 0", color: "var(--muted, #486581)", fontSize: "0.85rem", lineHeight: "1.4" }}>
+                    Select an eligible patient from this hospital to assign them to this doctor's care team.
+                  </p>
+
+                  <form onSubmit={handleAssignPatient} style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                    <select
+                      id="assign-patient-select"
+                      value={selectedPatientToAssign}
+                      onChange={(e) => setSelectedPatientToAssign(e.target.value)}
+                      required
+                      style={{
+                        flex: 1,
+                        padding: "12px 14px",
+                        border: "1.5px solid #cbd2d9",
+                        borderRadius: "8px",
+                        fontSize: "0.9rem",
+                        fontFamily: "inherit"
+                      }}
+                      disabled={assigningPatient || assignedLoading}
+                    >
+                      <option value="">-- Select Patient --</option>
+                      {availablePatients.map((p) => (
+                        <option key={p.patientId} value={p.patientId}>
+                          {p.fullName} ({p.patientId})
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="submit"
+                      id="btn-confirm-assign-patient"
+                      disabled={!selectedPatientToAssign || assigningPatient || assignedLoading}
+                      style={{
+                        background: "#0080ff",
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: "8px",
+                        padding: "12px 24px",
+                        fontSize: "0.9rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {assigningPatient ? "Assigning..." : "Assign Patient"}
+                    </button>
+                  </form>
+                </div>
+
+                {/* Assigned Patients List Table */}
+                <div style={{
+                  background: "var(--surface, #ffffff)",
+                  border: "1px solid var(--line, #e4e7eb)",
+                  borderRadius: "14px",
+                  padding: "24px",
+                  boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)",
+                  overflowX: "auto"
+                }}>
+                  <h4 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800 }}>
+                    Active Patient Assignments ({assignedPatients.length})
+                  </h4>
+
+                  {assignedLoading ? (
+                    <div style={{ padding: "30px 0", textAlign: "center", color: "var(--muted, #486581)" }}>
+                      Loading assigned patients...
+                    </div>
+                  ) : assignedPatients.length === 0 ? (
+                    <div style={{ padding: "40px 0", textAlign: "center", color: "var(--muted, #486581)", border: "1px dashed var(--line)", borderRadius: "8px" }}>
+                      No patients currently assigned to this doctor. Use the form above to assign a patient.
+                    </div>
+                  ) : (
+                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Patient ID</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Full Name</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Gender & DOB</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Assignment Date</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Status</th>
+                          <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.72rem" }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {assignedPatients.map((ap) => (
+                          <tr key={ap.patientId} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                            <td style={{ padding: "12px 6px", fontWeight: 800, color: "#0080ff", fontFamily: "monospace" }}>{ap.patientId}</td>
+                            <td style={{ padding: "12px 6px", fontWeight: 700, color: "var(--navy, #0a2540)" }}>{ap.fullName}</td>
+                            <td style={{ padding: "12px 6px" }}>
+                              <div style={{ fontWeight: 600 }}>{ap.gender}</div>
+                              <div style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>DOB: {ap.dob}</div>
+                            </td>
+                            <td style={{ padding: "12px 6px", color: "var(--muted, #486581)", fontWeight: 600 }}>
+                              {new Date(ap.assignedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                            </td>
+                            <td style={{ padding: "12px 6px" }}>
+                              <span style={{
+                                display: "inline-block",
+                                background: ap.status === "inactive" ? "#fee2e2" : "#e2fbf0",
+                                color: ap.status === "inactive" ? "#ef4444" : "#10b981",
+                                borderRadius: "10px",
+                                padding: "2px 6px",
+                                fontSize: "0.7rem",
+                                fontWeight: 750,
+                                textTransform: "uppercase"
+                              }}>
+                                {ap.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: "12px 6px" }}>
+                              <button
+                                type="button"
+                                className="btn-remove-assignment"
+                                onClick={() => handleRemoveAssignment(ap.patientId)}
+                                style={{
+                                  background: "#fee2e2",
+                                  color: "#ef4444",
+                                  border: "1px solid #fca5a5",
+                                  borderRadius: "6px",
+                                  padding: "4px 8px",
+                                  fontSize: "0.78rem",
+                                  fontWeight: 700,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
         </div>

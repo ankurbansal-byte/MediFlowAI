@@ -129,7 +129,7 @@ const ForcePasswordChange: React.FC<ForcePasswordChangeProps> = ({
           <span className="auth-logo-mark">+</span>
           <h2>First-Time Login Verification</h2>
           <p>
-            Welcome, <strong>{user.fullName || user.username}</strong>. As a newly enrolled patient, you are required to change your temporary password before accessing the clinical telemetry workspace.
+            Welcome, <strong>{user.fullName || user.username}</strong>. As a newly enrolled {user.role === "doctor" ? "doctor" : "patient"}, you are required to change your temporary password before accessing the clinical telemetry workspace.
           </p>
         </div>
 

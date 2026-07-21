@@ -1,10 +1,11 @@
 import { Response } from "express";
 import HealthRecord from "../models/HealthRecord";
+import Assignment from "../models/Assignment";
 import { generateDemoRecords } from "../utils/demoData";
 import { AuthenticatedRequest } from "../utils/authMiddleware";
 import User from "../models/User";
 import Hospital from "../models/Hospital";
-import { dynamicMockUsers } from "../utils/mockUsers";
+import { dynamicMockUsers, dynamicMockAssignments } from "../utils/mockUsers";
 import { dynamicMockHospitals } from "../utils/mockHospitals";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
@@ -116,58 +117,112 @@ export const getPatients = async (req: AuthenticatedRequest, res: Response) => {
     }
   }
 
-  // For Doctor (All patients)
-  if (process.env.USE_MOCK_DATA === "true") {
-    const dynamicMockPatients = Object.keys(MOCK_RECORDS).map((pId) => {
-      const recs = MOCK_RECORDS[pId] || [];
-      const latestRec = recs[recs.length - 1];
-      return {
-        patientId: pId,
-        latestRecordedAt: latestRec ? latestRec.recordedAt : new Date(),
-        totalRecords: recs.length,
-      };
-    }).sort((a, b) => new Date(b.latestRecordedAt).getTime() - new Date(a.latestRecordedAt).getTime());
+  // For Doctor (restricted to actively assigned patients in their same hospital)
+  if (user.role === "doctor") {
+    let doctorId = "";
+    let hospitalId = "";
+    if (process.env.USE_MOCK_DATA === "true") {
+      const doctorUser = dynamicMockUsers.find((u) => u.username === user.username);
+      if (doctorUser) {
+        doctorId = doctorUser.doctorId;
+        hospitalId = doctorUser.hospitalId;
+      }
+    } else {
+      try {
+        const doctorUser = await User.findOne({ username: user.username });
+        if (doctorUser) {
+          doctorId = doctorUser.doctorId || "";
+          hospitalId = doctorUser.hospitalId || "";
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
 
-    return res.status(200).json({
-      success: true,
-      totalPatients: dynamicMockPatients.length,
-      patients: dynamicMockPatients,
-    });
+    if (!doctorId || !hospitalId) {
+      return res.status(200).json({ success: true, totalPatients: 0, patients: [] });
+    }
+
+    // Get assigned patients
+    let assignedPatientIds: string[] = [];
+    if (process.env.USE_MOCK_DATA === "true") {
+      assignedPatientIds = dynamicMockAssignments
+        .filter((a) => a.doctorId === doctorId && a.status === "active" && a.hospitalId === hospitalId)
+        .map((a) => a.patientId);
+    } else {
+      try {
+        assignedPatientIds = await Assignment.find({
+          doctorId,
+          status: "active",
+          hospitalId,
+        }).distinct("patientId");
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    if (process.env.USE_MOCK_DATA === "true") {
+      const dynamicMockPatients = Object.keys(MOCK_RECORDS)
+        .filter((pId) => assignedPatientIds.includes(pId))
+        .map((pId) => {
+          const recs = MOCK_RECORDS[pId] || [];
+          const latestRec = recs[recs.length - 1];
+          return {
+            patientId: pId,
+            latestRecordedAt: latestRec ? latestRec.recordedAt : new Date(),
+            totalRecords: recs.length,
+          };
+        })
+        .sort((a, b) => new Date(b.latestRecordedAt).getTime() - new Date(a.latestRecordedAt).getTime());
+
+      return res.status(200).json({
+        success: true,
+        totalPatients: dynamicMockPatients.length,
+        patients: dynamicMockPatients,
+      });
+    }
+
+    try {
+      const patients = await HealthRecord.aggregate<PatientDiscoveryResult>([
+        { $match: { patientId: { $in: assignedPatientIds } } },
+        {
+          $group: {
+            _id: "$patientId",
+            latestRecordedAt: { $max: "$recordedAt" },
+            totalRecords: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            patientId: "$_id",
+            latestRecordedAt: 1,
+            totalRecords: 1,
+          },
+        },
+        { $sort: { latestRecordedAt: -1 } },
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        totalPatients: patients.length,
+        patients,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch patients.",
+      });
+    }
   }
 
-  try {
-    const patients = await HealthRecord.aggregate<PatientDiscoveryResult>([
-      {
-        $group: {
-          _id: "$patientId",
-          latestRecordedAt: { $max: "$recordedAt" },
-          totalRecords: { $sum: 1 },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          patientId: "$_id",
-          latestRecordedAt: 1,
-          totalRecords: 1,
-        },
-      },
-      { $sort: { latestRecordedAt: -1 } },
-    ]);
-
-    return res.status(200).json({
-      success: true,
-      totalPatients: patients.length,
-      patients,
-    });
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch patients.",
-    });
-  }
+  // Fallback (for admin/other if any, return empty as Admin has administrative PatientsView instead)
+  return res.status(200).json({
+    success: true,
+    totalPatients: 0,
+    patients: [],
+  });
 };
 
 /**
@@ -573,6 +628,7 @@ export const listPatientsByAdmin = async (req: AuthenticatedRequest, res: Respon
         dob: u.dob,
         gender: u.gender,
         hospitalId: u.hospitalId,
+        status: u.status || "active",
         createdAt: (u as any).createdAt || new Date().toISOString(),
       })),
     });
@@ -650,6 +706,7 @@ export const searchPatientsByAdmin = async (req: AuthenticatedRequest, res: Resp
         dob: u.dob,
         gender: u.gender,
         hospitalId: u.hospitalId,
+        status: u.status || "active",
         createdAt: (u as any).createdAt || new Date().toISOString(),
       })),
     });
@@ -803,7 +860,8 @@ export const addHealthRecord = async (
 /**
  * Helper to check if a user has access to a specific patient.
  * If user is a patient, they can only access their own.
- * If user is an admin or doctor, they can only access patients within their own hospital.
+ * If user is an admin, they can only access patients within their own hospital.
+ * If user is a doctor, they can only access patients within their own hospital AND who are actively assigned to them.
  */
 export const canAccessPatient = async (reqUser: any, patientId: string): Promise<boolean> => {
   if (!reqUser) return false;
@@ -812,18 +870,21 @@ export const canAccessPatient = async (reqUser: any, patientId: string): Promise
     return reqUser.patientId === patientId;
   }
 
-  // Get requesting user's hospitalId
+  // Get requesting user's hospitalId and doctorId (if doctor)
   let reqUserHospitalId = "";
+  let doctorId = "";
   if (process.env.USE_MOCK_DATA === "true") {
     const matched = dynamicMockUsers.find((u) => u.username === reqUser.username);
     if (matched) {
       reqUserHospitalId = matched.hospitalId;
+      doctorId = matched.doctorId;
     }
   } else {
     try {
       const matched = await User.findOne({ username: reqUser.username });
       if (matched) {
         reqUserHospitalId = matched.hospitalId || "";
+        doctorId = matched.doctorId || "";
       }
     } catch (e) {
       console.error("Error fetching request user for access control:", e);
@@ -850,7 +911,33 @@ export const canAccessPatient = async (reqUser: any, patientId: string): Promise
     }
   }
 
-  return reqUserHospitalId === targetHospitalId;
+  if (reqUserHospitalId !== targetHospitalId) return false;
+
+  // If role is doctor, additionally check Doctor-Patient active assignment
+  if (reqUser.role === "doctor") {
+    if (!doctorId) return false;
+    if (process.env.USE_MOCK_DATA === "true") {
+      const hasAssignment = dynamicMockAssignments.some(
+        (a) => a.doctorId === doctorId && a.patientId === patientId && a.status === "active" && a.hospitalId === reqUserHospitalId
+      );
+      return hasAssignment;
+    } else {
+      try {
+        const hasAssignment = await Assignment.findOne({
+          doctorId,
+          patientId,
+          status: "active",
+          hospitalId: reqUserHospitalId,
+        });
+        return !!hasAssignment;
+      } catch (err) {
+        console.error("Error checking assignment for Doctor:", err);
+        return false;
+      }
+    }
+  }
+
+  return true; // Hospital Admin (role === "admin") retains hospital-wide administrative patient access.
 };
 
 // ==============================
