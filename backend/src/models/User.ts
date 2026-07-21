@@ -24,6 +24,11 @@ const userSchema = new mongoose.Schema(
       required: false,
       default: null,
     },
+    doctorId: {
+      type: String,
+      required: false,
+      default: null,
+    },
     hospitalId: {
       type: String,
       required: false,
@@ -69,6 +74,16 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     specialization: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    department: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    qualification: {
       type: String,
       required: false,
       trim: true,

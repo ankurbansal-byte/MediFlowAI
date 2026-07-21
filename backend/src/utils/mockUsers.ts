@@ -51,11 +51,12 @@ export const MOCK_USERS = [
   },
 ];
 
-export let dynamicMockUsers = [...MOCK_USERS].map((user) => ({
+export let dynamicMockUsers: any[] = [...MOCK_USERS].map((user) => ({
   username: user.username,
   passwordHash: user.passwordHash,
   role: user.role,
   patientId: user.patientId,
+  doctorId: user.role === "doctor" ? "DOC-101" : undefined,
   hospitalId: "HOSP-001",
   fullName: user.role === "doctor" ? "Dr. Demo" : user.role === "admin" ? "Hospital Admin" : `Patient ${user.username}`,
   email: `${user.username.toLowerCase()}@mediflow.com`,
@@ -67,10 +68,13 @@ export let dynamicMockUsers = [...MOCK_USERS].map((user) => ({
   emailVerificationTokenExpires: undefined as Date | undefined,
   passwordResetToken: undefined as string | undefined,
   passwordResetTokenExpires: undefined as Date | undefined,
-  dob: user.role === "patient" ? "1990-01-01" : undefined,
-  gender: user.role === "patient" ? "Male" : undefined,
+  dob: user.role === "patient" ? "1990-01-01" : "1980-01-01",
+  gender: user.role === "patient" ? "Male" : "Male",
   medicalRegistrationNumber: user.role === "doctor" ? "MED-12345" : undefined,
   hospitalClinicName: user.role === "doctor" ? "MediFlow Hospital" : undefined,
   specialization: user.role === "doctor" ? "General Medicine" : undefined,
+  department: user.role === "doctor" ? "General Medicine" : undefined,
+  qualification: user.role === "doctor" ? "MD, MBBS" : undefined,
+  yearsOfExperience: user.role === "doctor" ? "10" : undefined,
   mustChangePassword: false,
 }));

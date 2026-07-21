@@ -571,7 +571,8 @@ export const login = async (req: Request, res: Response) => {
       (u) =>
         u.username.toLowerCase() === cleanQuery ||
         (u.email && u.email.toLowerCase() === cleanQuery) ||
-        (u.patientId && u.patientId.toLowerCase() === cleanQuery)
+        (u.patientId && u.patientId.toLowerCase() === cleanQuery) ||
+        ((u as any).doctorId && (u as any).doctorId.toLowerCase() === cleanQuery)
     );
 
     if (!user) {
@@ -584,7 +585,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const token = jwt.sign(
-      { username: user.username, role: user.role, patientId: user.patientId },
+      { username: user.username, role: user.role, patientId: user.patientId, doctorId: (user as any).doctorId },
       JWT_SECRET,
       { expiresIn: "1h" }
     );
@@ -609,6 +610,7 @@ export const login = async (req: Request, res: Response) => {
         username: user.username,
         role: user.role,
         patientId: user.patientId,
+        doctorId: (user as any).doctorId,
         isEmailVerified: user.isEmailVerified,
         email: user.email,
         fullName: user.fullName,
@@ -624,6 +626,7 @@ export const login = async (req: Request, res: Response) => {
         { username: { $regex: new RegExp(`^${cleanQuery}$`, "i") } },
         { email: { $regex: new RegExp(`^${cleanQuery}$`, "i") } },
         { patientId: { $regex: new RegExp(`^${cleanQuery}$`, "i") } },
+        { doctorId: { $regex: new RegExp(`^${cleanQuery}$`, "i") } },
       ],
     });
 
@@ -637,7 +640,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const token = jwt.sign(
-      { username: user.username, role: user.role, patientId: user.patientId },
+      { username: user.username, role: user.role, patientId: user.patientId, doctorId: (user as any).doctorId },
       JWT_SECRET,
       { expiresIn: "1h" }
     );
@@ -661,6 +664,7 @@ export const login = async (req: Request, res: Response) => {
         username: user.username,
         role: user.role,
         patientId: user.patientId,
+        doctorId: (user as any).doctorId,
         isEmailVerified: user.isEmailVerified,
         email: user.email,
         fullName: user.fullName,
@@ -697,10 +701,10 @@ export const refreshToken = async (req: Request, res: Response) => {
       }
 
       // Rotate Refresh Token
-      user.refreshTokens = user.refreshTokens.filter((t) => t !== refreshToken);
+      user.refreshTokens = user.refreshTokens.filter((t: string) => t !== refreshToken);
 
       const newToken = jwt.sign(
-        { username: user.username, role: user.role, patientId: user.patientId },
+        { username: user.username, role: user.role, patientId: user.patientId, doctorId: (user as any).doctorId },
         JWT_SECRET,
         { expiresIn: "1h" }
       );
@@ -730,7 +734,7 @@ export const refreshToken = async (req: Request, res: Response) => {
     const refreshTokens = user.refreshTokens.filter((t) => t !== refreshToken);
 
     const newToken = jwt.sign(
-      { username: user.username, role: user.role, patientId: user.patientId },
+      { username: user.username, role: user.role, patientId: user.patientId, doctorId: (user as any).doctorId },
       JWT_SECRET,
       { expiresIn: "1h" }
     );
@@ -1004,7 +1008,7 @@ export const logout = async (req: Request, res: Response) => {
   if (process.env.USE_MOCK_DATA === "true") {
     for (const u of dynamicMockUsers) {
       if (u.refreshTokens.includes(refreshToken)) {
-        u.refreshTokens = u.refreshTokens.filter((t) => t !== refreshToken);
+        u.refreshTokens = u.refreshTokens.filter((t: string) => t !== refreshToken);
         break;
       }
     }
