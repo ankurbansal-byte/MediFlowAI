@@ -3,7 +3,9 @@ import HealthRecord from "../models/HealthRecord";
 import { generateDemoRecords } from "../utils/demoData";
 import { AuthenticatedRequest } from "../utils/authMiddleware";
 import User from "../models/User";
+import Hospital from "../models/Hospital";
 import { dynamicMockUsers } from "../utils/mockUsers";
+import { dynamicMockHospitals } from "../utils/mockHospitals";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
@@ -169,6 +171,187 @@ export const getPatients = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 /**
+ * GET /api/patient/admin/detail/:patientId
+ * Returns the full details of a patient, including the hospital name.
+ */
+export const getPatientDetailByAdmin = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ success: false, message: "Forbidden. Admin access required." });
+  }
+
+  const patientId = req.params.patientId as string;
+  const isAllowed = await canAccessPatient(req.user, patientId);
+  if (!isAllowed) {
+    return res.status(403).json({ success: false, message: "Forbidden. Patient does not belong to your hospital." });
+  }
+
+  // Get patient details
+  let patient: any = null;
+  if (process.env.USE_MOCK_DATA === "true") {
+    const found = dynamicMockUsers.find((u) => u.patientId === patientId && u.role === "patient");
+    if (found) {
+      patient = {
+        patientId: found.patientId,
+        username: found.username,
+        fullName: found.fullName,
+        email: found.email,
+        mobileNumber: found.mobileNumber,
+        dob: found.dob,
+        gender: found.gender,
+        hospitalId: found.hospitalId,
+        status: found.status || "active",
+        createdAt: (found as any).createdAt || new Date().toISOString(),
+      };
+    }
+  } else {
+    try {
+      const found = await User.findOne({ patientId, role: "patient" }).select("-password -refreshTokens");
+      if (found) {
+        patient = {
+          patientId: found.patientId,
+          username: found.username,
+          fullName: found.fullName,
+          email: found.email,
+          mobileNumber: found.mobileNumber,
+          dob: found.dob,
+          gender: found.gender,
+          hospitalId: found.hospitalId,
+          status: found.status || "active",
+          createdAt: found.createdAt,
+        };
+      }
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Error fetching patient details." });
+    }
+  }
+
+  if (!patient) {
+    return res.status(404).json({ success: false, message: "Patient not found." });
+  }
+
+  // Fetch hospital name
+  let hospitalName = "";
+  if (patient.hospitalId) {
+    if (process.env.USE_MOCK_DATA === "true") {
+      const h = dynamicMockHospitals.find((h) => h.hospitalId === patient.hospitalId);
+      hospitalName = h ? h.hospitalName : "MediFlow Hospital";
+    } else {
+      try {
+        const h = await Hospital.findOne({ hospitalId: patient.hospitalId });
+        hospitalName = h ? h.hospitalName : "";
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }
+
+  return res.status(200).json({
+    success: true,
+    patient,
+    hospitalName,
+  });
+};
+
+/**
+ * PUT /api/patient/admin/update/:patientId
+ * Updates demographic and account status for a patient.
+ */
+export const updatePatientDetailByAdmin = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ success: false, message: "Forbidden. Admin access required." });
+  }
+
+  const patientId = req.params.patientId as string;
+  const isAllowed = await canAccessPatient(req.user, patientId);
+  if (!isAllowed) {
+    return res.status(403).json({ success: false, message: "Forbidden. Patient does not belong to your hospital." });
+  }
+
+  const { fullName, email, mobileNumber, dob, gender, status } = req.body;
+
+  if (!fullName || !email || !mobileNumber || !dob || !gender || !status) {
+    return res.status(400).json({ success: false, message: "Required fields are missing: fullName, email, mobileNumber, dob, gender, status." });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  // Check unique email (excluding current user)
+  if (process.env.USE_MOCK_DATA === "true") {
+    const emailExists = dynamicMockUsers.some(
+      (u) => u.email && u.email.toLowerCase() === cleanEmail && u.patientId !== patientId
+    );
+    if (emailExists) {
+      return res.status(400).json({ success: false, message: "A user with this email already exists." });
+    }
+
+    const patient = dynamicMockUsers.find((u) => u.patientId === patientId && u.role === "patient");
+    if (!patient) {
+      return res.status(404).json({ success: false, message: "Patient not found." });
+    }
+
+    patient.fullName = fullName.trim();
+    patient.email = cleanEmail;
+    patient.mobileNumber = mobileNumber.trim();
+    patient.dob = dob;
+    patient.gender = gender;
+    patient.status = status;
+
+    return res.status(200).json({
+      success: true,
+      message: "Patient details updated successfully.",
+      patient: {
+        patientId: patient.patientId,
+        fullName: patient.fullName,
+        email: patient.email,
+        mobileNumber: patient.mobileNumber,
+        dob: patient.dob,
+        gender: patient.gender,
+        status: patient.status,
+      },
+    });
+  } else {
+    try {
+      const existingUser = await User.findOne({
+        email: { $regex: new RegExp(`^${cleanEmail}$`, "i") },
+        patientId: { $ne: patientId },
+      });
+      if (existingUser) {
+        return res.status(400).json({ success: false, message: "A user with this email already exists." });
+      }
+
+      const updated = await User.findOneAndUpdate(
+        { patientId, role: "patient" },
+        {
+          $set: {
+            fullName: fullName.trim(),
+            email: cleanEmail,
+            mobileNumber: mobileNumber.trim(),
+            dob,
+            gender,
+            status,
+          },
+        },
+        { new: true }
+      ).select("-password -refreshTokens");
+
+      if (!updated) {
+        return res.status(404).json({ success: false, message: "Patient not found." });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Patient details updated successfully.",
+        patient: updated,
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Failed to update patient details." });
+    }
+  }
+};
+
+/**
  * Helper: Generate unique patientId continuing the existing PAT sequence.
  */
 const getNextPatientIdForAdmin = async (): Promise<string> => {
@@ -278,6 +461,7 @@ export const createPatientByAdmin = async (req: AuthenticatedRequest, res: Respo
       dob,
       gender,
       isEmailVerified: true,
+      status: "active",
       mustChangePassword: true,
       refreshTokens: [] as string[],
       emailVerificationToken: undefined,
@@ -616,6 +800,59 @@ export const addHealthRecord = async (
   }
 };
 
+/**
+ * Helper to check if a user has access to a specific patient.
+ * If user is a patient, they can only access their own.
+ * If user is an admin or doctor, they can only access patients within their own hospital.
+ */
+export const canAccessPatient = async (reqUser: any, patientId: string): Promise<boolean> => {
+  if (!reqUser) return false;
+
+  if (reqUser.role === "patient") {
+    return reqUser.patientId === patientId;
+  }
+
+  // Get requesting user's hospitalId
+  let reqUserHospitalId = "";
+  if (process.env.USE_MOCK_DATA === "true") {
+    const matched = dynamicMockUsers.find((u) => u.username === reqUser.username);
+    if (matched) {
+      reqUserHospitalId = matched.hospitalId;
+    }
+  } else {
+    try {
+      const matched = await User.findOne({ username: reqUser.username });
+      if (matched) {
+        reqUserHospitalId = matched.hospitalId || "";
+      }
+    } catch (e) {
+      console.error("Error fetching request user for access control:", e);
+    }
+  }
+
+  if (!reqUserHospitalId) return false;
+
+  // Get target patient's hospitalId
+  let targetHospitalId = "";
+  if (process.env.USE_MOCK_DATA === "true") {
+    const matched = dynamicMockUsers.find((u) => u.patientId === patientId && u.role === "patient");
+    if (matched) {
+      targetHospitalId = matched.hospitalId;
+    }
+  } else {
+    try {
+      const matched = await User.findOne({ patientId, role: "patient" });
+      if (matched) {
+        targetHospitalId = matched.hospitalId || "";
+      }
+    } catch (e) {
+      console.error("Error fetching target patient for access control:", e);
+    }
+  }
+
+  return reqUserHospitalId === targetHospitalId;
+};
+
 // ==============================
 // Get Patient Timeline
 // ==============================
@@ -630,8 +867,9 @@ export const getPatientTimeline = async (
     return res.status(401).json({ success: false, message: "Unauthorized." });
   }
 
-  if (user.role === "patient" && user.patientId !== patientId) {
-    return res.status(403).json({ success: false, message: "Forbidden. You can only access your own health records." });
+  const allowed = await canAccessPatient(user, patientId);
+  if (!allowed) {
+    return res.status(403).json({ success: false, message: "Forbidden. You do not have access to this patient's records." });
   }
 
   if (process.env.USE_MOCK_DATA === "true") {
@@ -683,8 +921,9 @@ export const getPatientSummary = async (
     return res.status(401).json({ success: false, message: "Unauthorized." });
   }
 
-  if (user.role === "patient" && user.patientId !== patientId) {
-    return res.status(403).json({ success: false, message: "Forbidden. You can only access your own health records." });
+  const allowed = await canAccessPatient(user, patientId);
+  if (!allowed) {
+    return res.status(403).json({ success: false, message: "Forbidden. You do not have access to this patient's records." });
   }
 
   if (process.env.USE_MOCK_DATA === "true") {
@@ -760,8 +999,9 @@ export const getParameterTrend = async (
     return res.status(401).json({ success: false, message: "Unauthorized." });
   }
 
-  if (user.role === "patient" && user.patientId !== patientId) {
-    return res.status(403).json({ success: false, message: "Forbidden. You can only access your own health records." });
+  const allowed = await canAccessPatient(user, patientId);
+  if (!allowed) {
+    return res.status(403).json({ success: false, message: "Forbidden. You do not have access to this patient's records." });
   }
 
   if (process.env.USE_MOCK_DATA === "true") {
@@ -832,8 +1072,9 @@ export const getParameterStatistics = async (
     return res.status(401).json({ success: false, message: "Unauthorized." });
   }
 
-  if (user.role === "patient" && user.patientId !== patientId) {
-    return res.status(403).json({ success: false, message: "Forbidden. You can only access your own health records." });
+  const allowed = await canAccessPatient(user, patientId);
+  if (!allowed) {
+    return res.status(403).json({ success: false, message: "Forbidden. You do not have access to this patient's records." });
   }
 
   if (process.env.USE_MOCK_DATA === "true") {
