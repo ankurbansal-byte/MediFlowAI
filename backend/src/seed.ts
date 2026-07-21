@@ -66,6 +66,7 @@ async function runSeeder() {
       role: u.role,
       patientId: u.patientId || null,
       hospitalId: "HOSP-001",
+      isEmailVerified: true,
     }));
     const userInsertResult = await User.insertMany(usersToInsert);
     console.log(`✅ Successfully seeded ${userInsertResult.length} users!`);
