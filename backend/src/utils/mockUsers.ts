@@ -61,6 +61,7 @@ export let dynamicMockUsers = [...MOCK_USERS].map((user) => ({
   email: `${user.username.toLowerCase()}@mediflow.com`,
   mobileNumber: "+1234567890",
   isEmailVerified: true, // Seeded users are pre-verified
+  status: "active",
   refreshTokens: [] as string[],
   emailVerificationToken: undefined as string | undefined,
   emailVerificationTokenExpires: undefined as Date | undefined,

@@ -89,6 +89,12 @@ const userSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
+    status: {
+      type: String,
+      required: false,
+      enum: ["active", "inactive", ""],
+      default: "active",
+    },
     // Security and Flow Fields
     isEmailVerified: {
       type: Boolean,

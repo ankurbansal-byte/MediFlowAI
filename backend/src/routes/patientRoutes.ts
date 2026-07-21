@@ -11,6 +11,8 @@ import {
   createPatientByAdmin,
   listPatientsByAdmin,
   searchPatientsByAdmin,
+  getPatientDetailByAdmin,
+  updatePatientDetailByAdmin,
 } from "../controllers/patientController";
 
 const router = Router();
@@ -22,6 +24,8 @@ router.use(authMiddleware);
 router.post("/admin/create", createPatientByAdmin);
 router.get("/admin/list", listPatientsByAdmin);
 router.get("/admin/search", searchPatientsByAdmin);
+router.get("/admin/detail/:patientId", getPatientDetailByAdmin);
+router.put("/admin/update/:patientId", updatePatientDetailByAdmin);
 
 router.get("/", getPatients);
 
