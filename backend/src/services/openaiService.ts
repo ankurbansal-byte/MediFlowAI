@@ -8,6 +8,15 @@ const client = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
 });
 
+// Testing / Mock support
+let mockExtractHealthData: ((message: string) => Promise<string>) | null = null;
+
+export function setMockExtractHealthData(
+  fn: ((message: string) => Promise<string>) | null
+) {
+  mockExtractHealthData = fn;
+}
+
 // ================================
 // Normal AI Reply
 // ================================
@@ -55,6 +64,10 @@ Rules:
 export async function extractHealthData(
   message: string
 ): Promise<string> {
+  if (mockExtractHealthData) {
+    return mockExtractHealthData(message);
+  }
+
   try {
     const modelName = process.env.OPENROUTER_MODEL || "tencent/hy3";
     const completion = await client.chat.completions.create({

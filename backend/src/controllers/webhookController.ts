@@ -6,6 +6,8 @@ import fs from "fs";
 import path from "path";
 import { extractHealthData } from "../services/openaiService";
 import { Request, Response } from "express";
+import { findEnrolledPatientByWhatsApp } from "../utils/phoneHelper";
+import { MOCK_RECORDS } from "./patientController";
 
 // Meta Webhook Verification
 export const verifyWebhook = (req: Request, res: Response) => {
@@ -63,64 +65,92 @@ export const receiveMessage = async (req: Request, res: Response) => {
     if (message && from) {
       console.log("👤 User:", message);
 
+      // Resolve WhatsApp sender to an enrolled patient user (fail safely if not found or ambiguous)
+      const patient = await findEnrolledPatientByWhatsApp(from);
+      if (!patient) {
+        // Safe fail. Preserve normal webhook acknowledgement behavior (200 OK)
+        return res.sendStatus(200);
+      }
+
       // AI Extract Health Data
-const extractedData = await extractHealthData(message);
+      const extractedData = await extractHealthData(message);
 
-console.log("🧠 Extracted Health Record:");
-console.log(extractedData);
+      console.log("🧠 Extracted Health Record:");
+      console.log(extractedData);
 
-if (!extractedData) {
-  console.error(`❌ [Pipeline Error] AI extraction failed or returned an empty string for user message: "${message}"`);
-}
+      if (!extractedData) {
+        console.error(`❌ [Pipeline Error] AI extraction failed or returned an empty string for user message: "${message}"`);
+      }
 
-// AI JSON → HealthRecord Objects
-const records = parseHealthRecord(
-  extractedData,
-  from,
-  "text",
-  message,
-  whatsappMessageId
-);
+      // AI JSON → HealthRecord Objects using resolved patient's PAT-xxx ID
+      const records = parseHealthRecord(
+        extractedData,
+        patient.patientId,
+        "text",
+        message,
+        whatsappMessageId
+      );
 
-console.log("📦 Parsed Health Records:");
-console.log(records);
+      console.log("📦 Parsed Health Records:");
+      console.log(records);
 
-if (records.length > 0) {
+      if (records.length > 0) {
+        for (const record of records) {
+          // Set additional attributes including hospitalId for tenant security
+          const recordPayload: any = {
+            ...record,
+            hospitalId: patient.hospitalId,
+          };
 
-  for (const record of records) {
+          // Duplicate Check
+          let existingRecord = null;
+          if (process.env.USE_MOCK_DATA === "true") {
+            for (const pId in MOCK_RECORDS) {
+              const match = MOCK_RECORDS[pId].find(
+                (r: any) => r.whatsappMessageId === recordPayload.whatsappMessageId
+              );
+              if (match) {
+                existingRecord = match;
+                break;
+              }
+            }
+          } else {
+            existingRecord = await HealthRecord.findOne({
+              whatsappMessageId: recordPayload.whatsappMessageId,
+            });
+          }
 
-  // Duplicate Check
-  const existingRecord = await HealthRecord.findOne({
-  whatsappMessageId: record.whatsappMessageId,
-});
+          if (existingRecord) {
+            console.log("⚠️ Duplicate Record Skipped:", recordPayload.parameter);
+            continue;
+          }
 
-  if (existingRecord) {
-    console.log("⚠️ Duplicate Record Skipped:", record.parameter);
-    continue;
-  }
+          if (process.env.USE_MOCK_DATA === "true") {
+            if (!MOCK_RECORDS[recordPayload.patientId]) {
+              MOCK_RECORDS[recordPayload.patientId] = [];
+            }
+            MOCK_RECORDS[recordPayload.patientId].push(recordPayload);
+          } else {
+            await HealthRecord.create(recordPayload);
+          }
 
-  await HealthRecord.create(record);
+          console.log("✅ Saved:", recordPayload.parameter);
+        }
 
-  console.log("✅ Saved:", record.parameter);
-}
+        await sendWhatsAppMessage(
+          from,
+          `✅ ${records.length} health record(s) saved successfully.`
+        );
 
-  await sendWhatsAppMessage(
-    from,
-    `✅ ${records.length} health record(s) saved successfully.`
-  );
+        console.log("✅ All Health Records Saved");
+      } else {
+        await sendWhatsAppMessage(
+          from,
+          "❌ Unable to understand your health record."
+        );
 
-  console.log("✅ All Health Records Saved");
-
-} else {
-
-  await sendWhatsAppMessage(
-    from,
-    "❌ Unable to understand your health record."
-  );
-
-  console.log("❌ Invalid Health Record");
-
-}
+        console.log("❌ Invalid Health Record");
+      }
     }
   } catch (err) {
     console.error(err);
@@ -130,29 +160,33 @@ if (records.length > 0) {
 };
 
 async function sendWhatsAppMessage(to: string, message: string) {
-  await axios.post(
-    `https://graph.facebook.com/v23.0/${process.env.PHONE_NUMBER_ID}/messages`,
-    {
-      messaging_product: "whatsapp",
-      to,
-      text: {
-        body: message,
+  try {
+    await axios.post(
+      `https://graph.facebook.com/v23.0/${process.env.PHONE_NUMBER_ID}/messages`,
+      {
+        messaging_product: "whatsapp",
+        to,
+        text: {
+          body: message,
+        },
       },
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+  } catch (err: any) {
+    console.error("Failed to send WhatsApp message:", err?.message || err);
+  }
 }
 
 // =========================
 // Download WhatsApp Audio
 // =========================
 async function downloadWhatsAppAudio(mediaId: string) {
-    console.log("📥 Downloading Media ID:", mediaId);
+  console.log("📥 Downloading Media ID:", mediaId);
   // Step 1 - Get Media URL
   const mediaResponse = await axios.get(
     `https://graph.facebook.com/v23.0/${mediaId}`,
