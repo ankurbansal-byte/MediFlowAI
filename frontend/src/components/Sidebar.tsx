@@ -12,9 +12,9 @@ const navigationItems: NavigationItem[] = [
   { label: "Today’s Patients", icon: "📆", tab: "today-patients" },
   { label: "My Patients", icon: "👥", tab: "my-patients" },
   { label: "Patients", icon: "♙", tab: "patients" },
+  { label: "Doctors", icon: "🩺", tab: "doctors" },
   { label: "OPD / Visits", icon: "📆", tab: "visits-admin" },
   { label: "Visits / Consultations", icon: "📆", tab: "doctor-visits" },
-  { label: "Doctors", icon: "🩺", tab: "doctors" },
   { label: "Hospital", icon: "🏥", tab: "hospital" },
   { label: "Trends", icon: "↗", tab: "trends" },
   { label: "AI Insights", icon: "✦", tab: "ai-insights" },
@@ -61,8 +61,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     if (item.tab === "doctor-visits") {
       return false;
     }
-    if (item.tab === "trends" || item.tab === "ai-insights" || item.tab === "dashboard") {
+    if (item.tab === "trends" || item.tab === "ai-insights") {
       return userRole === "patient";
+    }
+    if (item.tab === "dashboard") {
+      return userRole === "patient" || userRole === "admin";
     }
     return true;
   });
