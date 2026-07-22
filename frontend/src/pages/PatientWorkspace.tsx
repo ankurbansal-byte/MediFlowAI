@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import api from "../api/axios";
 import TrendChart from "../components/TrendChart";
 import AIInsights from "../components/AIInsights";
@@ -60,6 +60,20 @@ interface WorkspaceTrendRecord {
   recordedAt?: string;
 }
 
+// Age calculation helper
+const calculateAge = (dobString?: string) => {
+  if (!dobString) return "";
+  const birthDate = new Date(dobString);
+  if (isNaN(birthDate.getTime())) return "";
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return `${age} Yrs`;
+};
+
 const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
   patientId,
   encounterId,
@@ -88,7 +102,7 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
   const [patientVisits, setPatientVisits] = useState<EncounterData[]>([]);
   const [trendRecords, setTrendRecords] = useState<WorkspaceTrendRecord[]>([]);
   const [selectedParameter, setSelectedParameter] = useState<"blood_sugar" | "blood_pressure" | "weight" | "heart_rate" | "body_temperature">("blood_sugar");
-  const [trendPeriod, setTrendPeriod] = useState<7 | 30 | 90>(30);
+  const [trendPeriod, setTrendPeriod] = useState<7 | 30 | 90 | 365 | 36500>(30);
   const [isTrendLoading, setIsTrendLoading] = useState(false);
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"overview" | "timeline" | "trends" | "insights" | "visits">("overview");
 
@@ -133,7 +147,7 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
     await fetchPatientTrend(patientId, param, trendPeriod);
   };
 
-  const handleSelectPeriod = async (period: 7 | 30 | 90) => {
+  const handleSelectPeriod = async (period: 7 | 30 | 90 | 365 | 36500) => {
     setTrendPeriod(period);
     await fetchPatientTrend(patientId, selectedParameter, period);
   };
@@ -145,7 +159,7 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
       setSuccess("");
 
       try {
-        // 1. Fetch patient basic details (using our newly-accessible endpoint!)
+        // 1. Fetch patient basic details
         const detailRes = await api.get(`/patient/admin/detail/${patientId}`);
         if (detailRes.data.success) {
           setPatientDetails(detailRes.data.patient);
@@ -285,6 +299,174 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
 
   const isCompleted = selectedEncounter?.status === "completed";
 
+  // Trend Stats calculation
+  const trendStats = useMemo(() => {
+    if (trendRecords.length === 0) return null;
+
+    const isBP = selectedParameter === "blood_pressure";
+    const totalReadings = trendRecords.length;
+
+    // Trend direction: comparing first (oldest) vs last (latest/newest) in the selected timeframe
+    const oldest = trendRecords[0];
+    const latest = trendRecords[trendRecords.length - 1];
+
+    let trendDirection = { text: "Stable", icon: "→", color: "#475569" };
+
+    if (isBP) {
+      const oldestParts = String(oldest.value).split("/");
+      const latestParts = String(latest.value).split("/");
+      if (oldestParts.length === 2 && latestParts.length === 2) {
+        const oldestSys = Number(oldestParts[0]);
+        const latestSys = Number(latestParts[0]);
+        if (!isNaN(oldestSys) && !isNaN(latestSys)) {
+          const diff = latestSys - oldestSys;
+          if (Math.abs(diff) >= 2) {
+            trendDirection = diff > 0
+              ? { text: "Rising BP", icon: "↗", color: "#ef4444" }
+              : { text: "Falling BP", icon: "↘", color: "#10b981" };
+          }
+        }
+      }
+
+      const bpRecords = trendRecords.map(r => {
+        const parts = String(r.value).split("/");
+        return parts.length === 2 ? { sys: Number(parts[0]), dia: Number(parts[1]) } : null;
+      }).filter((r): r is { sys: number; dia: number } => r !== null && !isNaN(r.sys) && !isNaN(r.dia));
+
+      const sysValues = bpRecords.map(r => r.sys);
+      const diaValues = bpRecords.map(r => r.dia);
+
+      const highest = sysValues.length > 0 ? `${Math.max(...sysValues)}/${Math.max(...diaValues)}` : "—";
+      const lowest = sysValues.length > 0 ? `${Math.min(...sysValues)}/${Math.min(...diaValues)}` : "—";
+      const avgSys = sysValues.length > 0 ? Math.round(sysValues.reduce((s, v) => s + v, 0) / sysValues.length) : 0;
+      const avgDia = diaValues.length > 0 ? Math.round(diaValues.reduce((s, v) => s + v, 0) / diaValues.length) : 0;
+      const average = sysValues.length > 0 ? `${avgSys}/${avgDia}` : "—";
+
+      return {
+        totalReadings,
+        latest: latest.value,
+        average,
+        highest,
+        lowest,
+        trendDirection,
+        unit: "mmHg"
+      };
+    } else {
+      const oldestVal = Number(oldest.value);
+      const latestVal = Number(latest.value);
+      if (!isNaN(oldestVal) && !isNaN(latestVal)) {
+        const diff = latestVal - oldestVal;
+        if (Math.abs(diff) >= 0.1) {
+          trendDirection = diff > 0
+            ? { text: "Rising", icon: "↗", color: "#ef4444" }
+            : { text: "Falling", icon: "↘", color: "#10b981" };
+        }
+      }
+
+      const numericValues = trendRecords.map(r => Number(r.value)).filter(v => !isNaN(v));
+      const highest = numericValues.length > 0 ? Math.max(...numericValues) : "—";
+      const lowest = numericValues.length > 0 ? Math.min(...numericValues) : "—";
+      const average = numericValues.length > 0
+        ? (numericValues.reduce((sum, val) => sum + val, 0) / numericValues.length).toFixed(1)
+        : "—";
+
+      return {
+        totalReadings,
+        latest: latest.value,
+        average,
+        highest,
+        lowest,
+        trendDirection,
+        unit: trendRecords[0]?.unit || ""
+      };
+    }
+  }, [trendRecords, selectedParameter]);
+
+  // Factual Health Summary calculation for Last 30 Days
+  const factualSummaryBlocks = useMemo(() => {
+    const parameters = [
+      { key: "blood_sugar", label: "Blood Sugar", unit: "mg/dL" },
+      { key: "blood_pressure", label: "Blood Pressure", unit: "mmHg" },
+      { key: "heart_rate", label: "Heart Rate", unit: "bpm" },
+      { key: "body_temperature", label: "Temperature", unit: "°C" },
+      { key: "weight", label: "Weight", unit: "kg" }
+    ];
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    return parameters.map((p) => {
+      const records = patientTimeline.filter(
+        (r) => r.parameter === p.key && new Date(r.recordedAt).getTime() >= thirtyDaysAgo.getTime()
+      );
+
+      if (records.length === 0) {
+        return {
+          key: p.key,
+          label: p.label,
+          hasData: false,
+          text: `No ${p.label.toLowerCase()} readings recorded in the last 30 days.`
+        };
+      }
+
+      if (p.key === "blood_pressure") {
+        const bpRecords = records.map(r => {
+          const parts = String(r.value).split("/");
+          return parts.length === 2 ? { sys: Number(parts[0]), dia: Number(parts[1]) } : null;
+        }).filter((r): r is { sys: number; dia: number } => r !== null && !isNaN(r.sys) && !isNaN(r.dia));
+
+        if (bpRecords.length === 0) {
+          return {
+            key: p.key,
+            label: p.label,
+            hasData: false,
+            text: `No valid BP readings in the last 30 days.`
+          };
+        }
+
+        const sysVals = bpRecords.map(r => r.sys);
+        const diaVals = bpRecords.map(r => r.dia);
+
+        const latestVal = records[0].value;
+        const minSys = Math.min(...sysVals);
+        const maxSys = Math.max(...sysVals);
+        const minDia = Math.min(...diaVals);
+        const maxDia = Math.max(...diaVals);
+        const avgSys = Math.round(sysVals.reduce((s, v) => s + v, 0) / sysVals.length);
+        const avgDia = Math.round(diaVals.reduce((s, v) => s + v, 0) / diaVals.length);
+
+        return {
+          key: p.key,
+          label: p.label,
+          hasData: true,
+          text: `Last 30 Days: ${records.length} BP readings recorded. Average: ${avgSys}/${avgDia} mmHg. Range: ${minSys}/${minDia} to ${maxSys}/${maxDia} mmHg. Latest: ${latestVal} mmHg.`
+        };
+      }
+
+      const numericValues = records.map(r => Number(r.value)).filter(v => !isNaN(v));
+      if (numericValues.length === 0) {
+        return {
+          key: p.key,
+          label: p.label,
+          hasData: false,
+          text: `No numeric ${p.label.toLowerCase()} readings recorded in the last 30 days.`
+        };
+      }
+
+      const latestVal = records[0].value;
+      const minVal = Math.min(...numericValues);
+      const maxVal = Math.max(...numericValues);
+      const avgVal = (numericValues.reduce((s, v) => s + v, 0) / numericValues.length).toFixed(1);
+
+      return {
+        key: p.key,
+        label: p.label,
+        hasData: true,
+        text: `Last 30 Days: ${records.length} ${p.label.toLowerCase()} readings recorded. Average: ${avgVal} ${p.unit}. Range: ${minVal}–${maxVal} ${p.unit}. Latest: ${latestVal} ${p.unit}.`
+      };
+    });
+  }, [patientTimeline]);
+
   return (
     <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px" }}>
       {/* Back navigation button */}
@@ -309,17 +491,19 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
         ← Back to list
       </button>
 
-      {/* Page Header */}
+      {/* Page Header with Patient Identity Context */}
       <div style={{ marginBottom: "28px", borderBottom: "1px solid var(--line, #e4e7eb)", paddingBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <p className="summary-section__eyebrow" style={{ color: "#0080ff", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.85rem", margin: 0 }}>
             PRACTITIONER CLINICAL WORKSPACE
           </p>
-          <h1 style={{ margin: "4px 0 0 0", color: "var(--navy, #0a2540)", fontSize: "2rem", fontWeight: 850, letterSpacing: "-0.02em" }}>
-            Consultation: {patientDetails?.fullName || "Loading Patient..."}
+          <h1 style={{ margin: "4px 0 0 0", color: "var(--navy, #0a2540)", fontSize: "2.2rem", fontWeight: 850, letterSpacing: "-0.02em" }}>
+            {patientDetails?.fullName || "Loading Patient..."}
           </h1>
-          <p style={{ margin: "4px 0 0 0", color: "var(--muted, #486581)", fontSize: "0.95rem" }}>
-            Patient ID: {patientId} {selectedEncounter && `— Encounter ${selectedEncounter.encounterId}`}
+          <p style={{ margin: "6px 0 0 0", color: "var(--muted, #486581)", fontSize: "0.95rem", fontWeight: 600 }}>
+            Patient ID: <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{patientId}</span>
+            {patientDetails?.dob && ` | DOB: ${new Date(patientDetails.dob).toLocaleDateString()} (${calculateAge(patientDetails.dob)})`}
+            {patientDetails?.gender && ` | Gender: ${patientDetails.gender}`}
           </p>
         </div>
         {selectedEncounter && (
@@ -381,8 +565,10 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                 )}
                 {patientDetails?.dob && (
                   <div>
-                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>DOB</span>
-                    <span style={{ color: "var(--navy, #0a2540)", fontWeight: 600 }}>{new Date(patientDetails.dob).toLocaleDateString()}</span>
+                    <span style={{ display: "block", fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Age / DOB</span>
+                    <span style={{ color: "var(--navy, #0a2540)", fontWeight: 600 }}>
+                      {new Date(patientDetails.dob).toLocaleDateString()} ({calculateAge(patientDetails.dob)})
+                    </span>
                   </div>
                 )}
                 {patientDetails?.mobileNumber && (
@@ -633,120 +819,181 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
           <div style={{ minHeight: "350px" }}>
             {activeWorkspaceTab === "overview" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                <h3 style={{ margin: 0, color: "var(--navy, #0a2540)", fontSize: "1.15rem", fontWeight: 800 }}>
+                {/* 📊 Compact Factual Health Summary Card */}
+                <div style={{
+                  background: "var(--surface, #ffffff)",
+                  border: "1.5px dashed #0080ff",
+                  borderRadius: "12px",
+                  padding: "20px",
+                  boxShadow: "0 4px 15px rgba(0, 128, 255, 0.03)"
+                }}>
+                  <h4 style={{ margin: "0 0 14px 0", color: "var(--navy, #0a2540)", fontSize: "1.05rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "8px" }}>
+                    📊 Factual Clinical Summary (Last 30 Days)
+                  </h4>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "0.85rem" }}>
+                    {factualSummaryBlocks.map((block) => (
+                      <div key={block.key} style={{ paddingBottom: "8px", borderBottom: "1px solid #f1f5f9" }}>
+                        <strong style={{ color: "#0080ff", textTransform: "uppercase", fontSize: "0.75rem", display: "block", marginBottom: "2px" }}>
+                          {block.label}
+                        </strong>
+                        <p style={{ margin: 0, color: "var(--navy, #0a2540)", fontWeight: 600, fontStyle: block.hasData ? "normal" : "italic" }}>
+                          {block.text}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: "14px", padding: "10px", background: "#fdf2f8", border: "1px solid #fbcfe8", borderRadius: "8px", fontSize: "0.72rem", color: "#9d174d", fontWeight: 650, lineHeight: "1.4" }}>
+                    ⚠️ Factual Clinical Disclaimer: This summary is automatically derived strictly from recorded patient-reported values. It is descriptive and factual only. It does not diagnose disease, recommend medication, change treatment, claim medical certainty, or make clinical decisions. Any clinical adjustments must be made by the licensed practitioner.
+                  </div>
+                </div>
+
+                <h3 style={{ margin: "10px 0 0 0", color: "var(--navy, #0a2540)", fontSize: "1.15rem", fontWeight: 800 }}>
                   Latest Physiological Vitals & Measurements
                 </h3>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
 
                   {/* Blood Sugar */}
-                  <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div style={{
+                    background: "#ffffff",
+                    border: "1px solid var(--line, #e4e7eb)",
+                    borderRadius: "10px",
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                    opacity: patientSummary?.blood_sugar ? 1 : 0.7
+                  }}>
                     <span style={{ fontSize: "1.4rem" }}>🩸</span>
                     <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Blood Glucose</span>
-                    <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
-                      {patientSummary?.blood_sugar?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.blood_sugar?.unit || "mg/dL"}</span>
-                    </strong>
-                    {patientSummary?.blood_sugar?.recordedAt && (
-                      <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                        As of {new Date(patientSummary.blood_sugar.recordedAt).toLocaleDateString()}
+                    {patientSummary?.blood_sugar ? (
+                      <>
+                        <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
+                          {patientSummary.blood_sugar.value} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)", fontWeight: 500 }}>{patientSummary.blood_sugar.unit || "mg/dL"}</span>
+                        </strong>
+                        <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
+                          As of {new Date(patientSummary.blood_sugar.recordedAt).toLocaleDateString()}
+                        </span>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: "0.88rem", color: "var(--muted, #486581)", fontStyle: "italic", fontWeight: 550 }}>
+                        No data available
                       </span>
                     )}
                   </div>
 
                   {/* Blood Pressure */}
-                  <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <span style={{ fontSize: "1.4rem" }}>🩺</span>
+                  <div style={{
+                    background: "#ffffff",
+                    border: "1px solid var(--line, #e4e7eb)",
+                    borderRadius: "10px",
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                    opacity: patientSummary?.blood_pressure ? 1 : 0.7
+                  }}>
+                    <span style={{ fontSize: "1.4rem" }}>%</span>
                     <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Blood Pressure</span>
-                    <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
-                      {patientSummary?.blood_pressure?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.blood_pressure?.unit || "mmHg"}</span>
-                    </strong>
-                    {patientSummary?.blood_pressure?.recordedAt && (
-                      <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                        As of {new Date(patientSummary.blood_pressure.recordedAt).toLocaleDateString()}
+                    {patientSummary?.blood_pressure ? (
+                      <>
+                        <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
+                          {patientSummary.blood_pressure.value} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)", fontWeight: 500 }}>{patientSummary.blood_pressure.unit || "mmHg"}</span>
+                        </strong>
+                        <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
+                          As of {new Date(patientSummary.blood_pressure.recordedAt).toLocaleDateString()}
+                        </span>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: "0.88rem", color: "var(--muted, #486581)", fontStyle: "italic", fontWeight: 550 }}>
+                        No data available
                       </span>
                     )}
                   </div>
 
                   {/* Heart Rate */}
-                  <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div style={{
+                    background: "#ffffff",
+                    border: "1px solid var(--line, #e4e7eb)",
+                    borderRadius: "10px",
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                    opacity: patientSummary?.heart_rate ? 1 : 0.7
+                  }}>
                     <span style={{ fontSize: "1.4rem" }}>❤️</span>
                     <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Heart Rate / Pulse</span>
-                    <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
-                      {patientSummary?.heart_rate?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.heart_rate?.unit || "bpm"}</span>
-                    </strong>
-                    {patientSummary?.heart_rate?.recordedAt && (
-                      <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                        As of {new Date(patientSummary.heart_rate.recordedAt).toLocaleDateString()}
+                    {patientSummary?.heart_rate ? (
+                      <>
+                        <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
+                          {patientSummary.heart_rate.value} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)", fontWeight: 500 }}>{patientSummary.heart_rate.unit || "bpm"}</span>
+                        </strong>
+                        <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
+                          As of {new Date(patientSummary.heart_rate.recordedAt).toLocaleDateString()}
+                        </span>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: "0.88rem", color: "var(--muted, #486581)", fontStyle: "italic", fontWeight: 550 }}>
+                        No data available
                       </span>
                     )}
                   </div>
 
                   {/* Temperature */}
-                  <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div style={{
+                    background: "#ffffff",
+                    border: "1px solid var(--line, #e4e7eb)",
+                    borderRadius: "10px",
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                    opacity: patientSummary?.body_temperature ? 1 : 0.7
+                  }}>
                     <span style={{ fontSize: "1.4rem" }}>🌡️</span>
                     <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Temperature</span>
-                    <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
-                      {patientSummary?.body_temperature?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.body_temperature?.unit || "°C"}</span>
-                    </strong>
-                    {patientSummary?.body_temperature?.recordedAt && (
-                      <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                        As of {new Date(patientSummary.body_temperature.recordedAt).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* SpO2 */}
-                  <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <span style={{ fontSize: "1.4rem" }}>🫁</span>
-                    <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Oxygen Saturation</span>
-                    <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
-                      {patientSummary?.spo2?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.spo2?.unit || "%"}</span>
-                    </strong>
-                    {patientSummary?.spo2?.recordedAt && (
-                      <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                        As of {new Date(patientSummary.spo2.recordedAt).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Respiratory Rate */}
-                  <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <span style={{ fontSize: "1.4rem" }}>🌬️</span>
-                    <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Respiratory Rate</span>
-                    <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
-                      {patientSummary?.respiratory_rate?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.respiratory_rate?.unit || "breaths/min"}</span>
-                    </strong>
-                    {patientSummary?.respiratory_rate?.recordedAt && (
-                      <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                        As of {new Date(patientSummary.respiratory_rate.recordedAt).toLocaleDateString()}
+                    {patientSummary?.body_temperature ? (
+                      <>
+                        <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
+                          {patientSummary.body_temperature.value} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)", fontWeight: 500 }}>{patientSummary.body_temperature.unit || "°C"}</span>
+                        </strong>
+                        <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
+                          As of {new Date(patientSummary.body_temperature.recordedAt).toLocaleDateString()}
+                        </span>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: "0.88rem", color: "var(--muted, #486581)", fontStyle: "italic", fontWeight: 550 }}>
+                        No data available
                       </span>
                     )}
                   </div>
 
                   {/* Weight */}
-                  <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div style={{
+                    background: "#ffffff",
+                    border: "1px solid var(--line, #e4e7eb)",
+                    borderRadius: "10px",
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                    opacity: patientSummary?.weight ? 1 : 0.7
+                  }}>
                     <span style={{ fontSize: "1.4rem" }}>⚖️</span>
                     <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Weight</span>
-                    <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
-                      {patientSummary?.weight?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.weight?.unit || "kg"}</span>
-                    </strong>
-                    {patientSummary?.weight?.recordedAt && (
-                      <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                        As of {new Date(patientSummary.weight.recordedAt).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Height */}
-                  <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "10px", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <span style={{ fontSize: "1.4rem" }}>📏</span>
-                    <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase" }}>Height</span>
-                    <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
-                      {patientSummary?.height?.value || "—"} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)" }}>{patientSummary?.height?.unit || "cm"}</span>
-                    </strong>
-                    {patientSummary?.height?.recordedAt && (
-                      <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                        As of {new Date(patientSummary.height.recordedAt).toLocaleDateString()}
+                    {patientSummary?.weight ? (
+                      <>
+                        <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
+                          {patientSummary.weight.value} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)", fontWeight: 500 }}>{patientSummary.weight.unit || "kg"}</span>
+                        </strong>
+                        <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
+                          As of {new Date(patientSummary.weight.recordedAt).toLocaleDateString()}
+                        </span>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: "0.88rem", color: "var(--muted, #486581)", fontStyle: "italic", fontWeight: 550 }}>
+                        No data available
                       </span>
                     )}
                   </div>
@@ -757,43 +1004,96 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
 
             {activeWorkspaceTab === "timeline" && (
               <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "14px", padding: "24px" }}>
-                <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800 }}>
-                  Historical Physical Measurement Logs
+                <h3 style={{ margin: "0 0 20px 0", color: "var(--navy, #0a2540)", fontSize: "1.15rem", fontWeight: 800, borderBottom: "1px solid #f1f5f9", paddingBottom: "12px" }}>
+                  🏥 Longitudinal Health History Timeline
                 </h3>
                 {patientTimeline.length === 0 ? (
                   <p style={{ margin: 0, color: "var(--muted, #486581)", fontSize: "0.88rem" }}>
                     No physiological records exist in this patient's medical timeline.
                   </p>
                 ) : (
-                  <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem" }}>
-                    <thead>
-                      <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
-                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Recorded At</th>
-                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Parameter</th>
-                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Value</th>
-                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Source</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {patientTimeline.map((record, index) => {
-                        const displayParam = record.parameter.toUpperCase().replace("_", " ");
-                        return (
-                          <tr key={index} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                            <td style={{ padding: "12px 6px", color: "var(--navy)", fontWeight: 600 }}>
-                              {new Date(record.recordedAt).toLocaleString()}
-                            </td>
-                            <td style={{ padding: "12px 6px", fontWeight: 700, color: "#0080ff" }}>{displayParam}</td>
-                            <td style={{ padding: "12px 6px", fontWeight: 750, color: "var(--navy)" }}>
-                              {record.value} {record.unit}
-                            </td>
-                            <td style={{ padding: "12px 6px", color: "var(--muted)", textTransform: "capitalize" }}>
-                              {record.source}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                    {patientTimeline.map((record, index) => {
+                      const displayParam = record.parameter.replace("_", " ").toUpperCase().replace(/\b\w/g, c => c.toUpperCase());
+                      const isNewest = index === 0;
+                      const dateStr = new Date(record.recordedAt).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric"
+                      });
+
+                      return (
+                        <div
+                          key={index}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "16px",
+                            background: isNewest ? "#f0f9ff" : "#ffffff",
+                            border: isNewest ? "1.5px solid #0080ff" : "1px solid var(--line, #e4e7eb)",
+                            borderRadius: "10px",
+                            boxShadow: isNewest ? "0 4px 12px rgba(0, 128, 255, 0.08)" : "none",
+                            transition: "all 0.15s ease"
+                          }}
+                          className="table-row-hover"
+                        >
+                          <div>
+                            <span style={{
+                              fontSize: "0.82rem",
+                              color: isNewest ? "#0080ff" : "#627d98",
+                              fontWeight: 800,
+                              display: "block",
+                              marginBottom: "4px"
+                            }}>
+                              {dateStr}
+                            </span>
+                            <span style={{
+                              fontSize: "1.05rem",
+                              color: "var(--navy, #0a2540)",
+                              fontWeight: 800,
+                              display: "block"
+                            }}>
+                              {displayParam}
+                            </span>
+                            <span style={{
+                              fontSize: "0.75rem",
+                              color: "var(--muted, #486581)",
+                              textTransform: "capitalize",
+                              display: "block",
+                              marginTop: "2px"
+                            }}>
+                              Source: {record.source}
+                            </span>
+                          </div>
+
+                          <div style={{ textAlign: "right" }}>
+                            <strong style={{
+                              fontSize: "1.25rem",
+                              color: isNewest ? "#0080ff" : "var(--navy, #0a2540)",
+                              fontWeight: 850
+                            }}>
+                              {record.value} <span style={{ fontSize: "0.8rem", fontWeight: 650, color: "var(--muted)" }}>{record.unit}</span>
+                            </strong>
+
+                            {isNewest && (
+                              <span style={{
+                                "display": "block",
+                                fontSize: "0.68rem",
+                                fontWeight: 800,
+                                color: "#0080ff",
+                                textTransform: "uppercase",
+                                marginTop: "4px",
+                                letterSpacing: "0.05em"
+                              }}>
+                                ✨ Latest Record
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             )}
@@ -833,6 +1133,43 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                     ))}
                   </div>
                 </div>
+
+                {/* Factual statistics card grid for Selected Timeframe */}
+                {trendStats && (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                    gap: "16px",
+                    background: "#f8fafc",
+                    border: "1px solid var(--line, #e4e7eb)",
+                    borderRadius: "12px",
+                    padding: "16px"
+                  }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Readings</span>
+                      <strong style={{ fontSize: "1.2rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>{trendStats.totalReadings}</strong>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Latest</span>
+                      <strong style={{ fontSize: "1.2rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>{trendStats.latest} <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontWeight: 500 }}>{trendStats.unit}</span></strong>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Average</span>
+                      <strong style={{ fontSize: "1.2rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>{trendStats.average} <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontWeight: 500 }}>{trendStats.unit}</span></strong>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Range (Min–Max)</span>
+                      <strong style={{ fontSize: "1.2rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>{trendStats.lowest}–{trendStats.highest}</strong>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase" }}>Trend Direction</span>
+                      <strong style={{ fontSize: "1.2rem", color: trendStats.trendDirection.color, fontWeight: 800, display: "flex", alignItems: "center", gap: "4px" }}>
+                        {trendStats.trendDirection.text} {trendStats.trendDirection.icon}
+                      </strong>
+                    </div>
+                  </div>
+                )}
+
                 <TrendChart
                   records={trendRecords}
                   period={trendPeriod}
