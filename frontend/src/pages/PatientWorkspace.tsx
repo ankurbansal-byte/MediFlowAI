@@ -187,7 +187,7 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
 
         // 6. Fetch initial trend
         await fetchPatientTrend(patientId, "blood_sugar", 30);
-      } catch (err: any) {
+      } catch (err) {
         console.error("Error loading workspace details:", err);
         setError("Unable to load patient records or access is unauthorized.");
       } finally {
