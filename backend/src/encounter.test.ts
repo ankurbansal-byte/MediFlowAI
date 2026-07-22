@@ -1,6 +1,10 @@
 import { createEncounter, getEncounterDetail, updateEncounterDetail, completeEncounter } from "./controllers/encounterController";
 import { dynamicMockUsers, dynamicMockAssignments } from "./utils/mockUsers";
 import { dynamicMockEncounters } from "./utils/mockEncounters";
+import { login, refreshToken } from "./controllers/authController";
+import { updateCurrentHospital, getHospitalById } from "./controllers/hospitalController";
+import { authMiddleware } from "./utils/authMiddleware";
+import jwt from "jsonwebtoken";
 
 // Enable mock data mode explicitly for the tests
 process.env.USE_MOCK_DATA = "true";
@@ -275,6 +279,77 @@ async function runTests() {
     await completeEncounter(compReq, resComp);
     assert(resComp.statusCode === 200 || resComp.statusCode === undefined, "Doctor should successfully complete the consultation.");
     assert(flowEnc.status === "completed", "Encounter status must transition to 'completed'.");
+
+    // -------------------------------------------------------------------------
+    // TEST 9: Inactive/Deactivated account blocks Login
+    // -------------------------------------------------------------------------
+    const docUser = dynamicMockUsers.find((u) => u.username === "doctor1");
+    if (docUser) docUser.status = "inactive";
+
+    const loginReq: any = {
+      body: { username: "doctor1", password: "password" }
+    };
+    const resLogin = mockResponse();
+    await login(loginReq, resLogin);
+    assert(resLogin.statusCode === 403, "Deactivated account must be forbidden from logging in.");
+
+    // Restore doctor1 status
+    if (docUser) docUser.status = "active";
+
+    // -------------------------------------------------------------------------
+    // TEST 10: Inactive/Deactivated account blocks API Requests (authMiddleware)
+    // -------------------------------------------------------------------------
+    const JWT_SECRET = process.env.JWT_SECRET || "mediflow_secret_key_change_me_in_production";
+    const testToken = jwt.sign({ username: "doctor1", role: "doctor" }, JWT_SECRET);
+
+    // Set to inactive
+    if (docUser) docUser.status = "inactive";
+
+    const middlewareReq: any = {
+      headers: { authorization: `Bearer ${testToken}` }
+    };
+    const resMiddleware = mockResponse();
+    let middlewareCalledNext = false;
+    await authMiddleware(middlewareReq, resMiddleware, () => {
+      middlewareCalledNext = true;
+    });
+
+    assert(resMiddleware.statusCode === 403, "Deactivated account must be blocked by authMiddleware (403).");
+    assert(!middlewareCalledNext, "Deactivated account request must not proceed to route handler.");
+
+    // Restore doctor1 status
+    if (docUser) docUser.status = "active";
+
+    // -------------------------------------------------------------------------
+    // TEST 11: Non-Admin Hospital Update Block
+    // -------------------------------------------------------------------------
+    const updateHospitalReq: any = {
+      user: { username: "doctor1", role: "doctor" },
+      body: {
+        hospitalName: "New Hospital",
+        address: "Address",
+        city: "City",
+        state: "State",
+        country: "Country",
+        pincode: "123456",
+        phone: "1234567890",
+        email: "hosp@test.com"
+      }
+    };
+    const resUpdateHospital = mockResponse();
+    await updateCurrentHospital(updateHospitalReq, resUpdateHospital);
+    assert(resUpdateHospital.statusCode === 403, "Doctor role is forbidden from updating hospital profile details.");
+
+    // -------------------------------------------------------------------------
+    // TEST 12: Cross-Hospital Profile Retrieval Block
+    // -------------------------------------------------------------------------
+    const getHospitalReq: any = {
+      user: { username: "doctor1", role: "doctor" }, // Belongs to HOSP-001
+      params: { hospitalId: "HOSP-999" } // Trying to fetch cross-hospital HOSP-999
+    };
+    const resGetHospital = mockResponse();
+    await getHospitalById(getHospitalReq, resGetHospital);
+    assert(resGetHospital.statusCode === 403, "Cross-hospital profile lookup must be strictly forbidden.");
 
   } catch (error) {
     console.error("💥 Unexpected test execution error:", error);
