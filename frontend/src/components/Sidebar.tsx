@@ -16,7 +16,7 @@ const navigationItems: NavigationItem[] = [
   { label: "OPD / Visits", icon: "📆", tab: "visits-admin" },
   { label: "Visits / Consultations", icon: "📆", tab: "doctor-visits" },
   { label: "Hospital", icon: "🏥", tab: "hospital" },
-  { label: "Trends", icon: "↗", tab: "trends" },
+  { label: "Health / Trends", icon: "↗", tab: "trends" },
   { label: "AI Insights", icon: "✦", tab: "ai-insights" },
   { label: "Profile", icon: "👤", tab: "profile" },
   { label: "Settings", icon: "⚙", tab: "settings" },

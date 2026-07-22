@@ -153,6 +153,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
             setSelectedParameter={setSelectedParameter}
             visibleTimeline={visibleTimeline}
             setIsModalOpen={setIsModalOpen}
+            onTabChange={handleTabChange}
           />
         );
       case "today-patients":
