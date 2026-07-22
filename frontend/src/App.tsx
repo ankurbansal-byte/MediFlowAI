@@ -7,6 +7,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
+import PublicHome from "./pages/PublicHome";
 
 export interface User {
   username: string;
@@ -19,7 +20,7 @@ export interface User {
   mustChangePassword?: boolean;
 }
 
-type ActiveView = "login" | "patient-register" | "doctor-register" | "forgot-password" | "reset-password" | "verify-email";
+type ActiveView = "home" | "login" | "patient-register" | "doctor-register" | "forgot-password" | "reset-password" | "verify-email";
 
 function App() {
   const [user, setUser] = useState<User | null>(() => {
@@ -58,7 +59,7 @@ function App() {
     } else if (viewParam === "verify-email") {
       return "verify-email";
     }
-    return "login";
+    return "home";
   });
 
   const [successMessage, setSuccessMessage] = useState<string>("");
@@ -73,7 +74,7 @@ function App() {
     localStorage.removeItem("mediflow_token");
     localStorage.removeItem("mediflow_refresh_token");
     setUser(null);
-    setActiveView("login");
+    setActiveView("home");
   };
 
   const handleVerifySuccess = () => {
@@ -133,6 +134,12 @@ function App() {
 
   // Guest Routing
   switch (activeView) {
+    case "home":
+      return (
+        <PublicHome
+          onLoginClick={() => setActiveView("login")}
+        />
+      );
     case "patient-register":
       return (
         <PatientRegister
@@ -219,6 +226,7 @@ function App() {
             onOpenPatientRegister={() => { setSuccessMessage(""); setActiveView("patient-register"); }}
             onOpenDoctorRegister={() => { setSuccessMessage(""); setActiveView("doctor-register"); }}
             onOpenForgotPassword={() => { setSuccessMessage(""); setActiveView("forgot-password"); }}
+            onBackToHome={() => { setSuccessMessage(""); setActiveView("home"); }}
           />
         </div>
       );
