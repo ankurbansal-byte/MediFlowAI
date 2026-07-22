@@ -1,4 +1,4 @@
-/* Premium dual-portal layout */
+/* Premium dual-portal layout & gateway selections */
 
 .login-page-wrapper {
   display: flex;
@@ -84,7 +84,7 @@
 
 .portal-header {
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .portal-icon-wrapper {
@@ -292,20 +292,144 @@
   font-weight: 500;
 }
 
-.portal-register-link-btn {
+/* New CSS for Multi-step Portal Selection Gateway */
+
+.portal-selection-container {
+  width: 100%;
+  max-width: 960px;
+  box-sizing: border-box;
+}
+
+.portal-select-card {
+  padding: 50px 40px;
+  text-align: center;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 320px;
+  background-color: #ffffff;
+  border: 1.5px solid #e2e8f0;
+}
+
+.portal-select-card:hover {
+  border-color: #0080ff;
+  transform: translateY(-4px);
+}
+
+.portal-select-action-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 20px;
+}
+
+.portal-select-action-btn.hospital-select-btn {
+  background-color: #0080ff;
+  color: #ffffff;
+}
+
+.portal-select-action-btn.hospital-select-btn:hover {
+  background-color: #0066cc;
+}
+
+.portal-select-action-btn.patient-select-btn {
+  background-color: #0a2540;
+  color: #ffffff;
+}
+
+.portal-select-action-btn.patient-select-btn:hover {
+  background-color: #061729;
+}
+
+.back-to-home-link-btn {
   background: none;
   border: none;
-  color: #0080ff;
-  font-size: 13.5px;
+  color: #486581;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  padding: 2px 8px;
   transition: color 0.15s ease;
 }
 
-.portal-register-link-btn:hover {
-  color: #0066cc;
+.back-to-home-link-btn:hover {
+  color: #0080ff;
   text-decoration: underline;
+}
+
+/* Single Form Card Wrapper */
+
+.login-single-portal-wrapper {
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+}
+
+.single-form-card {
+  position: relative;
+  padding: 40px;
+  border: 1.5px solid #e2e8f0;
+}
+
+.back-navigation-btn {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: none;
+  border: none;
+  color: #627d98;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.back-navigation-btn:hover {
+  color: #0080ff;
+}
+
+/* Hospital Role Tab Selector */
+
+.hospital-role-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background-color: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.role-tab-btn {
+  background: none;
+  border: none;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #627d98;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.role-tab-btn.active {
+  background-color: #ffffff;
+  color: #0a2540;
+  box-shadow: 0 2px 4px rgba(10, 37, 64, 0.05);
+}
+
+.active-role-indicator {
+  text-align: center;
+  font-size: 13px;
+  color: #627d98;
+  margin-bottom: 20px;
+}
+
+.active-role-indicator strong {
+  color: #0a2540;
 }
 
 /* Responsiveness Rules: Desktop, Tablet, Mobile */

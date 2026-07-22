@@ -9,9 +9,22 @@ def run_sprint25_verification():
         context = browser.new_context()
         page = context.new_page()
 
-        # Step 1: Admin Login
+        # Step 1: Admin Login with Portal Selection
         print("👤 1. Logging in as Hospital Admin...")
         page.goto("http://localhost:5173")
+
+        # Public Home page login click
+        page.wait_for_selector("text=Explore MediFlowAI")
+        page.click("text=Login")
+
+        # Portal selection click
+        page.wait_for_selector("text=Hospital Portal")
+        page.click("text=Access Hospital Portal")
+
+        # Select Admin role
+        page.wait_for_selector("text=Administrator")
+        page.click("text=Administrator")
+
         page.wait_for_selector("#doc-username")
         page.fill("#doc-username", "admin")
         page.fill("#doc-password", "password")
@@ -69,6 +82,11 @@ def run_sprint25_verification():
         # Step 8: Logout Admin
         print("⏾ 8. Logging out Admin...")
         page.click("text=Log Out")
+
+        # Navigate back to login selection to verify doc-username is present
+        page.wait_for_selector("text=Explore MediFlowAI")
+        page.click("text=Login")
+        page.click("text=Access Hospital Portal")
         page.wait_for_selector("#doc-username")
         print("✅ Admin logged out successfully!")
 

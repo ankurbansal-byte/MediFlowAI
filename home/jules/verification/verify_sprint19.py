@@ -12,6 +12,19 @@ def run_sprint19_flow():
         # Step 1: Admin Login
         print("👤 1. Logging in as Hospital Admin...")
         page.goto("http://localhost:5173")
+
+        # Public Home page login click
+        page.wait_for_selector("text=Explore MediFlowAI")
+        page.click("text=Login")
+
+        # Portal selection click
+        page.wait_for_selector("text=Hospital Portal")
+        page.click("text=Access Hospital Portal")
+
+        # Select Admin role
+        page.wait_for_selector("text=Administrator")
+        page.click("text=Administrator")
+
         page.wait_for_selector("#doc-username")
         page.fill("#doc-username", "admin")
         page.fill("#doc-password", "password")
@@ -65,6 +78,12 @@ def run_sprint19_flow():
         # Step 6: Logout Admin
         print("⏾ 6. Logging out Admin...")
         page.click("text=Log Out")
+
+        # Navigate through portals as Doctor
+        page.wait_for_selector("text=Explore MediFlowAI")
+        page.click("text=Login")
+        page.click("text=Access Hospital Portal")
+        page.click("text=Doctor")
         page.wait_for_selector("#doc-username")
 
         # Step 7: Log in as Doctor1
