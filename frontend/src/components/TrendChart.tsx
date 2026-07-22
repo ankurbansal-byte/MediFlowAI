@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { formatShortDate } from "../utils/date";
 
-export type TrendPeriod = 7 | 30 | 90;
+export type TrendPeriod = 7 | 30 | 90 | 365 | 36500;
 
 export type TrendRecord = {
   value: string | number;
@@ -168,14 +168,14 @@ const TrendChart = ({ records, period, onPeriodChange, isLoading, hasError, para
           </h2>
         </div>
         <div className="trend-section__periods" aria-label="Trend period">
-          {([7, 30, 90] as TrendPeriod[]).map((days) => (
+          {([7, 30, 90, 365, 36500] as TrendPeriod[]).map((days) => (
             <button
               className={`trend-section__period${period === days ? " trend-section__period--active" : ""}`}
               key={days}
               onClick={() => onPeriodChange(days)}
               type="button"
             >
-              Last {days} Days
+              {days === 36500 ? "All" : days === 365 ? "1 Year" : days === 90 ? "3 Months" : `Last ${days} Days`}
             </button>
           ))}
         </div>

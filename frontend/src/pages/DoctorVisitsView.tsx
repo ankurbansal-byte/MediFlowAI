@@ -81,7 +81,7 @@ const DoctorVisitsView: React.FC<DoctorVisitsViewProps> = ({ user }) => {
   const [patientVisits, setPatientVisits] = useState<EncounterData[]>([]);
   const [trendRecords, setTrendRecords] = useState<WorkspaceTrendRecord[]>([]);
   const [selectedParameter, setSelectedParameter] = useState<"blood_sugar" | "blood_pressure" | "weight" | "heart_rate" | "body_temperature">("blood_sugar");
-  const [trendPeriod, setTrendPeriod] = useState<7 | 30 | 90>(30);
+  const [trendPeriod, setTrendPeriod] = useState<7 | 30 | 90 | 365 | 36500>(30);
   const [isTrendLoading, setIsTrendLoading] = useState(false);
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"overview" | "timeline" | "trends" | "insights" | "visits">("overview");
 
@@ -171,7 +171,7 @@ const DoctorVisitsView: React.FC<DoctorVisitsViewProps> = ({ user }) => {
     }
   };
 
-  const handleSelectPeriod = async (period: 7 | 30 | 90) => {
+  const handleSelectPeriod = async (period: 7 | 30 | 90 | 365 | 36500) => {
     setTrendPeriod(period);
     if (selectedEncounter) {
       await fetchPatientTrend(selectedEncounter.patientId, selectedParameter, period);
