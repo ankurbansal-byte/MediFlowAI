@@ -24,6 +24,7 @@ import DoctorHomeView from "./DoctorHomeView";
 import TodayPatientsView from "./TodayPatientsView";
 import MyPatientsView from "./MyPatientsView";
 import PatientWorkspace from "./PatientWorkspace";
+import AdminDashboardView from "./AdminDashboardView";
 
 interface DashboardProps {
   user: User;
@@ -36,7 +37,7 @@ export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "sett
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(() => {
-    if (user.role === "admin") return "patients";
+    if (user.role === "admin") return "dashboard";
     if (user.role === "doctor") return "dashboard";
     return "dashboard";
   });
@@ -119,6 +120,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
                 setWorkspacePatientId(pId);
                 setWorkspaceEncounterId(encId);
               }}
+            />
+          );
+        }
+        if (user.role === "admin") {
+          return (
+            <AdminDashboardView
+              user={user}
+              onTabChange={handleTabChange}
             />
           );
         }
@@ -339,7 +348,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
               <h1>Patients unavailable</h1>
               <p>Please check the connection and try again.</p>
             </div>
-          ) : (!effectivePatientId && activeTab === "dashboard" && user.role !== "doctor") ? (
+          ) : (!effectivePatientId && activeTab === "dashboard" && user.role !== "doctor" && user.role !== "admin") ? (
             <div className="dashboard__state-card" style={{ margin: "40px auto" }}>
               <h1>No patients found</h1>
               <p>Health records will appear here once a patient has submitted a measurement.</p>
