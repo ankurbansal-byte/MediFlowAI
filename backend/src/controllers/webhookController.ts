@@ -69,6 +69,10 @@ const extractedData = await extractHealthData(message);
 console.log("🧠 Extracted Health Record:");
 console.log(extractedData);
 
+if (!extractedData) {
+  console.error(`❌ [Pipeline Error] AI extraction failed or returned an empty string for user message: "${message}"`);
+}
+
 // AI JSON → HealthRecord Objects
 const records = parseHealthRecord(
   extractedData,

@@ -13,8 +13,9 @@ const client = new OpenAI({
 // ================================
 export async function getAIReply(userMessage: string): Promise<string> {
   try {
+    const modelName = process.env.OPENROUTER_MODEL || "tencent/hy3";
     const completion = await client.chat.completions.create({
-      model: "tencent/hy3:free",
+      model: modelName,
       messages: [
         {
           role: "system",
@@ -55,8 +56,9 @@ export async function extractHealthData(
   message: string
 ): Promise<string> {
   try {
+    const modelName = process.env.OPENROUTER_MODEL || "tencent/hy3";
     const completion = await client.chat.completions.create({
-      model: "tencent/hy3:free",
+      model: modelName,
       messages: [
         {
           role: "system",
@@ -330,8 +332,8 @@ Always return valid JSON only.
 
     return completion.choices[0]?.message?.content ?? "";
   } catch (error: any) {
-    console.error("HEALTH DATA EXTRACTION ERROR");
-    console.error(error);
+    console.error("❌ [AI Service Error] Health data extraction failed via OpenRouter client.");
+    console.error("📝 Error details:", error?.message || error);
 
     return "";
   }
