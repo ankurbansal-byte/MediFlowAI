@@ -1,4 +1,18 @@
-/* Premium dual-portal layout & gateway selections */
+/* MediFlowAI Premium Dual-Portal Login & Gateway Stylesheet */
+
+:root {
+  --primary-blue: #0080ff;
+  --primary-blue-dark: #0066cc;
+  --primary-teal: #00a389;
+  --primary-teal-dark: #00806a;
+  --navy-dark: #0a2540;
+  --slate-dark: #1e293b;
+  --slate-medium: #475569;
+  --slate-light: #f8fafc;
+  --border-pencil: #cbd5e1;
+  --watercolor-blue: radial-gradient(circle, rgba(0, 128, 255, 0.04) 0%, rgba(255, 255, 255, 0) 70%);
+  --watercolor-teal: radial-gradient(circle, rgba(0, 163, 137, 0.04) 0%, rgba(255, 255, 255, 0) 70%);
+}
 
 .login-page-wrapper {
   display: flex;
@@ -6,43 +20,73 @@
   align-items: center;
   justify-content: flex-start;
   min-height: 100vh;
-  background: radial-gradient(circle at 10% 20%, #f4f8fc 0%, #e8f1f7 90%);
+  background-color: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-  padding: 40px 20px;
+  padding: 60px 20px;
   box-sizing: border-box;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Subtle watercolor accent overlays */
+.login-page-wrapper::before {
+  content: "";
+  position: absolute;
+  top: -10%;
+  right: -10%;
+  width: 50vw;
+  height: 50vw;
+  background: var(--watercolor-blue);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.login-page-wrapper::after {
+  content: "";
+  position: absolute;
+  bottom: -10%;
+  left: -10%;
+  width: 50vw;
+  height: 50vw;
+  background: var(--watercolor-teal);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .login-brand-header {
   text-align: center;
-  margin-bottom: 36px;
+  margin-bottom: 40px;
   max-width: 600px;
+  position: relative;
+  z-index: 10;
 }
 
 .login-logo-container {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  text-decoration: none;
 }
 
 .login-logo-mark-blue {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background-color: #0080ff;
+  background-color: var(--primary-blue);
   color: #ffffff;
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 800;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 128, 255, 0.2);
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 128, 255, 0.15);
 }
 
 .login-brand-header h1 {
-  font-size: 32px;
-  color: #0a2540;
+  font-size: 30px;
+  color: var(--navy-dark);
   margin: 0;
   font-weight: 850;
   letter-spacing: -0.02em;
@@ -50,10 +94,19 @@
 
 .login-brand-subtitle {
   font-size: 15px;
-  color: #486581;
-  margin: 0;
-  font-weight: 500;
-  line-height: 1.4;
+  color: var(--slate-medium);
+  margin: 4px 0 0 0;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/* Portal Selection Container (Step 1) */
+.portal-selection-container {
+  width: 100%;
+  max-width: 900px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 10;
 }
 
 .login-dual-portal-container {
@@ -61,25 +114,31 @@
   grid-template-columns: 1fr 1fr;
   gap: 32px;
   width: 100%;
-  max-width: 960px;
   box-sizing: border-box;
 }
 
 .login-portal-section {
   background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 10px 35px rgba(10, 37, 64, 0.05), 0 1px 3px rgba(10, 37, 64, 0.02);
-  border: 1px solid #e4e7eb;
-  padding: 40px;
+  border-radius: 18px;
+  box-shadow: 0 8px 30px rgba(10, 37, 64, 0.03);
+  border: 1px dashed var(--border-pencil);
+  padding: 48px 40px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.25s ease;
+}
+
+.login-portal-section.portal-select-card {
+  min-height: 340px;
+  justify-content: space-between;
 }
 
 .login-portal-section:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(10, 37, 64, 0.08), 0 1px 4px rgba(10, 37, 64, 0.03);
+  transform: translateY(-3px);
+  border-style: solid;
+  border-color: var(--primary-blue);
+  box-shadow: 0 12px 35px rgba(10, 37, 64, 0.06);
 }
 
 .portal-header {
@@ -91,54 +150,175 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
-  font-size: 26px;
-  margin-bottom: 14px;
+  font-size: 28px;
+  margin-bottom: 16px;
+  transition: transform 0.2s ease;
+}
+
+.login-portal-section:hover .portal-icon-wrapper {
+  transform: scale(1.05);
 }
 
 .portal-icon-wrapper.doctor-color {
-  background-color: #e6f0ff;
-  border: 1px solid #99c2ff;
+  background-color: rgba(0, 128, 255, 0.08);
+  border: 1px solid rgba(0, 128, 255, 0.2);
 }
 
 .portal-icon-wrapper.patient-color {
-  background-color: #f0f4f8;
-  border: 1px solid #cbd5e1;
+  background-color: rgba(0, 163, 137, 0.08);
+  border: 1px solid rgba(0, 163, 137, 0.2);
 }
 
 .portal-header h2 {
   font-size: 22px;
-  color: #0a2540;
+  color: var(--navy-dark);
   margin: 0 0 8px 0;
   font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 .portal-header p {
-  font-size: 13.5px;
-  color: #627d98;
+  font-size: 14px;
+  color: var(--slate-medium);
   margin: 0;
-  line-height: 1.4;
-  padding: 0 10px;
+  line-height: 1.5;
+  padding: 0 8px;
 }
 
+/* Action Buttons on Gateway Cards */
+.portal-select-action-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.portal-select-action-btn.hospital-select-btn {
+  background-color: var(--primary-blue);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 128, 255, 0.15);
+}
+
+.portal-select-action-btn.hospital-select-btn:hover {
+  background-color: var(--primary-blue-dark);
+}
+
+.portal-select-action-btn.patient-select-btn {
+  background-color: var(--navy-dark);
+  color: #ffffff;
+}
+
+.portal-select-action-btn.patient-select-btn:hover {
+  background-color: #111827;
+}
+
+/* Link Button to Back Home */
+.back-to-home-link-btn {
+  background: none;
+  border: none;
+  color: var(--slate-medium);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  margin-top: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.back-to-home-link-btn:hover {
+  color: var(--primary-blue);
+  text-decoration: underline;
+}
+
+/* Single Form Card (Steps 2A, 2B) */
+.login-single-portal-wrapper {
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 10;
+}
+
+.login-portal-section.single-form-card {
+  border-style: solid;
+  border-color: var(--border-pencil);
+  padding: 40px;
+}
+
+.back-navigation-btn {
+  background: none;
+  border: none;
+  color: var(--slate-medium);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  align-self: flex-start;
+  margin-bottom: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+}
+
+.back-navigation-btn:hover {
+  color: var(--primary-blue);
+}
+
+/* Hospital Portal Role Tabs */
+.hospital-role-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background-color: var(--slate-light);
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-pencil);
+}
+
+.role-tab-btn {
+  background: none;
+  border: none;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--slate-medium);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.role-tab-btn.active {
+  background-color: #ffffff;
+  color: var(--navy-dark);
+  box-shadow: 0 2px 5px rgba(10, 37, 64, 0.05);
+}
+
+.active-role-indicator {
+  text-align: center;
+  font-size: 13px;
+  color: var(--slate-medium);
+  margin-bottom: 24px;
+}
+
+.active-role-indicator strong {
+  color: var(--navy-dark);
+}
+
+/* Login Form Fields */
 .portal-form {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  flex-grow: 1;
-}
-
-.portal-error-alert {
-  background-color: #fef2f2;
-  border-left: 4px solid #ef4444;
-  color: #991b1b;
-  padding: 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  line-height: 1.4;
-  text-align: left;
 }
 
 .portal-form-group {
@@ -149,9 +329,9 @@
 }
 
 .portal-form-group label {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
-  color: #334e68;
+  color: var(--slate-dark);
 }
 
 .portal-password-header {
@@ -162,7 +342,7 @@
 
 .portal-forgot-link {
   font-size: 12px;
-  color: #0080ff;
+  color: var(--primary-blue);
   font-weight: 700;
   text-decoration: none;
   transition: color 0.15s ease;
@@ -170,26 +350,26 @@
 
 .portal-forgot-link:hover {
   text-decoration: underline;
-  color: #0066cc;
+  color: var(--primary-blue-dark);
 }
 
 .portal-input {
   width: 100%;
   padding: 12px 14px;
-  font-size: 14px;
-  border: 1.5px solid #cbd2d9;
+  font-size: 14.5px;
+  border: 1.5px solid var(--border-pencil);
   border-radius: 8px;
   box-sizing: border-box;
-  color: #102a43;
-  background-color: #f5f7fa;
+  color: var(--slate-dark);
+  background-color: var(--slate-light);
   transition: all 0.15s ease-in-out;
 }
 
 .portal-input:focus {
   outline: none;
-  border-color: #0080ff;
+  border-color: var(--primary-blue);
   background-color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(0, 128, 255, 0.12);
+  box-shadow: 0 0 0 3px rgba(0, 128, 255, 0.1);
 }
 
 .portal-input-with-icon {
@@ -210,7 +390,7 @@
   border: none;
   cursor: pointer;
   font-size: 16px;
-  color: #627d98;
+  color: var(--slate-medium);
   padding: 4px;
   display: flex;
   align-items: center;
@@ -229,17 +409,18 @@
   cursor: pointer;
   width: 16px;
   height: 16px;
-  accent-color: #0080ff;
+  accent-color: var(--primary-blue);
 }
 
 .portal-remember-row label {
   font-size: 13px;
-  color: #486581;
+  color: var(--slate-medium);
   cursor: pointer;
   user-select: none;
   font-weight: 600;
 }
 
+/* Submit Action Button on Forms */
 .portal-submit-btn {
   color: #ffffff;
   border: none;
@@ -253,31 +434,33 @@
 }
 
 .portal-submit-btn.doctor-btn {
-  background-color: #0080ff;
+  background-color: var(--primary-blue);
+  box-shadow: 0 4px 10px rgba(0, 128, 255, 0.15);
 }
 
 .portal-submit-btn.doctor-btn:hover:not(:disabled) {
-  background-color: #0066cc;
+  background-color: var(--primary-blue-dark);
 }
 
 .portal-submit-btn.patient-btn {
-  background-color: #0a2540;
+  background-color: var(--navy-dark);
 }
 
 .portal-submit-btn.patient-btn:hover:not(:disabled) {
-  background-color: #061729;
+  background-color: #111827;
 }
 
 .portal-submit-btn:disabled {
-  background-color: #cbd2d9;
-  color: #829ab1;
+  background-color: var(--border-pencil);
+  color: var(--slate-medium);
   cursor: not-allowed;
   box-shadow: none;
 }
 
+/* Portal Footer */
 .portal-footer-register {
   margin-top: 24px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid rgba(226, 232, 240, 0.8);
   padding-top: 18px;
   display: flex;
   flex-direction: column;
@@ -286,150 +469,16 @@
   text-align: center;
 }
 
-.portal-footer-register span {
-  font-size: 12.5px;
-  color: #627d98;
-  font-weight: 500;
-}
-
-/* New CSS for Multi-step Portal Selection Gateway */
-
-.portal-selection-container {
-  width: 100%;
-  max-width: 960px;
-  box-sizing: border-box;
-}
-
-.portal-select-card {
-  padding: 50px 40px;
-  text-align: center;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 320px;
-  background-color: #ffffff;
-  border: 1.5px solid #e2e8f0;
-}
-
-.portal-select-card:hover {
-  border-color: #0080ff;
-  transform: translateY(-4px);
-}
-
-.portal-select-action-btn {
-  width: 100%;
-  padding: 14px;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  margin-top: 20px;
-}
-
-.portal-select-action-btn.hospital-select-btn {
-  background-color: #0080ff;
-  color: #ffffff;
-}
-
-.portal-select-action-btn.hospital-select-btn:hover {
-  background-color: #0066cc;
-}
-
-.portal-select-action-btn.patient-select-btn {
-  background-color: #0a2540;
-  color: #ffffff;
-}
-
-.portal-select-action-btn.patient-select-btn:hover {
-  background-color: #061729;
-}
-
-.back-to-home-link-btn {
-  background: none;
-  border: none;
-  color: #486581;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-
-.back-to-home-link-btn:hover {
-  color: #0080ff;
-  text-decoration: underline;
-}
-
-/* Single Form Card Wrapper */
-
-.login-single-portal-wrapper {
-  width: 100%;
-  max-width: 480px;
-  box-sizing: border-box;
-}
-
-.single-form-card {
-  position: relative;
-  padding: 40px;
-  border: 1.5px solid #e2e8f0;
-}
-
-.back-navigation-btn {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  background: none;
-  border: none;
-  color: #627d98;
-  font-size: 12.5px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-
-.back-navigation-btn:hover {
-  color: #0080ff;
-}
-
-/* Hospital Role Tab Selector */
-
-.hospital-role-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  background-color: #f1f5f9;
-  padding: 4px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  border: 1px solid #e2e8f0;
-}
-
-.role-tab-btn {
-  background: none;
-  border: none;
-  padding: 10px;
+.portal-error-alert {
+  background-color: #fff5f5;
+  border-left: 4px solid #ef4444;
+  color: #991b1b;
+  padding: 12px 14px;
   border-radius: 6px;
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #627d98;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.role-tab-btn.active {
-  background-color: #ffffff;
-  color: #0a2540;
-  box-shadow: 0 2px 4px rgba(10, 37, 64, 0.05);
-}
-
-.active-role-indicator {
-  text-align: center;
   font-size: 13px;
-  color: #627d98;
-  margin-bottom: 20px;
-}
-
-.active-role-indicator strong {
-  color: #0a2540;
+  line-height: 1.5;
+  text-align: left;
+  font-weight: 600;
 }
 
 /* Responsiveness Rules: Desktop, Tablet, Mobile */
@@ -438,14 +487,15 @@
     grid-template-columns: 1fr;
     gap: 24px;
     max-width: 480px;
+    margin: 0 auto;
   }
 
   .login-portal-section {
-    padding: 32px;
+    padding: 36px 32px;
   }
 
   .login-page-wrapper {
-    padding: 30px 16px;
+    padding: 40px 16px;
   }
 }
 
