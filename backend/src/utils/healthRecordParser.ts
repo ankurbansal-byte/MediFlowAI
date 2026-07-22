@@ -47,8 +47,9 @@ export function parseHealthRecord(
     }
 
     return records;
-  } catch (error) {
-    console.error("❌ Invalid JSON");
+  } catch (error: any) {
+    console.error("❌ [JSON Parse Error] Failed to parse AI response as JSON:", error?.message || error);
+    console.error("📄 Raw response content that failed parsing was:", JSON.stringify(aiResponse));
     return [];
   }
 }
