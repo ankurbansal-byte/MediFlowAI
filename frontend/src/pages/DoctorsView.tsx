@@ -433,10 +433,10 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
             Hospital Administration Module
           </p>
           <h1 style={{ margin: "4px 0 0 0", color: "var(--navy, #0a2540)", fontSize: "2rem", fontWeight: 850, letterSpacing: "-0.02em" }}>
-            Doctor Management & Enrollment
+            Manage Doctor Profiles & Assignments
           </h1>
           <p style={{ margin: "4px 0 0 0", color: "var(--muted, #486581)", fontSize: "0.95rem" }}>
-            Search, monitor, and enroll professional clinical physicians in your hospital directory.
+            Search hospital doctors, manage active profiles, and assign care team relationships.
           </p>
         </div>
 
@@ -892,13 +892,13 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
         {/* Page Header */}
         <div style={{ marginBottom: "28px", borderBottom: "1px solid var(--line, #e4e7eb)", paddingBottom: "20px" }}>
           <p className="summary-section__eyebrow" style={{ color: "#0080ff", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.85rem", margin: 0 }}>
-            Dedicated Doctor Profile
+            Doctor Profile & Assignments Overview
           </p>
           <h1 style={{ margin: "4px 0 0 0", color: "var(--navy, #0a2540)", fontSize: "2rem", fontWeight: 850, letterSpacing: "-0.02em" }}>
             {doctorDetail.fullName}
           </h1>
           <p style={{ margin: "4px 0 0 0", color: "var(--muted, #486581)", fontSize: "0.95rem" }}>
-            Comprehensive professional details, qualification credentials, and hospital-level access settings.
+            Comprehensive professional details, qualification credentials, active patient care teams, and hospital-level access settings.
           </p>
         </div>
 
@@ -1266,7 +1266,9 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
                 border: "1px solid var(--line, #e4e7eb)",
                 borderRadius: "14px",
                 padding: "24px",
-                boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
+                boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)",
+                overflowX: "auto",
+                WebkitOverflowScrolling: "touch"
               }}>
                 <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.15rem", fontWeight: 800 }}>
                   Doctor OPD Consultation Logs
@@ -1291,7 +1293,7 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
                     </thead>
                     <tbody>
                       {doctorEncounters.map((enc) => (
-                        <tr key={enc.encounterId} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <tr key={enc.encounterId} style={{ borderBottom: "1px solid #f1f5f9" }} className="table-row-hover">
                           <td style={{ padding: "12px 6px", fontWeight: 800, color: "#0080ff", fontFamily: "monospace" }}>{enc.encounterId}</td>
                           <td style={{ padding: "12px 6px", fontWeight: 600, color: "var(--muted)" }}>{enc.patientId}</td>
                           <td style={{ padding: "12px 6px", fontWeight: 700, color: "var(--navy)" }}>{enc.patientName}</td>
@@ -1436,7 +1438,8 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
                   borderRadius: "14px",
                   padding: "24px",
                   boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)",
-                  overflowX: "auto"
+                  overflowX: "auto",
+                  WebkitOverflowScrolling: "touch"
                 }}>
                   <h4 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800 }}>
                     Active Patient Assignments ({assignedPatients.length})
@@ -1464,7 +1467,7 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
                       </thead>
                       <tbody>
                         {assignedPatients.map((ap) => (
-                          <tr key={ap.patientId} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          <tr key={ap.patientId} style={{ borderBottom: "1px solid #f1f5f9" }} className="table-row-hover">
                             <td style={{ padding: "12px 6px", fontWeight: 800, color: "#0080ff", fontFamily: "monospace" }}>{ap.patientId}</td>
                             <td style={{ padding: "12px 6px", fontWeight: 700, color: "var(--navy, #0a2540)" }}>{ap.fullName}</td>
                             <td style={{ padding: "12px 6px" }}>

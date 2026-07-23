@@ -317,10 +317,10 @@ const HospitalVisitsView: React.FC<HospitalVisitsViewProps> = ({ user }) => {
           Hospital Administration Module
         </p>
         <h1 style={{ margin: "4px 0 0 0", color: "var(--navy, #0a2540)", fontSize: "2rem", fontWeight: 850, letterSpacing: "-0.02em" }}>
-          OPD Visit & Clinical Encounters
+          Visit Registry & Active Consultations
         </h1>
         <p style={{ margin: "4px 0 0 0", color: "var(--muted, #486581)", fontSize: "0.95rem" }}>
-          Register and monitor patient consultations, schedule new follow-ups, and review hospital OPD visits.
+          Register outpatient consultations, establish care team mappings, and log vital measurements securely under this facility.
         </p>
       </div>
 
@@ -516,7 +516,8 @@ const HospitalVisitsView: React.FC<HospitalVisitsViewProps> = ({ user }) => {
             borderRadius: "14px",
             padding: "24px",
             boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)",
-            overflowX: "auto"
+            overflowX: "auto",
+            WebkitOverflowScrolling: "touch"
           }}>
             <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.2rem", fontWeight: 800 }}>
               OPD Visit Directory ({filteredEncounters.length})
@@ -761,7 +762,7 @@ const HospitalVisitsView: React.FC<HospitalVisitsViewProps> = ({ user }) => {
               alignItems: "center"
             }}>
               <h3 style={{ margin: 0, color: "var(--navy, #0a2540)", fontWeight: 850 }}>
-                Clinical Encounter File ({viewingEncounter.encounterId})
+                Visit Record & Measurements Overview ({viewingEncounter.encounterId})
               </h3>
               <button
                 onClick={() => setViewingEncounter(null)}
@@ -863,7 +864,7 @@ const HospitalVisitsView: React.FC<HospitalVisitsViewProps> = ({ user }) => {
                 {/* Right side: Record Vitals Portal */}
                 <div style={{ borderLeft: "1px solid var(--line, #e4e7eb)", paddingLeft: "24px" }}>
                   <h4 style={{ margin: "0 0 12px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800 }}>
-                    Record Vitals / Clinical Measurements
+                    Recorded Visit Measurements
                   </h4>
 
                   {isVitalsLoading ? (

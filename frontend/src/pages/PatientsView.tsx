@@ -435,10 +435,10 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
             Hospital Administration Module
           </p>
           <h1 style={{ margin: "4px 0 0 0", color: "var(--navy, #0a2540)", fontSize: "2rem", fontWeight: 850, letterSpacing: "-0.02em" }}>
-            Patient Management & Enrollment
+            Patient Directory & Care Team Management
           </h1>
           <p style={{ margin: "4px 0 0 0", color: "var(--muted, #486581)", fontSize: "0.95rem" }}>
-            Search, monitor, and register new patients in your hospital directory.
+            Search hospital-enrolled patients and manage care team relationships.
           </p>
         </div>
 
@@ -677,8 +677,11 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
               <h3 style={{ margin: "0 0 6px 0", color: "var(--navy, #0a2540)", fontSize: "1.2rem", fontWeight: 800 }}>
                 Enroll New Patient
               </h3>
-              <p style={{ margin: "0 0 20px 0", color: "var(--muted, #486581)", fontSize: "0.85rem", lineHeight: "1.4" }}>
+              <p style={{ margin: "0 0 4px 0", color: "var(--muted, #486581)", fontSize: "0.85rem", lineHeight: "1.4" }}>
                 Complete the credentials profile to generate a unique Patient ID and safe temporary password.
+              </p>
+              <p style={{ margin: "0 0 20px 0", color: "#0d9488", fontSize: "0.78rem", fontWeight: 700 }}>
+                Enrolled Patients belong securely to this hospital tenant
               </p>
 
               <form onSubmit={handleEnrollPatient} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -842,13 +845,13 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
         {/* Page Header */}
         <div style={{ marginBottom: "28px", borderBottom: "1px solid var(--line, #e4e7eb)", paddingBottom: "20px" }}>
           <p className="summary-section__eyebrow" style={{ color: "#0080ff", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.85rem", margin: 0 }}>
-            Dedicated Patient File Foundation
+            Patient Directory File
           </p>
           <h1 style={{ margin: "4px 0 0 0", color: "var(--navy, #0a2540)", fontSize: "2rem", fontWeight: 850, letterSpacing: "-0.02em" }}>
             {patientDetail.fullName}
           </h1>
           <p style={{ margin: "4px 0 0 0", color: "var(--muted, #486581)", fontSize: "0.95rem" }}>
-            Comprehensive clinical monitoring, medical history logs, and multi-tenant patient demographic access.
+            View patient details, active care team members, and chronological health records belonging to your hospital.
           </p>
         </div>
 
@@ -1394,17 +1397,17 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
 
               {activeSubTab === "history" && (
                 <div style={{
-                  padding: "60px 24px",
+                  padding: "16px",
                   textAlign: "center",
                   background: "#ffffff",
-                  border: "1px dashed var(--line, #e4e7eb)",
-                  borderRadius: "14px",
-                  boxShadow: "0 10px 30px rgba(10, 37, 64, 0.02)"
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "10px",
+                  color: "var(--muted, #486581)"
                 }}>
-                  <div style={{ fontSize: "3rem", marginBottom: "16px" }}>🏥</div>
-                  <h3 style={{ margin: "0 0 8px 0", color: "var(--navy, #0a2540)", fontWeight: 800 }}>Medical History Foundation</h3>
-                  <p style={{ margin: 0, color: "var(--muted, #486581)", fontSize: "0.92rem", maxWidth: "450px", marginLeft: "auto", marginRight: "auto" }}>
-                    No chronic conditions, past surgeries, or family medical history documented for this patient file.
+                  <div style={{ fontSize: "2rem", marginBottom: "12px" }}>🏥</div>
+                  <h3 style={{ margin: "0 0 6px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800 }}>Medical History Summary</h3>
+                  <p style={{ margin: 0, fontSize: "0.88rem", maxWidth: "450px", marginLeft: "auto", marginRight: "auto" }}>
+                    No chronic conditions or historical procedures registered for this patient profile. Writable records are managed directly from clinical encounters.
                   </p>
                 </div>
               )}
@@ -1415,7 +1418,9 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
                   border: "1px solid var(--line, #e4e7eb)",
                   borderRadius: "14px",
                   padding: "24px",
-                  boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
+                  boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)",
+                  overflowX: "auto",
+                  WebkitOverflowScrolling: "touch"
                 }}>
                   <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.15rem", fontWeight: 800 }}>
                     Clinical Outpatient Visit History
@@ -1449,7 +1454,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
                       </thead>
                       <tbody>
                         {patientEncounters.map((enc) => (
-                          <tr key={enc.encounterId} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          <tr key={enc.encounterId} style={{ borderBottom: "1px solid #f1f5f9" }} className="table-row-hover">
                             <td style={{ padding: "12px 6px", fontWeight: 800, color: "#0080ff", fontFamily: "monospace" }}>{enc.encounterId}</td>
                             <td style={{ padding: "12px 6px", fontWeight: 600, color: "var(--navy)" }}>
                               {new Date(enc.visitDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
@@ -1516,34 +1521,34 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
 
               {activeSubTab === "prescriptions" && (
                 <div style={{
-                  padding: "60px 24px",
+                  padding: "16px",
                   textAlign: "center",
                   background: "#ffffff",
-                  border: "1px dashed var(--line, #e4e7eb)",
-                  borderRadius: "14px",
-                  boxShadow: "0 10px 30px rgba(10, 37, 64, 0.02)"
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "10px",
+                  color: "var(--muted, #486581)"
                 }}>
-                  <div style={{ fontSize: "3rem", marginBottom: "16px" }}>💊</div>
-                  <h3 style={{ margin: "0 0 8px 0", color: "var(--navy, #0a2540)", fontWeight: 800 }}>Prescriptions Ledger</h3>
-                  <p style={{ margin: 0, color: "var(--muted, #486581)", fontSize: "0.92rem", maxWidth: "450px", marginLeft: "auto", marginRight: "auto" }}>
-                    No pharmaceutical prescriptions or drug lists issued for this patient record.
+                  <div style={{ fontSize: "2rem", marginBottom: "12px" }}>💊</div>
+                  <h3 style={{ margin: "0 0 6px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800 }}>Prescription Records</h3>
+                  <p style={{ margin: 0, fontSize: "0.88rem", maxWidth: "450px", marginLeft: "auto", marginRight: "auto" }}>
+                    No prescriptions have been issued to this patient. Medical prescriptions are tracked chronologically inside OPD visit histories.
                   </p>
                 </div>
               )}
 
               {activeSubTab === "reports" && (
                 <div style={{
-                  padding: "60px 24px",
+                  padding: "16px",
                   textAlign: "center",
                   background: "#ffffff",
-                  border: "1px dashed var(--line, #e4e7eb)",
-                  borderRadius: "14px",
-                  boxShadow: "0 10px 30px rgba(10, 37, 64, 0.02)"
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "10px",
+                  color: "var(--muted, #486581)"
                 }}>
-                  <div style={{ fontSize: "3rem", marginBottom: "16px" }}>📋</div>
-                  <h3 style={{ margin: "0 0 8px 0", color: "var(--navy, #0a2540)", fontWeight: 800 }}>Diagnostic & Lab Reports</h3>
-                  <p style={{ margin: 0, color: "var(--muted, #486581)", fontSize: "0.92rem", maxWidth: "450px", marginLeft: "auto", marginRight: "auto" }}>
-                    Laboratory uploads, clinical radiology PDF reports, and blood panels are awaiting upload integration.
+                  <div style={{ fontSize: "2rem", marginBottom: "12px" }}>📋</div>
+                  <h3 style={{ margin: "0 0 6px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800 }}>Diagnostic Reports</h3>
+                  <p style={{ margin: 0, fontSize: "0.88rem", maxWidth: "450px", marginLeft: "auto", marginRight: "auto" }}>
+                    Laboratory panels and imaging reports can be viewed under clinical encounter attachments when uploaded by authorized care teams.
                   </p>
                 </div>
               )}
@@ -1554,7 +1559,9 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
                   border: "1px solid var(--line, #e4e7eb)",
                   borderRadius: "14px",
                   padding: "24px",
-                  boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
+                  boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)",
+                  overflowX: "auto",
+                  WebkitOverflowScrolling: "touch"
                 }}>
                   <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.15rem", fontWeight: 800 }}>
                     Historical Structured Vitals Log
@@ -1594,7 +1601,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ user }) => {
                           const displayParam = record.parameter.toUpperCase().replace("_", " ");
                           const itemWithMetadata = record as { encounterId?: string; doctorId?: string };
                           return (
-                            <tr key={index} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                            <tr key={index} style={{ borderBottom: "1px solid #f1f5f9" }} className="table-row-hover">
                               <td style={{ padding: "12px 6px", fontWeight: 600, color: "var(--navy)" }}>{dateStr}</td>
                               <td style={{ padding: "12px 6px", fontWeight: 700, color: "#0080ff" }}>{displayParam}</td>
                               <td style={{ padding: "12px 6px", fontWeight: 750, color: "var(--navy)" }}>

@@ -151,7 +151,7 @@ const HospitalView: React.FC<HospitalViewProps> = ({ user }) => {
       {/* Header */}
       <div style={{ marginBottom: "28px", borderBottom: "1px solid var(--line, #e4e7eb)", paddingBottom: "20px" }}>
         <p className="summary-section__eyebrow" style={{ color: "#0080ff", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.85rem", margin: 0 }}>
-          Enterprise Management Suite
+          Hospital Location Profile
         </p>
         <h1 style={{ margin: "4px 0 0 0", color: "var(--navy, #0a2540)", fontSize: "2rem", fontWeight: 850, letterSpacing: "-0.02em" }}>
           Hospital Profile Management
