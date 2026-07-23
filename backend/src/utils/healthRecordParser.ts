@@ -3,10 +3,47 @@ import { IntelligenceResult, CandidateRecord } from "./intelligenceContract";
 import { HealthRecord } from "../services/healthRecordExtractor";
 
 /**
+ * Helper to strip numbers that are part of dates and times from the original message.
+ * This prevents them from accidentally validating hallucinated measurement values.
+ */
+export function stripNumbersBelongingToDatesAndTimes(msg: string): string {
+  let cleaned = msg.toLowerCase();
+
+  // 1. Remove YYYY-MM-DD or standard ISO date parts (like 2026-07-11 or 2026-07-12)
+  cleaned = cleaned.replace(/\b\d{4}-\d{2}-\d{2}\b/g, "");
+
+  // 2. Remove DD Month YYYY or DD Month
+  const monthsPattern = "(?:january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)";
+  const ddMonthYyyyRegex = new RegExp(`\\b\\d{1,2}\\s+${monthsPattern}\\s*(?:\\d{2,4})?\\b`, "gi");
+  cleaned = cleaned.replace(ddMonthYyyyRegex, "");
+
+  // 3. Remove dates with slashes like DD/MM/YYYY or DD/MM/YY
+  cleaned = cleaned.replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g, "");
+
+  // 4. Remove short slash dates like "20/07" only if it matches day <= 31 and month <= 12
+  cleaned = cleaned.replace(/\b(\d{1,2})\/(\d{1,2})\b/g, (match, p1, p2) => {
+    const d = parseInt(p1, 10);
+    const m = parseInt(p2, 10);
+    if (d <= 31 && m <= 12) {
+      return "";
+    }
+    return match;
+  });
+
+  // 5. Remove times with colons/dots like 12:30 or 12.30 followed/preceded by am/pm/hours/minutes
+  cleaned = cleaned.replace(/\b\d{1,2}[:.]\d{2}\s*(?:am|pm)?\b/gi, "");
+
+  // 6. Remove numeric quantities representing durations or times (e.g., "2 hours", "10 min", "5 pm", "10am")
+  cleaned = cleaned.replace(/\b\d+\s*(?:am|pm|hours|hrs|hr|minutes|mins|min|seconds|sec)\b/gi, "");
+
+  return cleaned;
+}
+
+/**
  * Deterministically resolves relative and historical dates from the original message.
- * - Relative terms such as "Aaj", "Today", "aaj", "today", "now", "abhi" resolve to messageDate.
- * - Relative terms such as "Yesterday", "Kal", "kal", "yesterday" resolve to messageDate minus 1 day.
- * - Explicit historical dates (e.g. 15 July) are parsed and respected.
+ * - Relative terms such as "Aaj", "Today", "aaj", "today", "now", "abhi", "subah", "dopahar", "shaam", "raat", "morning", "evening", "afternoon", "night", "this morning" resolve to messageDate.
+ * - Relative terms such as "Yesterday", "Kal", "kal", "yesterday", "last night", "kal raat", "yesterday morning" resolve to messageDate minus 1 day.
+ * - Explicit historical dates (e.g. 15 July, 20/07/2026) are parsed and respected.
  * - LLM hallucinations of the prompt examples (2026-07-11 or 2026-07-12) are discarded unless explicitly mentioned.
  */
 export function resolveRecordedAt(
@@ -20,21 +57,7 @@ export function resolveRecordedAt(
 
   const msgLower = originalMessage.toLowerCase();
 
-  // Check for explicit relative terms in the message
-  const isToday = msgLower.includes("today") || msgLower.includes("aaj") || msgLower.includes("now") || msgLower.includes("abhi");
-  const isYesterday = msgLower.includes("yesterday") || msgLower.includes("kal");
-
-  if (isYesterday) {
-    const date = new Date(messageDate);
-    date.setDate(date.getDate() - 1);
-    return date;
-  }
-
-  if (isToday) {
-    return new Date(messageDate);
-  }
-
-  // If there is an extracted recordedAt absolute date
+  // 1. If there is an extracted recordedAt absolute date, check it first to preserve precision!
   if (extractedRecordedAt) {
     const parsed = new Date(extractedRecordedAt);
     if (!isNaN(parsed.getTime())) {
@@ -43,6 +66,7 @@ export function resolveRecordedAt(
       const parsedIso = parsed.toISOString();
       const hallucinatedDates = ["2026-07-11", "2026-07-12"];
       const matchesHallucination = hallucinatedDates.some((hd) => parsedIso.startsWith(hd));
+      let isHallucination = false;
       if (matchesHallucination) {
         const hasDateMention =
           msgLower.includes("11") ||
@@ -50,11 +74,90 @@ export function resolveRecordedAt(
           msgLower.includes("july") ||
           msgLower.includes("jul");
         if (!hasDateMention) {
-          return new Date(messageDate);
+          isHallucination = true;
         }
       }
-      return parsed;
+      if (!isHallucination) {
+        return parsed;
+      }
     }
+  }
+
+  // 2. If no extracted recordedAt or it was a hallucinated date, check for explicit absolute dates in the original message
+  // Pattern: DD/MM/YYYY
+  const slashDateMatch = originalMessage.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
+  if (slashDateMatch) {
+    const day = parseInt(slashDateMatch[1], 10);
+    const month = parseInt(slashDateMatch[2], 10) - 1; // 0-based
+    const year = parseInt(slashDateMatch[3], 10);
+    const d = new Date(year, month, day, 12, 0, 0); // use mid-day to avoid TZ issues
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // Pattern: DD/MM (like 20/07)
+  const shortSlashDateMatch = originalMessage.match(/\b(\d{1,2})\/(\d{1,2})\b/);
+  if (shortSlashDateMatch) {
+    const first = parseInt(shortSlashDateMatch[1], 10);
+    const second = parseInt(shortSlashDateMatch[2], 10);
+    if (first <= 31 && second <= 12) {
+      const year = messageDate.getFullYear();
+      const d = new Date(year, second - 1, first, 12, 0, 0);
+      if (!isNaN(d.getTime())) return d;
+    }
+  }
+
+  // Pattern: DD Month YYYY or DD Month (e.g., "20 July 2026" or "20 July")
+  const monthsList = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december",
+                      "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+  const monthRegex = new RegExp(`\\b(\\d{1,2})\\s+(${monthsList.join("|")})\\s*(\\d{4})?\\b`, "i");
+  const monthMatch = originalMessage.match(monthRegex);
+  if (monthMatch) {
+    const day = parseInt(monthMatch[1], 10);
+    const monthStr = monthMatch[2].toLowerCase();
+    let monthIdx = monthsList.indexOf(monthStr);
+    if (monthIdx >= 12) monthIdx -= 12; // Handle shorthand months
+    const year = monthMatch[3] ? parseInt(monthMatch[3], 10) : messageDate.getFullYear();
+    const d = new Date(year, monthIdx, day, 12, 0, 0);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // 3. Relative historical checks (yesterday, kal, last night, kal raat, yesterday morning)
+  const isYesterday = msgLower.includes("yesterday") ||
+                      msgLower.includes("kal") ||
+                      msgLower.includes("कल") ||
+                      msgLower.includes("last night") ||
+                      msgLower.includes("kal raat") ||
+                      msgLower.includes("कल रात") ||
+                      msgLower.includes("yesterday morning");
+
+  if (isYesterday) {
+    const date = new Date(messageDate);
+    date.setDate(date.getDate() - 1);
+    return date;
+  }
+
+  // Relative current day checks
+  const isToday = msgLower.includes("today") ||
+                  msgLower.includes("aaj") ||
+                  msgLower.includes("आज") ||
+                  msgLower.includes("now") ||
+                  msgLower.includes("abhi") ||
+                  msgLower.includes("morning") ||
+                  msgLower.includes("subah") ||
+                  msgLower.includes("सुबह") ||
+                  msgLower.includes("dopahar") ||
+                  msgLower.includes("दोपहर") ||
+                  msgLower.includes("shaam") ||
+                  msgLower.includes("शाम") ||
+                  msgLower.includes("raat") ||
+                  msgLower.includes("रात") ||
+                  msgLower.includes("this morning") ||
+                  msgLower.includes("afternoon") ||
+                  msgLower.includes("evening") ||
+                  msgLower.includes("night");
+
+  if (isToday) {
+    return new Date(messageDate);
   }
 
   // Default to messageDate
@@ -72,10 +175,10 @@ export function isValueSupportedByMessage(
 ): boolean {
   if (value === undefined || value === null) return false;
 
-  const msgLower = originalMessage.toLowerCase();
+  const cleanedMessage = stripNumbersBelongingToDatesAndTimes(originalMessage);
 
-  // Extract all numbers from original message (integers and decimals)
-  const numbersInMessage = originalMessage.match(/\d+(\.\d+)?/g) || [];
+  // Extract all numbers from cleaned message (integers and decimals)
+  const numbersInMessage = cleanedMessage.match(/\d+(\.\d+)?/g) || [];
   const floatNumbers = numbersInMessage.map(n => parseFloat(n));
 
   // If parameter is body_temperature and value is in C, we might have had Fahrenheit in the message
@@ -94,6 +197,52 @@ export function isValueSupportedByMessage(
         return false;
       });
       if (matchFound) return true;
+    }
+  }
+
+  // If parameter is weight and value is in kg, we might have had lbs in the message
+  if (parameter === "weight") {
+    const valNum = Number(value);
+    if (!isNaN(valNum)) {
+      const matchFound = floatNumbers.some(n => {
+        // Direct match with tolerance (e.g. 72.4 vs 72.4)
+        if (Math.abs(n - valNum) < 0.2) return true;
+        // lbs match (lbs to kg conversion: kg = lbs * 0.45359237)
+        const expectedKg = n * 0.45359237;
+        if (Math.abs(expectedKg - valNum) < 1.0) return true;
+        return false;
+      });
+      if (matchFound) return true;
+    }
+  }
+
+  // If parameter is height, can we support feet/inches conversions?
+  if (parameter === "height") {
+    const valNum = Number(value);
+    if (!isNaN(valNum)) {
+      // Direct match in cm first
+      if (floatNumbers.some(n => Math.abs(n - valNum) < 0.2)) {
+        return true;
+      }
+      // Check if feet and inches representation exists in message
+      // E.g., if there are two numbers in the message like 5 and 8, they could represent feet and inches.
+      for (let i = 0; i < floatNumbers.length; i++) {
+        const ft = floatNumbers[i];
+        if (ft >= 3 && ft <= 8) { // reasonable feet range
+          // Check if there is an inch number
+          for (let j = 0; j < floatNumbers.length; j++) {
+            if (i === j) continue;
+            const inch = floatNumbers[j];
+            if (inch >= 0 && inch < 12) {
+              const cm = (ft * 12 + inch) * 2.54;
+              if (Math.abs(cm - valNum) < 3.0) return true;
+            }
+          }
+          // Also check single feet measurement (e.g. "5 feet" -> 152.4 cm)
+          const cmOnlyFt = ft * 12 * 2.54;
+          if (Math.abs(cmOnlyFt - valNum) < 3.0) return true;
+        }
+      }
     }
   }
 
@@ -190,7 +339,8 @@ export function parseHealthRecord(
   patientId: string,
   source: "text" | "voice",
   originalMessage: string,
-  whatsappMessageId: string
+  whatsappMessageId: string,
+  messageDate?: Date
 ): HealthRecord[] {
   try {
     const parsed = JSON.parse(aiResponse);
@@ -229,7 +379,7 @@ export function parseHealthRecord(
           parameter: item.parameter,
           value: resolvedVal,
           unit: item.unit ?? PARAMETER_REGISTRY[item.parameter]?.defaultUnit ?? "",
-          recordedAt: resolveRecordedAt(originalMessage, item.recordedAt as string | null, new Date()),
+          recordedAt: resolveRecordedAt(originalMessage, item.recordedAt as string | null, messageDate),
           source,
           confidence: item.confidence ?? 0.99,
           originalMessage,
@@ -270,7 +420,7 @@ export function parseHealthRecord(
               ? `${item.systolic}/${item.diastolic}`
               : Number(item.value),
           unit: item.unit ?? "",
-          recordedAt: resolveRecordedAt(originalMessage, item.recordedAt, new Date()),
+          recordedAt: resolveRecordedAt(originalMessage, item.recordedAt, messageDate),
           source,
           confidence: 0.99,
           originalMessage,
