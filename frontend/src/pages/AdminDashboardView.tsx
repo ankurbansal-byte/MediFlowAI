@@ -106,13 +106,13 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user, onTabChan
       {/* Page Header */}
       <div style={{ marginBottom: "28px", borderBottom: "1px solid var(--line, #e4e7eb)", paddingBottom: "20px" }}>
         <p className="summary-section__eyebrow" style={{ color: "#0080ff", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.85rem", margin: 0 }}>
-          Welcome back, {user.username.toUpperCase()} (Hospital Administrator)
+          Welcome, Admin {user.username.toUpperCase()}
         </p>
         <h1 style={{ margin: "4px 0 0 0", color: "var(--navy, #0a2540)", fontSize: "2.2rem", fontWeight: 850, letterSpacing: "-0.02em" }}>
-          Hospital Operational Overview
+          Hospital Admin Overview
         </h1>
         <p style={{ margin: "4px 0 0 0", color: "var(--muted, #486581)", fontSize: "0.95rem" }}>
-          Monitor high-level facility statistics, quickly launch management modules, and track daily clinical activities.
+          Monitor hospital-enrolled patients and active doctor profiles to manage relationships and ensure seamless longitudinal health-record access.
         </p>
       </div>
 
@@ -197,7 +197,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user, onTabChan
         boxShadow: "0 10px 30px rgba(10, 37, 64, 0.03)"
       }}>
         <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.15rem", fontWeight: 800 }}>
-          ⚡ Administrative Quick Shortcuts
+          ⚡ Quick Navigation
         </h3>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
           <button
