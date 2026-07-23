@@ -3,6 +3,7 @@ import HealthSummary from "../components/HealthSummary";
 import TrendChart from "../components/TrendChart";
 import { type TrendRecord, type TrendPeriod } from "../components/TrendChart";
 import { type HealthParameter } from "../hooks/useTrendData";
+import { type TimelineRecord } from "../components/TimelineItem";
 
 interface TrendsViewProps {
   trends: Record<HealthParameter, TrendRecord[]>;
@@ -13,6 +14,7 @@ interface TrendsViewProps {
   isTrendLoading: boolean;
   hasTrendError: boolean;
   trend: TrendRecord[];
+  timeline: TimelineRecord[];
 }
 
 const TrendsView: React.FC<TrendsViewProps> = ({
@@ -24,6 +26,7 @@ const TrendsView: React.FC<TrendsViewProps> = ({
   isTrendLoading,
   hasTrendError,
   trend,
+  timeline,
 }) => {
   return (
     <>
@@ -53,6 +56,86 @@ const TrendsView: React.FC<TrendsViewProps> = ({
           parameter={selectedParameter}
         />
       </div>
+
+      {/* Complete Historical Record List */}
+      <section aria-labelledby="full-history-title" style={{ borderTop: "1px solid var(--line)", paddingTop: "40px", marginTop: "40px" }}>
+        <h2 id="full-history-title" style={{ margin: "0 0 8px 0", color: "var(--navy)", fontSize: "1.5rem", fontWeight: 800 }}>
+          🏥 Complete Physiological History
+        </h2>
+        <p style={{ margin: "0 0 20px 0", color: "var(--muted)", fontSize: "0.95rem" }}>
+          The complete chronological archive of all your logged vital signs and WhatsApp telemetry.
+        </p>
+
+        {timeline.length === 0 ? (
+          <div className="clinical-state-card clinical-state-card--empty">
+            <span className="clinical-state-card__icon" aria-hidden="true">◈</span>
+            <div className="clinical-state-card__content">
+              <h3 className="clinical-state-card__title">No Records Available</h3>
+              <p className="clinical-state-card__message">
+                There are currently no physiological observations recorded in your history.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {timeline.map((record, index) => {
+              const displayParam = record.parameter.replace("_", " ").toUpperCase().replace(/\b\w/g, c => c.toUpperCase());
+              const dateStr = record.recordedAt ? new Date(record.recordedAt).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric"
+              }) : "—";
+
+              return (
+                <div
+                  key={index}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "16px",
+                    background: "#ffffff",
+                    border: "1px solid var(--line, #e4e7eb)",
+                    borderRadius: "10px",
+                    transition: "all 0.15s ease"
+                  }}
+                  className="table-row-hover"
+                >
+                  <div>
+                    <span style={{
+                      fontSize: "0.82rem",
+                      color: "#627d98",
+                      fontWeight: 800,
+                      display: "block",
+                      marginBottom: "4px"
+                    }}>
+                      {dateStr}
+                    </span>
+                    <span style={{
+                      fontSize: "1.05rem",
+                      color: "var(--navy, #0a2540)",
+                      fontWeight: 800,
+                      display: "block"
+                    }}>
+                      {displayParam}
+                    </span>
+                  </div>
+
+                  <div style={{ textAlign: "right" }}>
+                    <strong style={{
+                      fontSize: "1.25rem",
+                      color: "var(--navy, #0a2540)",
+                      fontWeight: 850
+                    }}>
+                      {record.value} <span style={{ fontSize: "0.8rem", fontWeight: 650, color: "var(--muted)" }}>{record.unit}</span>
+                    </strong>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </>
   );
 };

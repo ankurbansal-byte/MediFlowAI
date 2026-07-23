@@ -181,29 +181,41 @@ const DashboardView: React.FC<DashboardViewProps> = ({
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
         {/* Patient Greeting & Identity Header */}
-        <div className="patient-welcome-section">
-          <div className="patient-welcome-section__info">
-            <h1 className="patient-welcome-section__title">Welcome, {user.username}</h1>
-            <p className="patient-welcome-section__subtitle">
+        <div className="patient-welcome-section" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--line, #e4e7eb)", paddingBottom: "24px", marginBottom: "24px", gap: "20px", flexWrap: "wrap" }}>
+          <div className="patient-welcome-section__info" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <h1 className="patient-welcome-section__title" style={{ margin: 0, color: "var(--navy, #0a2540)", fontSize: "clamp(1.8rem, 3.2vw, 2.5rem)", fontWeight: 850, letterSpacing: "-0.04em" }}>
+              Welcome, {user.fullName || user.username}
+            </h1>
+            <p className="patient-welcome-section__id" style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--muted, #486581)" }}>
+              Patient ID: {user.patientId || user.username}
+            </p>
+            <p className="patient-welcome-section__subtitle" style={{ margin: "4px 0 0 0", color: "#627d98", fontSize: "0.95rem", fontWeight: 500 }}>
               Your personal health snapshot and longitudinal record.
             </p>
           </div>
-          <button
-            className="btn-add-record"
+          <div
+            className="whatsapp-info-hint"
             onClick={() => setIsModalOpen(true)}
             style={{
-              background: "#238b82",
-              color: "#ffffff",
-              padding: "12px 24px",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              background: "#f0fdf4",
+              border: "1px solid #bbf7d0",
               borderRadius: "10px",
-              border: "none",
-              fontWeight: 750,
-              cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(35, 139, 130, 0.15)"
+              padding: "12px 18px",
+              color: "#166534",
+              fontSize: "0.88rem",
+              fontWeight: 600,
+              maxWidth: "450px",
+              lineHeight: "1.4",
+              cursor: "pointer"
             }}
+            title="Click to manually submit a record"
           >
-            <span className="btn-add-record__icon">+</span> Add New Health Record
-          </button>
+            <span style={{ fontSize: "1.25rem" }}>💬</span>
+            <span>Health updates are automatically organized from your connected WhatsApp submissions.</span>
+          </div>
         </div>
 
         {/* Latest Health Snapshot Grid */}
@@ -255,11 +267,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* Factual Clinical Summary Card */}
         <section aria-labelledby="factual-summary-title" style={{
-          background: "var(--surface, #ffffff)",
-          border: "1.5px dashed #0080ff",
+          background: "#ffffff",
+          border: "1px solid #cbd5e1",
           borderRadius: "14px",
           padding: "24px",
-          boxShadow: "0 10px 30px rgba(10, 37, 64, 0.02)"
+          boxShadow: "0 4px 16px rgba(10, 37, 64, 0.02)"
         }}>
           <h3 id="factual-summary-title" style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.25rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "8px" }}>
             📊 Factual Clinical Summary (Last 30 Days)
@@ -340,7 +352,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {timeline.slice(0, 10).map((record, index) => {
+              {timeline.slice(0, 8).map((record, index) => {
                 const displayParam = record.parameter.replace("_", " ").toUpperCase().replace(/\b\w/g, c => c.toUpperCase());
                 const dateStr = record.recordedAt ? new Date(record.recordedAt).toLocaleDateString("en-IN", {
                   day: "numeric",
@@ -395,7 +407,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
                 );
               })}
-              {timeline.length > 10 && (
+              {timeline.length > 8 && (
                 <button
                   onClick={() => onTabChange && onTabChange("trends")}
                   style={{
@@ -409,7 +421,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                     textAlign: "center"
                   }}
                 >
-                  Show all {timeline.length} history records in Health / Trends →
+                  Show all history records in Health / Trends →
                 </button>
               )}
             </div>
