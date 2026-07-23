@@ -163,6 +163,21 @@ export const receiveMessage = async (req: Request, res: Response) => {
         console.log("📦 Parsed Health Records:");
         console.log(records);
 
+        // Parse intelligence actions for customized WhatsApp messaging
+        let action = "RECORD";
+        let missingFields: string[] = [];
+        try {
+          const parsedAI = JSON.parse(extractedData);
+          if (parsedAI && parsedAI.action) {
+            action = parsedAI.action;
+            if (Array.isArray(parsedAI.missingFields)) {
+              missingFields = parsedAI.missingFields;
+            }
+          }
+        } catch (e) {
+          // Handled gracefully if extractedData is not JSON or not contract-based
+        }
+
         if (records.length > 0) {
           for (const record of records) {
             // Set additional attributes including hospitalId for tenant security
@@ -213,12 +228,25 @@ export const receiveMessage = async (req: Request, res: Response) => {
 
           console.log("✅ All Health Records Saved");
         } else {
-          await sendWhatsAppMessage(
-            from,
-            "❌ Unable to understand your health record."
-          );
-
-          console.log("❌ Invalid Health Record");
+          if (action === "CLARIFY") {
+            await sendWhatsAppMessage(
+              from,
+              `❓ Please clarify: ${missingFields.join(", ")} is missing.`
+            );
+            console.log(`❓ Clarification requested for missing fields: ${missingFields.join(", ")}`);
+          } else if (action === "IGNORE") {
+            await sendWhatsAppMessage(
+              from,
+              "ℹ️ Message received. Conversational updates are not recorded as health entries."
+            );
+            console.log("ℹ️ Conversational message ignored for record persistence.");
+          } else {
+            await sendWhatsAppMessage(
+              from,
+              "❌ Unable to understand your health record."
+            );
+            console.log("❌ Invalid Health Record");
+          }
         }
       }
 
