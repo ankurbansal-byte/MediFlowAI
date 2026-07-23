@@ -108,7 +108,7 @@ async function runTests() {
   };
 
   try {
-    // Set mock extraction callback
+    // Set mock extraction callback returning the new Message Intelligence Contract format
     setMockExtractHealthData(async (message: string) => {
       const msg = message.toLowerCase();
       if (msg.includes("sugar")) {
@@ -118,16 +118,31 @@ async function runTests() {
         if (msg.includes("yesterday")) {
           recordedAt = "2026-07-11T08:00:00"; // simulated hallucinated prompt date
         }
-        return JSON.stringify([
-          {
-            parameter: "blood_sugar",
-            value,
-            unit: "mg/dL",
-            recordedAt,
-          },
-        ]);
+        return JSON.stringify({
+          language: "hinglish",
+          action: "RECORD",
+          intent: "health_measurement",
+          candidateRecords: [
+            {
+              parameter: "blood_sugar",
+              value,
+              unit: "mg/dL",
+              recordedAt,
+              confidence: 0.99
+            }
+          ],
+          missingFields: [],
+          reason: ""
+        });
       }
-      return "[]";
+      return JSON.stringify({
+        language: "unknown",
+        action: "IGNORE",
+        intent: "unknown",
+        candidateRecords: [],
+        missingFields: [],
+        reason: ""
+      });
     });
 
     // Let's seed a clean state of mock users & mock records
@@ -277,7 +292,7 @@ async function runTests() {
     assert(axiosPostCalls.length === 2, "Exactly 2 acknowledgements sent in total across both unique messages.");
 
     // -------------------------------------------------------------------------
-    // TEST E: Existing Sprint-23 patient identity linking and tenant security must continue to pass
+    // TEST E: Existing Patient identity linking and tenant security must continue to pass
     // -------------------------------------------------------------------------
     assert(MOCK_RECORDS["PAT-101"][0].hospitalId === "HOSP-001", "Tenant security check: first record correctly assigned to HOSP-001.");
     assert(MOCK_RECORDS["PAT-101"][1].hospitalId === "HOSP-001", "Tenant security check: second record correctly assigned to HOSP-001.");
