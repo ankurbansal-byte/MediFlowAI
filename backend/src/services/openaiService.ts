@@ -104,41 +104,57 @@ Rules for Classification:
 
 1. action = "RECORD":
    - Use when enough factual information exists to create a valid health record.
+   - All extracted candidateRecords must be fully valid and non-ambiguous.
+   - For blood_pressure, both systolic and diastolic must be present (e.g., "128/82" or "128 82" or "130 by 85").
+   - For body_temperature, a clear unit (F, C, °F, °C) must be explicitly stated or safely established. If unit is absent, use action "CLARIFY".
+   - For blood_sugar, a clear glucose context (fasting, pre_meal, post_meal, random) must be explicitly present. If glucose context is missing/unknown (e.g. "Sugar 125"), you MUST set action to "CLARIFY" with "missingFields": ["glucose_context"] - NEVER default to random or unknown for RECORD action.
    - Example: "Aaj fasting sugar 125 thi" -> action "RECORD", language "hinglish", parameter "blood_sugar", value 125, context "fasting".
    - Example: "BP 128/82 pulse 74" -> action "RECORD", multiple candidate records (blood_pressure and heart_rate).
-   - Example: "Oxygen 97%" -> action "RECORD", parameter "oxygen_saturation", value 97.
-   - Example: "Weight 72.4 kg" -> action "RECORD", parameter "weight", value 72.4.
+   - Example: "Oxygen 97%" -> action "RECORD", parameter "oxygen_saturation", value 97, unit "%".
+   - Example: "Weight 72.4 kg" -> action "RECORD", parameter "weight", value 72.4, unit "kg".
 
 2. action = "CLARIFY":
-   - Use when the message appears to contain health information, but important fields required for safe/useful recording are missing or ambiguous.
-   - Never invent/hallucinate the missing values.
-   - Example: "Sugar 125" -> action "CLARIFY" because glucose context is unknown/missing. Set "missingFields": ["glucose_context"], "candidateRecords": [{"parameter": "blood_sugar", "value": 125, "unit": "mg/dL", "context": "unknown"}].
-   - Example: "BP 140" -> action "CLARIFY" because diastolic value is missing. Set "missingFields": ["diastolic"], "candidateRecords": [{"parameter": "blood_pressure", "systolic": 140, "unit": "mmHg"}].
+   - Use when the message contains health parameter mentions, but important required fields for safe recording are missing/ambiguous.
+   - Examples of missing/ambiguous fields:
+     - "Sugar 125" -> missing glucose context. Action "CLARIFY", missingFields ["glucose_context"], candidateRecords: [{"parameter": "blood_sugar", "value": 125, "unit": "mg/dL", "context": "unknown"}]
+     - "BP 140" -> missing diastolic value. Action "CLARIFY", missingFields ["diastolic"], candidateRecords: [{"parameter": "blood_pressure", "systolic": 140, "unit": "mmHg"}]
+     - "Temperature 38" or "bukhar 101" -> missing unit. Action "CLARIFY", missingFields ["temperature_unit"], candidateRecords: [{"parameter": "body_temperature", "value": 38, "unit": "unknown"}]
+     - "oxygen check ki" -> no value supplied. Action "CLARIFY", missingFields ["value"], candidateRecords: []
+   - Never invent or fabricate missing values.
 
 3. action = "IGNORE":
-   - Use when the message does not contain any longitudinal physiological health records (e.g. "Thank you", "Hello", "Okay doctor").
-   - Set "candidateRecords" to [] and "missingFields" to [].
+   - Use when the message does not contain any recordable physiological measurements (e.g., "Hello", "Thank you", "Okay doctor").
+   - Also, symptom-only messages without any numeric values (e.g. "mujhe bukhar lag raha hai", "chakkar aa raha hai", "I feel weak", "saans phool rahi hai") must be action "IGNORE" or "CLARIFY" (if user wants to start a recording but gave no values), but must NOT create any health records. Set candidateRecords to [] and missingFields to [].
 
 4. Language Detection:
-   - "hinglish" for Hindi written in Roman script (e.g., "Aaj fasting sugar 125 thi").
-   - "hindi" for Hindi written in Devanagari script (e.g., "आज सुबह शुगर 125 थी").
-   - "english" for English (e.g., "My fasting sugar was 125 this morning").
+   - "hindi" for predominantly Devanagari script (e.g. "आज सुबह शुगर 125 थी").
+   - "hinglish" for Hindi/Indian conversational language written primarily in Latin/Roman script, including mixed English medical terms (e.g. "Aaj fasting sugar 125 thi", "mera bp 130 by 85 hai").
+   - "english" for predominantly English sentence structure (e.g. "My fasting glucose was 125 this morning").
    - "unknown" if language cannot be determined.
 
-5. Parameters & Units:
-   - blood_sugar -> default unit: "mg/dL"
-   - blood_pressure -> default unit: "mmHg" (also extract "systolic" and "diastolic")
-   - heart_rate -> default unit: "bpm"
-   - oxygen_saturation -> default unit: "%"
-   - body_temperature -> default unit: "°C" (Convert Fahrenheit to Celsius if user inputs F, e.g. 98.6 F -> 37 °C)
-   - weight -> default unit: "kg"
-   - respiratory_rate -> default unit: "breaths/min"
-   - height -> default unit: "cm"
+5. Parameters & Default Units:
+   - blood_sugar -> "mg/dL"
+   - blood_pressure -> "mmHg" (requires both "systolic" and "diastolic")
+   - heart_rate -> "bpm" (Pulse / dhadkan / pulse / heart rate)
+   - oxygen_saturation -> "%" (Oxygen / oxygen level / SpO2 / ऑक्सीजन)
+   - body_temperature -> "°C" (Convert Fahrenheit F to Celsius C: C = (F - 32) * 5/9, e.g. 98.6 F -> 37 °C)
+   - weight -> "kg" (Weight / wajan / वजन / kilo)
+   - respiratory_rate -> "breaths/min" (Respiratory rate / breathing rate / saans / सांस)
+   - height -> "cm" (Height / meri height / कद / feet/inches safely converted to cm: 1 inch = 2.54 cm, 1 foot = 12 inches)
 
-6. Temporal Information:
-   - If user mentions relative timing ("today", "yesterday", "kal", "aaj", "morning", "evening"), populate "recordedAt" with a relevant string or null. Do not use the current server time if not specified; let the parser handle it.
+6. Glucose Context Mapping:
+   - fasting: "fasting", "khali pet", "खाली पेट"
+   - pre_meal: "before breakfast", "before lunch", "before dinner", "khane se pehle", "खाने से पहले", "pre-meal"
+   - post_meal: "after breakfast", "after lunch", "after dinner", "khane ke baad", "खाने के बाद", "post-meal", "2 hours after meal"
+   - random: "random", "kabhi bhi check ki" (ONLY when explicitly stated)
+   - unknown: default when context cannot be safely mapped, but forces action to CLARIFY.
 
-Return ONLY valid JSON. No markdown backticks, no explanations.
+7. Temporal Expression Extraction:
+   - Look for terms and extract them to "recordedAt":
+     - relative: "today"/"aaj"/"आज" -> "today", "yesterday"/"kal"/"कल" -> "yesterday", "morning"/"subah"/"सुबह" -> "morning", "afternoon"/"dopahar"/"दोपहर" -> "afternoon", "evening"/"shaam"/"शाम" -> "evening", "night"/"raat"/"रात" -> "night", "last night"/"kal raat"/"कल रात" -> "last night", "yesterday morning" -> "yesterday morning", "this morning" -> "this morning".
+     - explicit dates: "20 July", "20 July 2026", "20/07/2026" etc. -> extract as the absolute date string.
+
+Return ONLY valid JSON. No markdown backticks (such as \`\`\`json), no extra text.
           `,
         },
         {

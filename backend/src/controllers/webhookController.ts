@@ -71,6 +71,16 @@ export const receiveMessage = async (req: Request, res: Response) => {
     const audioId = incomingMessage?.audio?.id;
     const messageType = incomingMessage?.type;
 
+    // Extract timestamp from incomingMessage to preserve precision
+    let messageDate = new Date();
+    if (incomingMessage?.timestamp) {
+      const tsSec = parseInt(incomingMessage.timestamp, 10);
+      if (!isNaN(tsSec)) {
+        // WhatsApp timestamp is in seconds, JavaScript Date needs milliseconds
+        messageDate = new Date(tsSec * 1000);
+      }
+    }
+
     // B. Check for duplicate messages using whatsappMessageId
     if (whatsappMessageId) {
       if (processingMessageIds.has(whatsappMessageId)) {
@@ -157,7 +167,8 @@ export const receiveMessage = async (req: Request, res: Response) => {
           patient.patientId,
           "text",
           message,
-          whatsappMessageId
+          whatsappMessageId,
+          messageDate
         );
 
         console.log("📦 Parsed Health Records:");
