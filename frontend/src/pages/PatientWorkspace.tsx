@@ -1226,7 +1226,7 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
             )}
 
             {activeWorkspaceTab === "visits" && (
-              <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "14px", padding: "24px" }}>
+              <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "14px", padding: "24px", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
                 <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800 }}>
                   Patient OPD Visit History
                 </h3>

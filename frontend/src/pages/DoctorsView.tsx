@@ -576,7 +576,8 @@ const DoctorsView: React.FC<DoctorsViewProps> = ({ user }) => {
               borderRadius: "14px",
               padding: "24px",
               boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)",
-              overflowX: "auto"
+              overflowX: "auto",
+              WebkitOverflowScrolling: "touch"
             }}>
               <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.2rem", fontWeight: 800 }}>
                 Hospital Doctor Directory ({doctors.length})

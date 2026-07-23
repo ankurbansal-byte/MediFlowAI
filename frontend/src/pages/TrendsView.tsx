@@ -31,10 +31,10 @@ const TrendsView: React.FC<TrendsViewProps> = ({
   return (
     <>
       <div className="trends-header" style={{ paddingBottom: "20px", borderBottom: "1px solid var(--line)", marginBottom: "28px" }}>
-        <p className="summary-section__eyebrow" style={{ margin: 0, color: "#238b82", fontSize: "0.75rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>Analytics Workspace</p>
-        <h1 style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "2rem", fontWeight: 850, letterSpacing: "-0.03em" }}>Clinical Trends & Historical Data</h1>
+        <p className="summary-section__eyebrow" style={{ margin: 0, color: "#238b82", fontSize: "0.75rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>Health Analytics</p>
+        <h1 style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "2rem", fontWeight: 850, letterSpacing: "-0.03em" }}>Health / Trends & Analysis</h1>
         <p style={{ margin: "6px 0 0 0", color: "var(--muted)", fontSize: "0.95rem" }}>
-          In-depth physiological telemetry visualizer and reading consistency reporting engine.
+          View and analyze your physiological trends and historical health measurements.
         </p>
       </div>
 
@@ -60,10 +60,10 @@ const TrendsView: React.FC<TrendsViewProps> = ({
       {/* Complete Historical Record List */}
       <section aria-labelledby="full-history-title" style={{ borderTop: "1px solid var(--line)", paddingTop: "40px", marginTop: "40px" }}>
         <h2 id="full-history-title" style={{ margin: "0 0 8px 0", color: "var(--navy)", fontSize: "1.5rem", fontWeight: 800 }}>
-          🏥 Complete Physiological History
+          🏥 Complete Health History
         </h2>
         <p style={{ margin: "0 0 20px 0", color: "var(--muted)", fontSize: "0.95rem" }}>
-          The complete chronological archive of all your logged vital signs and WhatsApp telemetry.
+          The chronological archive of all your logged health records and WhatsApp health updates.
         </p>
 
         {timeline.length === 0 ? (

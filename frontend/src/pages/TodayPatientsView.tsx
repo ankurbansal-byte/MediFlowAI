@@ -176,63 +176,65 @@ const TodayPatientsView: React.FC<TodayPatientsViewProps> = ({ user, onOpenPatie
           ) : encounters.length === 0 ? (
             <p style={{ margin: 0, color: "var(--muted)" }}>No master records found.</p>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.88rem" }}>
-              <thead>
-                <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
-                  <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Visit ID</th>
-                  <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Patient Name</th>
-                  <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Patient ID</th>
-                  <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Visit Date</th>
-                  <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Status</th>
-                  <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {encounters.map((enc) => (
-                  <tr key={enc.encounterId} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "14px 8px", fontWeight: 800, color: "#0080ff", fontFamily: "monospace" }}>{enc.encounterId}</td>
-                    <td style={{ padding: "14px 8px", fontWeight: 750, color: "var(--navy, #0a2540)" }}>{enc.patientName}</td>
-                    <td style={{ padding: "14px 8px", fontWeight: 600, color: "var(--muted, #486581)" }}>{enc.patientId}</td>
-                    <td style={{ padding: "14px 8px", fontWeight: 600, color: "var(--navy, #0a2540)" }}>
-                      {new Date(enc.visitDate).toLocaleDateString()}
-                    </td>
-                    <td style={{ padding: "14px 8px" }}>
-                      <span style={{
-                        display: "inline-block",
-                        background: enc.status === "completed" ? "#e2fbf0" : "#fffbeb",
-                        color: enc.status === "completed" ? "#10b981" : "#d97706",
-                        border: enc.status === "completed" ? "1px solid #a7f3d0" : "1px solid #fde68a",
-                        borderRadius: "12px",
-                        padding: "2px 8px",
-                        fontSize: "0.75rem",
-                        fontWeight: 750,
-                        textTransform: "uppercase"
-                      }}>
-                        {enc.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: "14px 8px" }}>
-                      <button
-                        type="button"
-                        onClick={() => onOpenPatient(enc.patientId, enc.encounterId)}
-                        style={{
-                          background: "#0080ff",
-                          color: "#ffffff",
-                          border: "none",
-                          borderRadius: "6px",
-                          padding: "6px 12px",
-                          fontSize: "0.8rem",
-                          fontWeight: 700,
-                          cursor: "pointer"
-                        }}
-                      >
-                        Open Workspace
-                      </button>
-                    </td>
+            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.88rem" }}>
+                <thead>
+                  <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                    <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Visit ID</th>
+                    <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Patient Name</th>
+                    <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Patient ID</th>
+                    <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Visit Date</th>
+                    <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Status</th>
+                    <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {encounters.map((enc) => (
+                    <tr key={enc.encounterId} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "14px 8px", fontWeight: 800, color: "#0080ff", fontFamily: "monospace" }}>{enc.encounterId}</td>
+                      <td style={{ padding: "14px 8px", fontWeight: 750, color: "var(--navy, #0a2540)" }}>{enc.patientName}</td>
+                      <td style={{ padding: "14px 8px", fontWeight: 600, color: "var(--muted, #486581)" }}>{enc.patientId}</td>
+                      <td style={{ padding: "14px 8px", fontWeight: 600, color: "var(--navy, #0a2540)" }}>
+                        {new Date(enc.visitDate).toLocaleDateString()}
+                      </td>
+                      <td style={{ padding: "14px 8px" }}>
+                        <span style={{
+                          display: "inline-block",
+                          background: enc.status === "completed" ? "#e2fbf0" : "#fffbeb",
+                          color: enc.status === "completed" ? "#10b981" : "#d97706",
+                          border: enc.status === "completed" ? "1px solid #a7f3d0" : "1px solid #fde68a",
+                          borderRadius: "12px",
+                          padding: "2px 8px",
+                          fontSize: "0.75rem",
+                          fontWeight: 750,
+                          textTransform: "uppercase"
+                        }}>
+                          {enc.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: "14px 8px" }}>
+                        <button
+                          type="button"
+                          onClick={() => onOpenPatient(enc.patientId, enc.encounterId)}
+                          style={{
+                            background: "#0080ff",
+                            color: "#ffffff",
+                            border: "none",
+                            borderRadius: "6px",
+                            padding: "6px 12px",
+                            fontSize: "0.8rem",
+                            fontWeight: 700,
+                            cursor: "pointer"
+                          }}
+                        >
+                          Open Workspace
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
