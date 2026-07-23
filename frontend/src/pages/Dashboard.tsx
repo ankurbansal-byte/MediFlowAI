@@ -110,6 +110,36 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
   };
 
   const renderActiveView = () => {
+    // Role-based route authorization gate
+    const isAdminView = ["hospital", "patients", "doctors", "visits-admin"].includes(activeTab);
+    const isDoctorView = ["today-patients", "my-patients", "doctor-visits"].includes(activeTab);
+    const isPatientView = ["trends", "ai-insights"].includes(activeTab);
+
+    if (isAdminView && user.role !== "admin") {
+      return (
+        <div style={{ padding: "40px", textAlign: "center", color: "#e11d48", border: "1px solid #fda4af", borderRadius: "8px", background: "#fff5f5", margin: "20px auto", maxWidth: "600px" }}>
+          <h2 style={{ color: "#ef4444", margin: "0 0 10px 0" }}>Access Denied</h2>
+          <p style={{ margin: 0, fontWeight: 600 }}>You do not have administrative privileges to view this page.</p>
+        </div>
+      );
+    }
+    if (isDoctorView && user.role !== "doctor") {
+      return (
+        <div style={{ padding: "40px", textAlign: "center", color: "#e11d48", border: "1px solid #fda4af", borderRadius: "8px", background: "#fff5f5", margin: "20px auto", maxWidth: "600px" }}>
+          <h2 style={{ color: "#ef4444", margin: "0 0 10px 0" }}>Access Denied</h2>
+          <p style={{ margin: 0, fontWeight: 600 }}>You do not have clinician privileges to view this page.</p>
+        </div>
+      );
+    }
+    if (isPatientView && user.role !== "patient") {
+      return (
+        <div style={{ padding: "40px", textAlign: "center", color: "#e11d48", border: "1px solid #fda4af", borderRadius: "8px", background: "#fff5f5", margin: "20px auto", maxWidth: "600px" }}>
+          <h2 style={{ color: "#ef4444", margin: "0 0 10px 0" }}>Access Denied</h2>
+          <p style={{ margin: 0, fontWeight: 600 }}>You do not have patient privileges to view this page.</p>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case "dashboard":
         if (user.role === "doctor") {

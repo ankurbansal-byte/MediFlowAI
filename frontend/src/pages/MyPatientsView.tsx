@@ -130,68 +130,70 @@ const MyPatientsView: React.FC<MyPatientsViewProps> = ({ user, onOpenPatient }) 
               : "No assigned patients match your search filter."}
           </div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.88rem" }}>
-            <thead>
-              <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
-                <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Patient ID</th>
-                <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Patient Name</th>
-                <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Gender</th>
-                <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Date of Birth</th>
-                <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Mobile Number</th>
-                <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Email</th>
-                <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Status</th>
-                <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPatients.map((p) => (
-                <tr key={p.patientId} style={{ borderBottom: "1px solid #f1f5f9" }} className="table-row-hover">
-                  <td style={{ padding: "14px 8px", fontWeight: 800, color: "#0080ff", fontFamily: "monospace" }}>{p.patientId}</td>
-                  <td style={{ padding: "14px 8px", fontWeight: 750, color: "var(--navy, #0a2540)" }}>{p.fullName}</td>
-                  <td style={{ padding: "14px 8px", color: "var(--muted, #486581)", fontWeight: 600 }}>{p.gender || "—"}</td>
-                  <td style={{ padding: "14px 8px", color: "var(--navy, #0a2540)", fontWeight: 600 }}>
-                    {p.dob ? new Date(p.dob).toLocaleDateString() : "—"}
-                  </td>
-                  <td style={{ padding: "14px 8px", color: "var(--muted, #486581)", fontWeight: 600 }}>{p.mobileNumber || "—"}</td>
-                  <td style={{ padding: "14px 8px", color: "var(--muted, #486581)", fontWeight: 600 }}>{p.email || "—"}</td>
-                  <td style={{ padding: "14px 8px" }}>
-                    <span style={{
-                      display: "inline-block",
-                      background: p.status === "inactive" ? "#fee2e2" : "#e2fbf0",
-                      color: p.status === "inactive" ? "#ef4444" : "#10b981",
-                      border: p.status === "inactive" ? "1px solid #fecaca" : "1px solid #a7f3d0",
-                      borderRadius: "12px",
-                      padding: "2px 8px",
-                      fontSize: "0.75rem",
-                      fontWeight: 750,
-                      textTransform: "uppercase"
-                    }}>
-                      {p.status || "active"}
-                    </span>
-                  </td>
-                  <td style={{ padding: "14px 8px" }}>
-                    <button
-                      type="button"
-                      onClick={() => onOpenPatient(p.patientId, null)}
-                      style={{
-                        background: "#0080ff",
-                        color: "#ffffff",
-                        border: "none",
-                        borderRadius: "6px",
-                        padding: "6px 12px",
-                        fontSize: "0.8rem",
-                        fontWeight: 700,
-                        cursor: "pointer",
-                        whiteSpace: "nowrap"
-                      }}
-                    >
-                      Open Workspace
-                    </button>
-                  </td>
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.88rem" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                  <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Patient ID</th>
+                  <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Patient Name</th>
+                  <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Gender</th>
+                  <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Date of Birth</th>
+                  <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Mobile Number</th>
+                  <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Email</th>
+                  <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Status</th>
+                  <th style={{ padding: "12px 8px", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", fontSize: "0.75rem" }}>Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredPatients.map((p) => (
+                  <tr key={p.patientId} style={{ borderBottom: "1px solid #f1f5f9" }} className="table-row-hover">
+                    <td style={{ padding: "14px 8px", fontWeight: 800, color: "#0080ff", fontFamily: "monospace" }}>{p.patientId}</td>
+                    <td style={{ padding: "14px 8px", fontWeight: 750, color: "var(--navy, #0a2540)" }}>{p.fullName}</td>
+                    <td style={{ padding: "14px 8px", color: "var(--muted, #486581)", fontWeight: 600 }}>{p.gender || "—"}</td>
+                    <td style={{ padding: "14px 8px", color: "var(--navy, #0a2540)", fontWeight: 600 }}>
+                      {p.dob ? new Date(p.dob).toLocaleDateString() : "—"}
+                    </td>
+                    <td style={{ padding: "14px 8px", color: "var(--muted, #486581)", fontWeight: 600 }}>{p.mobileNumber || "—"}</td>
+                    <td style={{ padding: "14px 8px", color: "var(--muted, #486581)", fontWeight: 600 }}>{p.email || "—"}</td>
+                    <td style={{ padding: "14px 8px" }}>
+                      <span style={{
+                        display: "inline-block",
+                        background: p.status === "inactive" ? "#fee2e2" : "#e2fbf0",
+                        color: p.status === "inactive" ? "#ef4444" : "#10b981",
+                        border: p.status === "inactive" ? "1px solid #fecaca" : "1px solid #a7f3d0",
+                        borderRadius: "12px",
+                        padding: "2px 8px",
+                        fontSize: "0.75rem",
+                        fontWeight: 750,
+                        textTransform: "uppercase"
+                      }}>
+                        {p.status || "active"}
+                      </span>
+                    </td>
+                    <td style={{ padding: "14px 8px" }}>
+                      <button
+                        type="button"
+                        onClick={() => onOpenPatient(p.patientId, null)}
+                        style={{
+                          background: "#0080ff",
+                          color: "#ffffff",
+                          border: "none",
+                          borderRadius: "6px",
+                          padding: "6px 12px",
+                          fontSize: "0.8rem",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          whiteSpace: "nowrap"
+                        }}
+                      >
+                        Open Workspace
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
