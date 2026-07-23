@@ -187,6 +187,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
             isTrendLoading={isTrendLoading}
             hasTrendError={hasTrendError}
             trend={trend}
+            timeline={timeline}
           />
         );
       case "ai-insights":
