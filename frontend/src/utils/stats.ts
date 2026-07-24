@@ -6,7 +6,7 @@ export interface ParameterStats {
   average: string | number;
   highest: string | number;
   lowest: string | number;
-  trendDirection: "Rising" | "Falling" | "Stable" | "No Data";
+  trendDirection: string;
   unit: string;
   count: number;
   lastUpdated: string;
@@ -220,12 +220,27 @@ export const calculateParameterStats = (
     const maxVal = Math.max(...parsedNumeric);
     const minVal = Math.min(...parsedNumeric);
 
-    let trendDirection: "Rising" | "Falling" | "Stable" = "Stable";
-    if (parsedNumeric.length >= 2) {
-      const firstVal = parsedNumeric[0];
-      const lastVal = parsedNumeric[parsedNumeric.length - 1];
-      if (lastVal > firstVal) trendDirection = "Rising";
-      else if (lastVal < firstVal) trendDirection = "Falling";
+    let trendDirection = "Stable";
+    if (parameter === "blood_sugar") {
+      const nonLegacyRecords = records.filter(r => r.context && r.context !== "unknown");
+      const distinctContexts = Array.from(new Set(nonLegacyRecords.map(r => r.context)));
+      if (distinctContexts.length > 1) {
+        trendDirection = "Mixed glucose contexts";
+      } else if (parsedNumeric.length < 2) {
+        trendDirection = "Not enough comparable readings";
+      } else {
+        const firstVal = parsedNumeric[0];
+        const lastVal = parsedNumeric[parsedNumeric.length - 1];
+        if (lastVal > firstVal) trendDirection = "Rising";
+        else if (lastVal < firstVal) trendDirection = "Falling";
+      }
+    } else {
+      if (parsedNumeric.length >= 2) {
+        const firstVal = parsedNumeric[0];
+        const lastVal = parsedNumeric[parsedNumeric.length - 1];
+        if (lastVal > firstVal) trendDirection = "Rising";
+        else if (lastVal < firstVal) trendDirection = "Falling";
+      }
     }
 
     // Format body temperature to 1 decimal place, others nicely as well

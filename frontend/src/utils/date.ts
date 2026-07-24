@@ -36,3 +36,50 @@ export const formatLongDate = (recordedAt?: string, fallback = "Not recorded") =
     minute: "2-digit",
   }).format(date);
 };
+
+/**
+ * Formats a date string into a clean date and time string: "D MMM YYYY · h:mm AM/PM" (e.g., "23 Jul 2026 · 7:32 PM").
+ */
+export const formatRecordDateTime = (recordedAt?: string, fallback = "—") => {
+  if (!recordedAt) {
+    return fallback;
+  }
+
+  const date = new Date(recordedAt);
+  if (Number.isNaN(date.getTime())) {
+    return fallback;
+  }
+
+  const dateStr = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  }).format(date);
+
+  const timeStr = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  }).format(date);
+
+  return `${dateStr} · ${timeStr}`;
+};
+
+/**
+ * Maps glucose context internal strings to patient-friendly display labels.
+ */
+export const formatGlucoseContext = (context?: string): string => {
+  if (!context) return "";
+  switch (context.toLowerCase()) {
+    case "fasting":
+      return "Fasting";
+    case "pre_meal":
+      return "Pre-meal";
+    case "post_meal":
+      return "Post-meal";
+    case "random":
+      return "Random";
+    default:
+      return "";
+  }
+};

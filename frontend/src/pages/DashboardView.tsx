@@ -12,6 +12,7 @@ import { type TimelineFilterValue } from "../components/TimelineFilter";
 import { type ParameterStats } from "../utils/stats";
 import { type HealthParameter } from "../hooks/useTrendData";
 import { type TabType } from "./Dashboard";
+import { formatRecordDateTime, formatGlucoseContext } from "../utils/date";
 
 interface DashboardViewProps {
   user: User;
@@ -151,20 +152,12 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
   // Helper to format timestamps nicely
   const formatRecordDate = (dateStr?: string) => {
-    if (!dateStr) return "";
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return "";
-    return date.toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
+    return formatRecordDateTime(dateStr);
   };
 
   const getLatestRecord = (key: string) => {
     if (!summary) return null;
-    const record = (summary as Record<string, { value?: string | number; unit?: string; recordedAt?: string } | undefined>)[key];
+    const record = (summary as Record<string, { value?: string | number; unit?: string; context?: string; recordedAt?: string } | undefined>)[key];
     if (!record || record.value === undefined || record.value === null) return null;
     return record;
   };
@@ -249,6 +242,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                     <>
                       <strong style={{ fontSize: "1.45rem", color: "var(--navy, #0a2540)", fontWeight: 850 }}>
                         {record.value} <span style={{ fontSize: "0.8rem", color: "var(--muted, #486581)", fontWeight: 600 }}>{record.unit || param.fallbackUnit}</span>
+                        {param.key === "blood_sugar" && record.context && formatGlucoseContext(record.context) ? (
+                          <span style={{ fontSize: "0.95rem", color: "var(--muted)", fontWeight: 600 }}> · {formatGlucoseContext(record.context)}</span>
+                        ) : null}
                       </strong>
                       <span style={{ fontSize: "0.72rem", color: "#627d98", fontWeight: 550 }}>
                         As of {formatRecordDate(record.recordedAt)}
@@ -354,11 +350,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {timeline.slice(0, 8).map((record, index) => {
                 const displayParam = record.parameter.replace("_", " ").toUpperCase().replace(/\b\w/g, c => c.toUpperCase());
-                const dateStr = record.recordedAt ? new Date(record.recordedAt).toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric"
-                }) : "—";
+                const dateStr = record.recordedAt ? formatRecordDateTime(record.recordedAt) : "—";
 
                 return (
                   <div
@@ -402,6 +394,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                         fontWeight: 850
                       }}>
                         {record.value} <span style={{ fontSize: "0.8rem", fontWeight: 650, color: "var(--muted)" }}>{record.unit}</span>
+                        {record.parameter === "blood_sugar" && record.context && formatGlucoseContext(record.context) ? (
+                          <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--muted)", marginLeft: "4px" }}> · {formatGlucoseContext(record.context)}</span>
+                        ) : null}
                       </strong>
                     </div>
                   </div>

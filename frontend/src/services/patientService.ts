@@ -3,7 +3,7 @@ import { type PatientOption } from "../components/PatientSelector";
 import { type TimelineRecord } from "../components/TimelineItem";
 import { type TrendRecord } from "../components/TrendChart";
 
-export type Measurement = { value?: string | number; unit?: string };
+export type Measurement = { value?: string | number; unit?: string; context?: string; recordedAt?: string };
 export type PatientSummaryMap = Record<string, Measurement | undefined>;
 
 export interface PatientsResponse {

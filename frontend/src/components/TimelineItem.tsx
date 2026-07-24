@@ -1,9 +1,10 @@
-import { formatLongDate } from "../utils/date";
+import { formatRecordDateTime, formatGlucoseContext } from "../utils/date";
 
 export type TimelineRecord = {
   parameter: string;
   value: string | number;
   unit?: string;
+  context?: string;
   recordedAt?: string;
   source?: string;
   confidence?: number;
@@ -47,12 +48,17 @@ const TimelineItem = ({ record }: TimelineItemProps) => {
         <p className="timeline-item__value">
           {record.value}
           {record.unit ? <span>{record.unit}</span> : null}
+          {record.parameter === "blood_sugar" && record.context && formatGlucoseContext(record.context) ? (
+            <span style={{ fontSize: "0.85em", color: "var(--muted)", fontWeight: "normal", marginLeft: "6px" }}>
+              · {formatGlucoseContext(record.context)}
+            </span>
+          ) : null}
         </p>
       </div>
 
       <div className="timeline-item__detail">
         <span className="timeline-item__detail-label">Recorded Time</span>
-        <span className="timeline-item__detail-value">{formatLongDate(record.recordedAt)}</span>
+        <span className="timeline-item__detail-value">{formatRecordDateTime(record.recordedAt)}</span>
       </div>
 
       <div className="timeline-item__detail">

@@ -49,6 +49,12 @@ export const MOCK_USERS = [
     role: "patient" as const,
     patientId: "PAT-106",
   },
+  {
+    username: "PAT-36B",
+    passwordHash: bcrypt.hashSync("password", 10),
+    role: "patient" as const,
+    patientId: "PAT-36B",
+  },
 ];
 
 export let dynamicMockUsers: any[] = [...MOCK_USERS].map((user) => ({
@@ -125,6 +131,14 @@ export let dynamicMockAssignments: any[] = [
     hospitalId: "HOSP-001",
     doctorId: "DOC-101",
     patientId: "PAT-106",
+    status: "active",
+    assignedAt: new Date(),
+    assignedBy: "admin"
+  },
+  {
+    hospitalId: "HOSP-001",
+    doctorId: "DOC-101",
+    patientId: "PAT-36B",
     status: "active",
     assignedAt: new Date(),
     assignedBy: "admin"

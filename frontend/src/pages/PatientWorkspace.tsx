@@ -3,6 +3,7 @@ import api from "../api/axios";
 import TrendChart from "../components/TrendChart";
 import AIInsights from "../components/AIInsights";
 import "./Auth.css";
+import { formatRecordDateTime, formatGlucoseContext } from "../utils/date";
 
 interface PatientWorkspaceProps {
   patientId: string;
@@ -32,6 +33,7 @@ interface EncounterData {
 interface PatientSummaryRecord {
   value: string | number;
   unit: string;
+  context?: string;
   recordedAt: string;
 }
 
@@ -50,6 +52,7 @@ interface TimelineItem {
   parameter: string;
   value: string | number;
   unit: string;
+  context?: string;
   recordedAt: string;
   source: string;
 }
@@ -57,6 +60,7 @@ interface TimelineItem {
 interface WorkspaceTrendRecord {
   value: string | number;
   unit?: string;
+  context?: string;
   recordedAt?: string;
 }
 
@@ -102,6 +106,7 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
   const [patientVisits, setPatientVisits] = useState<EncounterData[]>([]);
   const [trendRecords, setTrendRecords] = useState<WorkspaceTrendRecord[]>([]);
   const [selectedParameter, setSelectedParameter] = useState<"blood_sugar" | "blood_pressure" | "weight" | "heart_rate" | "body_temperature">("blood_sugar");
+  const [glucoseContextFilter, setGlucoseContextFilter] = useState<string>("all");
   const [trendPeriod, setTrendPeriod] = useState<7 | 30 | 90 | 365 | 36500>(30);
   const [isTrendLoading, setIsTrendLoading] = useState(false);
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"overview" | "timeline" | "trends" | "insights" | "visits">("overview");
@@ -144,6 +149,7 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
 
   const handleSelectParameter = async (param: "blood_sugar" | "blood_pressure" | "weight" | "heart_rate" | "body_temperature") => {
     setSelectedParameter(param);
+    setGlucoseContextFilter("all");
     await fetchPatientTrend(patientId, param, trendPeriod);
   };
 
@@ -299,16 +305,22 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
 
   const isCompleted = selectedEncounter?.status === "completed";
 
+  const filteredTrendRecords = useMemo(() => {
+    if (selectedParameter !== "blood_sugar" || glucoseContextFilter === "all") {
+      return trendRecords;
+    }
+    return trendRecords.filter(r => r.context === glucoseContextFilter);
+  }, [trendRecords, selectedParameter, glucoseContextFilter]);
+
   // Trend Stats calculation
   const trendStats = useMemo(() => {
-    if (trendRecords.length === 0) return null;
+    if (filteredTrendRecords.length === 0) return null;
 
     const isBP = selectedParameter === "blood_pressure";
-    const totalReadings = trendRecords.length;
+    const totalReadings = filteredTrendRecords.length;
 
-    // Trend direction: comparing first (oldest) vs last (latest/newest) in the selected timeframe
-    const oldest = trendRecords[0];
-    const latest = trendRecords[trendRecords.length - 1];
+    const oldest = filteredTrendRecords[0];
+    const latest = filteredTrendRecords[filteredTrendRecords.length - 1];
 
     let trendDirection = { text: "Stable", icon: "→", color: "#475569" };
 
@@ -328,7 +340,7 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
         }
       }
 
-      const bpRecords = trendRecords.map(r => {
+      const bpRecords = filteredTrendRecords.map(r => {
         const parts = String(r.value).split("/");
         return parts.length === 2 ? { sys: Number(parts[0]), dia: Number(parts[1]) } : null;
       }).filter((r): r is { sys: number; dia: number } => r !== null && !isNaN(r.sys) && !isNaN(r.dia));
@@ -354,16 +366,35 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
     } else {
       const oldestVal = Number(oldest.value);
       const latestVal = Number(latest.value);
-      if (!isNaN(oldestVal) && !isNaN(latestVal)) {
-        const diff = latestVal - oldestVal;
-        if (Math.abs(diff) >= 0.1) {
-          trendDirection = diff > 0
-            ? { text: "Rising", icon: "↗", color: "#ef4444" }
-            : { text: "Falling", icon: "↘", color: "#10b981" };
+
+      const numericValues = filteredTrendRecords.map(r => Number(r.value)).filter(v => !isNaN(v));
+
+      if (selectedParameter === "blood_sugar") {
+        const nonLegacyRecords = filteredTrendRecords.filter(r => r.context && r.context !== "unknown");
+        const distinctContexts = Array.from(new Set(nonLegacyRecords.map(r => r.context)));
+        if (distinctContexts.length > 1) {
+          trendDirection = { text: "Mixed glucose contexts", icon: "—", color: "#627d98" };
+        } else if (numericValues.length < 2) {
+          trendDirection = { text: "Not enough comparable readings", icon: "—", color: "#627d98" };
+        } else if (!isNaN(oldestVal) && !isNaN(latestVal)) {
+          const diff = latestVal - oldestVal;
+          if (Math.abs(diff) >= 0.1) {
+            trendDirection = diff > 0
+              ? { text: "Rising", icon: "↗", color: "#ef4444" }
+              : { text: "Falling", icon: "↘", color: "#10b981" };
+          }
+        }
+      } else {
+        if (!isNaN(oldestVal) && !isNaN(latestVal)) {
+          const diff = latestVal - oldestVal;
+          if (Math.abs(diff) >= 0.1) {
+            trendDirection = diff > 0
+              ? { text: "Rising", icon: "↗", color: "#ef4444" }
+              : { text: "Falling", icon: "↘", color: "#10b981" };
+          }
         }
       }
 
-      const numericValues = trendRecords.map(r => Number(r.value)).filter(v => !isNaN(v));
       const highest = numericValues.length > 0 ? Math.max(...numericValues) : "—";
       const lowest = numericValues.length > 0 ? Math.min(...numericValues) : "—";
       const average = numericValues.length > 0
@@ -377,10 +408,10 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
         highest,
         lowest,
         trendDirection,
-        unit: trendRecords[0]?.unit || ""
+        unit: filteredTrendRecords[0]?.unit || ""
       };
     }
-  }, [trendRecords, selectedParameter]);
+  }, [filteredTrendRecords, selectedParameter]);
 
   // Factual Health Summary calculation for Last 30 Days
   const factualSummaryBlocks = useMemo(() => {
@@ -870,9 +901,12 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                       <>
                         <strong style={{ fontSize: "1.3rem", color: "var(--navy, #0a2540)", fontWeight: 800 }}>
                           {patientSummary.blood_sugar.value} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)", fontWeight: 500 }}>{patientSummary.blood_sugar.unit || "mg/dL"}</span>
+                          {patientSummary.blood_sugar.context && formatGlucoseContext(patientSummary.blood_sugar.context) ? (
+                            <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 600 }}> · {formatGlucoseContext(patientSummary.blood_sugar.context)}</span>
+                          ) : null}
                         </strong>
                         <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                          As of {new Date(patientSummary.blood_sugar.recordedAt).toLocaleDateString()}
+                          As of {formatRecordDateTime(patientSummary.blood_sugar.recordedAt)}
                         </span>
                       </>
                     ) : (
@@ -901,7 +935,7 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                           {patientSummary.blood_pressure.value} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)", fontWeight: 500 }}>{patientSummary.blood_pressure.unit || "mmHg"}</span>
                         </strong>
                         <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                          As of {new Date(patientSummary.blood_pressure.recordedAt).toLocaleDateString()}
+                          As of {formatRecordDateTime(patientSummary.blood_pressure.recordedAt)}
                         </span>
                       </>
                     ) : (
@@ -930,7 +964,7 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                           {patientSummary.heart_rate.value} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)", fontWeight: 500 }}>{patientSummary.heart_rate.unit || "bpm"}</span>
                         </strong>
                         <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                          As of {new Date(patientSummary.heart_rate.recordedAt).toLocaleDateString()}
+                          As of {formatRecordDateTime(patientSummary.heart_rate.recordedAt)}
                         </span>
                       </>
                     ) : (
@@ -959,7 +993,7 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                           {patientSummary.body_temperature.value} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)", fontWeight: 500 }}>{patientSummary.body_temperature.unit || "°C"}</span>
                         </strong>
                         <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                          As of {new Date(patientSummary.body_temperature.recordedAt).toLocaleDateString()}
+                          As of {formatRecordDateTime(patientSummary.body_temperature.recordedAt)}
                         </span>
                       </>
                     ) : (
@@ -988,7 +1022,7 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                           {patientSummary.weight.value} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)", fontWeight: 500 }}>{patientSummary.weight.unit || "kg"}</span>
                         </strong>
                         <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                          As of {new Date(patientSummary.weight.recordedAt).toLocaleDateString()}
+                          As of {formatRecordDateTime(patientSummary.weight.recordedAt)}
                         </span>
                       </>
                     ) : (
@@ -1016,11 +1050,7 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                     {patientTimeline.map((record, index) => {
                       const displayParam = record.parameter.replace("_", " ").toUpperCase().replace(/\b\w/g, c => c.toUpperCase());
                       const isNewest = index === 0;
-                      const dateStr = new Date(record.recordedAt).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric"
-                      });
+                      const dateStr = record.recordedAt ? formatRecordDateTime(record.recordedAt) : "—";
 
                       return (
                         <div
@@ -1074,6 +1104,9 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                               fontWeight: 850
                             }}>
                               {record.value} <span style={{ fontSize: "0.8rem", fontWeight: 650, color: "var(--muted)" }}>{record.unit}</span>
+                              {record.parameter === "blood_sugar" && record.context && formatGlucoseContext(record.context) ? (
+                                <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--muted)", marginLeft: "4px" }}> · {formatGlucoseContext(record.context)}</span>
+                              ) : null}
                             </strong>
 
                             {isNewest && (
@@ -1170,8 +1203,52 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                   </div>
                 )}
 
+                {/* Glucose Context Filter Row */}
+                {selectedParameter === "blood_sugar" && (
+                  <div style={{
+                    marginTop: "10px",
+                    marginBottom: "10px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    flexWrap: "wrap",
+                    padding: "12px 16px",
+                    background: "#f8fafc",
+                    border: "1px solid var(--line, #e4e7eb)",
+                    borderRadius: "10px"
+                  }}>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 750, color: "var(--muted, #486581)" }}>Glucose Filter:</span>
+                    {([
+                      { id: "all", label: "All" },
+                      { id: "fasting", label: "Fasting" },
+                      { id: "pre_meal", label: "Pre-meal" },
+                      { id: "post_meal", label: "Post-meal" },
+                      { id: "random", label: "Random" }
+                    ]).map((ctx) => (
+                      <button
+                        key={ctx.id}
+                        onClick={() => setGlucoseContextFilter(ctx.id)}
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: "6px",
+                          border: glucoseContextFilter === ctx.id ? "2px solid #0080ff" : "1px solid var(--line, #e4e7eb)",
+                          background: glucoseContextFilter === ctx.id ? "#f4f8fc" : "transparent",
+                          color: glucoseContextFilter === ctx.id ? "#0080ff" : "var(--navy)",
+                          fontWeight: 700,
+                          fontSize: "0.8rem",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease"
+                        }}
+                        type="button"
+                      >
+                        {ctx.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <TrendChart
-                  records={trendRecords}
+                  records={filteredTrendRecords}
                   period={trendPeriod}
                   onPeriodChange={(p) => handleSelectPeriod(p)}
                   isLoading={isTrendLoading}

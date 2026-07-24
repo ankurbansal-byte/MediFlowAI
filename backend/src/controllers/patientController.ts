@@ -40,6 +40,65 @@ for (const r of demoRecords) {
   });
 }
 
+// Seed isolated PAT-36B patient records for Sprint 36B E2E verification
+MOCK_RECORDS["PAT-36B"] = [
+  {
+    parameter: "blood_sugar",
+    value: 125,
+    unit: "mg/dL",
+    context: "fasting",
+    recordedAt: new Date("2026-07-23T07:00:00.000Z"),
+    source: "whatsapp",
+    confidence: 0.99,
+    originalMessage: "fasting sugar 125",
+    whatsappMessageId: "msg_sugar_1"
+  },
+  {
+    parameter: "blood_sugar",
+    value: 168,
+    unit: "mg/dL",
+    context: "post_meal",
+    recordedAt: new Date("2026-07-23T09:15:00.000Z"),
+    source: "whatsapp",
+    confidence: 0.99,
+    originalMessage: "post meal sugar 168",
+    whatsappMessageId: "msg_sugar_2"
+  },
+  {
+    parameter: "blood_sugar",
+    value: 118,
+    unit: "mg/dL",
+    context: "pre_meal",
+    recordedAt: new Date("2026-07-23T12:45:00.000Z"),
+    source: "whatsapp",
+    confidence: 0.99,
+    originalMessage: "pre meal sugar 118",
+    whatsappMessageId: "msg_sugar_3"
+  },
+  {
+    parameter: "blood_sugar",
+    value: 142,
+    unit: "mg/dL",
+    context: "random",
+    recordedAt: new Date("2026-07-23T14:30:00.000Z"),
+    source: "whatsapp",
+    confidence: 0.99,
+    originalMessage: "random sugar 142",
+    whatsappMessageId: "msg_sugar_4"
+  },
+  {
+    parameter: "blood_sugar",
+    value: 110,
+    unit: "mg/dL",
+    context: undefined,
+    recordedAt: new Date("2026-07-22T08:00:00.000Z"),
+    source: "portal",
+    confidence: 1.0,
+    originalMessage: "Legacy record",
+    whatsappMessageId: "msg_sugar_5"
+  }
+];
+
 // Generate patient discovery summary list sorted by latestRecordedAt descending
 const MOCK_PATIENTS = Object.keys(MOCK_RECORDS).map((patientId) => {
   const records = MOCK_RECORDS[patientId];
@@ -961,7 +1020,9 @@ export const getPatientTimeline = async (
   }
 
   if (process.env.USE_MOCK_DATA === "true") {
-    const records = [...(MOCK_RECORDS[patientId] || [])].reverse();
+    const records = [...(MOCK_RECORDS[patientId] || [])].sort(
+      (a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
+    );
     return res.status(200).json({
       success: true,
       totalRecords: records.length,
@@ -1015,7 +1076,9 @@ export const getPatientSummary = async (
   }
 
   if (process.env.USE_MOCK_DATA === "true") {
-    const records = [...(MOCK_RECORDS[patientId] || [])].reverse();
+    const records = [...(MOCK_RECORDS[patientId] || [])].sort(
+      (a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
+    );
     const latest: Record<string, any> = {};
 
     for (const record of records) {
