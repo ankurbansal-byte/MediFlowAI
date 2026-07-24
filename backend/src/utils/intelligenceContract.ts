@@ -33,4 +33,5 @@ export interface IntelligenceResult {
   candidateRecords: CandidateRecord[];
   missingFields: string[];
   reason?: string;
+  unresolvedMeasurements?: number[];
 }

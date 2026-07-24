@@ -97,6 +97,7 @@ Your job is to analyze the patient's incoming WhatsApp message, detect language,
     }
   ],
   "missingFields": string[],
+  "unresolvedMeasurements": number[],
   "reason": string
 }
 
@@ -114,12 +115,13 @@ Rules for Classification:
    - Example: "Weight 72.4 kg" -> action "RECORD", parameter "weight", value 72.4, unit "kg".
 
 2. action = "CLARIFY":
-   - Use when the message contains health parameter mentions, but important required fields for safe recording are missing/ambiguous.
+   - Use when the message contains health parameter mentions, but important required fields for safe recording are missing/ambiguous, OR when there are unresolved plausible health measurements in the message.
    - Examples of missing/ambiguous fields:
      - "Sugar 125" -> missing glucose context. Action "CLARIFY", missingFields ["glucose_context"], candidateRecords: [{"parameter": "blood_sugar", "value": 125, "unit": "mg/dL", "context": "unknown"}]
      - "BP 140" -> missing diastolic value. Action "CLARIFY", missingFields ["diastolic"], candidateRecords: [{"parameter": "blood_pressure", "systolic": 140, "unit": "mmHg"}]
      - "Temperature 38" or "bukhar 101" -> missing unit. Action "CLARIFY", missingFields ["temperature_unit"], candidateRecords: [{"parameter": "body_temperature", "value": 38, "unit": "unknown"}]
      - "oxygen check ki" -> no value supplied. Action "CLARIFY", missingFields ["value"], candidateRecords: []
+   - If there is a plausible numeric health measurement that cannot be assigned to any parameter (e.g., "140, 160/80" where 160/80 is recognized but 140 is unresolved/ambiguous; or "125, 72" where both are unresolved), you must put those numbers in "unresolvedMeasurements" array and set action to "CLARIFY" and intent to "ambiguous_health_message". Do NOT guess the parameter, and do NOT silently ignore them.
    - Never invent or fabricate missing values.
 
 3. action = "IGNORE":

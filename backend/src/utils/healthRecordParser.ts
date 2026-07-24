@@ -275,6 +275,59 @@ export function isValueSupportedByMessage(
  * Deterministically validates a candidate record against safety guidelines,
  * ensuring no fabricated values, correct unit parameters, positive values, and full BP pairs.
  */
+export function findUnresolvedPlausibleNumbers(
+  originalMessage: string,
+  candidateRecords: CandidateRecord[]
+): number[] {
+  let cleaned = stripNumbersBelongingToDatesAndTimes(originalMessage);
+
+  // Also strip any words like OTP, ID, Order, PAT, etc. and their following numbers to prevent non-health numbers
+  cleaned = cleaned.replace(/\b(?:otp|order|id|pat|msg|hosp|user|doctor|doc|visit|enc)\s*\d+/gi, "");
+  // Also strip 4+ digit numbers (like 1256, 2026, etc. which are not home health measurements)
+  cleaned = cleaned.replace(/\b\d{4,}\b/g, "");
+
+  // Now find all numbers (including decimals)
+  const numbersInMessage = cleaned.match(/\b\d+(?:\.\d+)?\b/g) || [];
+  const floatNumbers = numbersInMessage.map(n => parseFloat(n));
+
+  // Identify the numbers that are represented in candidateRecords
+  const representedNumbers: number[] = [];
+  for (const record of candidateRecords) {
+    if (record.parameter === "blood_pressure") {
+      if (record.systolic !== undefined) representedNumbers.push(record.systolic);
+      if (record.diastolic !== undefined) representedNumbers.push(record.diastolic);
+    } else if (record.value !== undefined && record.value !== null) {
+      const val = Number(record.value);
+      if (!isNaN(val)) {
+        representedNumbers.push(val);
+        if (record.parameter === "body_temperature") {
+          representedNumbers.push(val * 1.8 + 32);
+        }
+        if (record.parameter === "weight") {
+          representedNumbers.push(val / 0.45359237);
+        }
+      }
+    }
+  }
+
+  const unresolved: number[] = [];
+  for (const num of floatNumbers) {
+    // Plausible measurements are usually between 30 and 500
+    if (num < 30 || num > 500) {
+      continue;
+    }
+
+    const isRepresented = representedNumbers.some(rn => Math.abs(rn - num) < 1.0);
+    if (!isRepresented) {
+      if (!unresolved.some(un => Math.abs(un - num) < 0.1)) {
+        unresolved.push(num);
+      }
+    }
+  }
+
+  return unresolved;
+}
+
 export function validateCandidateRecord(
   record: CandidateRecord,
   originalMessage: string

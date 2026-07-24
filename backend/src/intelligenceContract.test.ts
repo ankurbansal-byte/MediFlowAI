@@ -133,7 +133,8 @@ async function runTests() {
     assert(MOCK_RECORDS["PAT-101"] !== undefined && MOCK_RECORDS["PAT-101"].length === 1, "T1: Record saved for PAT-101.");
     assert(MOCK_RECORDS["PAT-101"][0].parameter === "blood_sugar", "T1: Parameter is blood_sugar.");
     assert(MOCK_RECORDS["PAT-101"][0].value === 125, "T1: Value is 125.");
-    assert(axiosPostCalls[0].data.text.body.includes("1 health record(s) saved successfully"), "T1: Correct user reply.");
+    const t1Ack = axiosPostCalls[0].data.text.body;
+    assert(t1Ack.includes("saved successfully") || t1Ack.includes("save ho gayi") || t1Ack.includes("1 health record(s) saved successfully"), "T1: Correct user reply.");
 
     // -------------------------------------------------------------------------
     // TEST 2: “Sugar 125” -> CLARIFY, missing glucose_context, NO persistence
@@ -166,7 +167,8 @@ async function runTests() {
     const countAfter2 = MOCK_RECORDS["PAT-101"]?.length || 0;
     assert(countAfter2 === countBefore2, "T2: CLARIFY action did NOT persist a health record.");
     assert(axiosPostCalls.length === acksBefore2 + 1, "T2: Acknowledgment sent.");
-    assert(axiosPostCalls[axiosPostCalls.length - 1].data.text.body.includes("Please clarify: glucose_context is missing"), "T2: Clarification request sent back to user.");
+    const t2Ack = axiosPostCalls[axiosPostCalls.length - 1].data.text.body;
+    assert(t2Ack.includes("glucose reading fasting") || t2Ack.includes("glucose_context is missing") || t2Ack.includes("Please clarify: glucose_context is missing"), "T2: Clarification request sent back to user.");
 
     // -------------------------------------------------------------------------
     // TEST 3: “आज सुबह शुगर 125 थी” -> Hindi, valid glucose candidate

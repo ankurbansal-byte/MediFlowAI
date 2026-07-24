@@ -593,6 +593,4 @@ async function runSprint36aTests() {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  runSprint36aTests();
-}
+runSprint36aTests();
