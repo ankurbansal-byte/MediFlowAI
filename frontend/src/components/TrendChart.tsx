@@ -6,6 +6,7 @@ export type TrendPeriod = 7 | 30 | 90 | 365 | 36500;
 export type TrendRecord = {
   value: string | number;
   unit?: string;
+  context?: string;
   recordedAt?: string;
 };
 
