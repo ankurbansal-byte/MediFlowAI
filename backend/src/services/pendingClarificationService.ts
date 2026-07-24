@@ -8,6 +8,7 @@ export interface PendingClarification {
   language: string;
   candidateRecords: CandidateRecord[];
   missingFields: string[];
+  unresolvedMeasurements?: number[];
   clarificationReason: string;
   createdAt: Date;
   expiresAt: Date;
