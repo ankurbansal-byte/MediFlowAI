@@ -83,3 +83,16 @@ export const formatGlucoseContext = (context?: string): string => {
       return "";
   }
 };
+
+/**
+ * Formats a date or string into a timezone-agnostic local date string "YYYY-MM-DD".
+ */
+export const getLocalDateString = (dateOrStr?: string | Date) => {
+  if (!dateOrStr) return "";
+  const d = new Date(dateOrStr);
+  if (Number.isNaN(d.getTime())) return "";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
