@@ -234,22 +234,32 @@ export const receiveMessage = async (req: Request, res: Response) => {
 
         // Prepare complete records to save
         const recordsToSave: any[] = [];
+        const paramCounts: Record<string, number> = {};
         for (const item of completeCandidates) {
           const resolvedVal =
             item.parameter === "blood_pressure"
               ? `${item.systolic}/${item.diastolic}`
               : Number(item.value);
 
+          const param = item.parameter;
+          const occurrence = paramCounts[param] || 0;
+          paramCounts[param] = occurrence + 1;
+
+          const suffix = occurrence === 0
+            ? `${whatsappMessageId}_${param}`
+            : `${whatsappMessageId}_${param}_idx${occurrence}`;
+
           recordsToSave.push({
             patientId: patient.patientId,
             parameter: item.parameter,
             value: resolvedVal,
             unit: item.unit ?? PARAMETER_REGISTRY[item.parameter]?.defaultUnit ?? "",
+            context: item.context || undefined,
             recordedAt: resolveRecordedAt(message, item.recordedAt as string | null, messageDate),
             source: "text",
             confidence: item.confidence ?? 0.99,
             originalMessage: message,
-            whatsappMessageId: `${whatsappMessageId}_${item.parameter}`,
+            whatsappMessageId: suffix,
             hospitalId: patient.hospitalId,
           });
         }
@@ -679,6 +689,7 @@ function parseMergedHealthRecords(
     parameter,
     value: resolvedVal,
     unit: completedCandidate.unit ?? PARAMETER_REGISTRY[parameter]?.defaultUnit ?? "",
+    context: completedCandidate.context || undefined,
     recordedAt: originalRecordedAt,
     source: "text",
     confidence: completedCandidate.confidence ?? 0.99,

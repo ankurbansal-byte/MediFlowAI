@@ -22,6 +22,12 @@ const healthRecordSchema = new mongoose.Schema(
       default: "",
     },
 
+    context: {
+      type: String,
+      enum: ["fasting", "pre_meal", "post_meal", "random", "unknown"],
+      required: false,
+    },
+
     recordedAt: {
       type: Date,
       default: Date.now,
