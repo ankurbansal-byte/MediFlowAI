@@ -473,7 +473,9 @@ export const receiveMessage = async (req: Request, res: Response) => {
       if (process.env.USE_MOCK_DATA === "true") {
         for (const pId in MOCK_RECORDS) {
           const match = MOCK_RECORDS[pId].find(
-            (r: any) => r.whatsappMessageId === whatsappMessageId
+            (r: any) =>
+              r.whatsappMessageId === whatsappMessageId ||
+              r.whatsappMessageId.startsWith(whatsappMessageId + "_")
           );
           if (match) {
             existsInDb = true;
@@ -481,7 +483,10 @@ export const receiveMessage = async (req: Request, res: Response) => {
           }
         }
       } else {
-        const record = await HealthRecord.findOne({ whatsappMessageId }, { _id: 1 });
+        const escapedId = whatsappMessageId.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const record = await HealthRecord.findOne({
+          whatsappMessageId: { $regex: `^${escapedId}(_|$)` }
+        }, { _id: 1 });
         if (record) {
           existsInDb = true;
         }
