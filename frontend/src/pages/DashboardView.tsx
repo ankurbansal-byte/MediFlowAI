@@ -12,7 +12,7 @@ import { type TimelineFilterValue } from "../components/TimelineFilter";
 import { type ParameterStats } from "../utils/stats";
 import { type HealthParameter } from "../hooks/useTrendData";
 import { type TabType } from "./Dashboard";
-import { formatRecordDateTime, formatGlucoseContext } from "../utils/date";
+import { formatRecordDateTime, formatGlucoseContext, getLocalDateString } from "../utils/date";
 
 interface DashboardViewProps {
   user: User;
@@ -36,6 +36,7 @@ interface DashboardViewProps {
   visibleTimeline: TimelineRecord[];
   setIsModalOpen: (open: boolean) => void;
   onTabChange?: (tab: TabType) => void;
+  setSelectedHistoryDate?: (dateStr: string | null) => void;
 }
 
 const DashboardView: React.FC<DashboardViewProps> = ({
@@ -60,6 +61,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   visibleTimeline,
   setIsModalOpen,
   onTabChange,
+  setSelectedHistoryDate,
 }) => {
   // 1. Factual Health Summary calculation for Last 30 Days (for patients)
   const factualSummaryBlocks = React.useMemo(() => {
@@ -171,6 +173,33 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   ];
 
   if (user.role === "patient") {
+    const todayRecords = timeline
+      .filter(r => r.recordedAt && getLocalDateString(r.recordedAt) === getLocalDateString(new Date()))
+      .sort((a, b) => {
+        const tA = a.recordedAt ? new Date(a.recordedAt).getTime() : 0;
+        const tB = b.recordedAt ? new Date(b.recordedAt).getTime() : 0;
+        return tB - tA;
+      });
+
+    const formatTodayDateHeader = (date: Date) => {
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      }).format(date);
+    };
+
+    const formatTimeOnly = (recordedAt?: string) => {
+      if (!recordedAt) return "—";
+      const date = new Date(recordedAt);
+      if (isNaN(date.getTime())) return "—";
+      return new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+      }).format(date);
+    };
+
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
         {/* Patient Greeting & Identity Header */}
@@ -261,7 +290,99 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </section>
 
-        {/* Factual Clinical Summary Card */}
+        {/* Today's Health Section */}
+        <section aria-labelledby="todays-health-title" style={{
+          background: "#ffffff",
+          border: "1px solid var(--line, #e4e7eb)",
+          borderRadius: "14px",
+          padding: "24px",
+          boxShadow: "0 4px 16px rgba(23, 49, 84, 0.02)"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
+            <div>
+              <h2 id="todays-health-title" style={{ margin: 0, color: "var(--navy)", fontSize: "1.5rem", fontWeight: 800 }}>
+                ☀️ Today's Health
+              </h2>
+              <p style={{ margin: "4px 0 0 0", color: "var(--muted)", fontSize: "0.88rem", fontWeight: 600 }}>
+                {formatTodayDateHeader(new Date())} · {todayRecords.length} record{todayRecords.length !== 1 ? "s" : ""}
+              </p>
+            </div>
+            {onTabChange && (
+              <button
+                onClick={() => {
+                  if (setSelectedHistoryDate) {
+                    setSelectedHistoryDate(getLocalDateString(new Date()));
+                  }
+                  onTabChange("trends");
+                }}
+                className="view-history-link"
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#0080ff",
+                  fontWeight: 750,
+                  fontSize: "0.92rem",
+                  cursor: "pointer",
+                  padding: 0
+                }}
+              >
+                View today's records →
+              </button>
+            )}
+          </div>
+
+          {todayRecords.length === 0 ? (
+            <p style={{ margin: 0, color: "var(--muted)", fontStyle: "italic", fontSize: "0.95rem", fontWeight: 550 }}>
+              No health records logged today.
+            </p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {todayRecords.map((record, index) => {
+                const displayParam = record.parameter.replace("_", " ").toUpperCase().replace(/\b\w/g, c => c.toUpperCase());
+                const timeStr = formatTimeOnly(record.recordedAt);
+                return (
+                  <div
+                    key={index}
+                    onClick={() => {
+                      if (setSelectedHistoryDate) {
+                        setSelectedHistoryDate(getLocalDateString(record.recordedAt));
+                      }
+                      if (onTabChange) {
+                        onTabChange("trends");
+                      }
+                    }}
+                    style={{
+                      cursor: "pointer",
+                      transition: "all 0.15s ease"
+                    }}
+                    className="table-row-hover today-record-row"
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                      <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 750, minWidth: "70px" }}>
+                        {timeStr}
+                      </span>
+                      <strong style={{ fontSize: "1rem", color: "var(--navy)", fontWeight: 750 }}>
+                        {displayParam}
+                      </strong>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <strong style={{ fontSize: "1.1rem", color: "var(--navy)", fontWeight: 850 }}>
+                        {record.value} <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 650 }}>{record.unit}</span>
+                        {record.parameter === "blood_sugar" && record.context && formatGlucoseContext(record.context) ? (
+                          <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontWeight: 650, marginLeft: "4px" }}>
+                            · {formatGlucoseContext(record.context)}
+                          </span>
+                        ) : null}
+                      </strong>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* Factual Clinical Summary Card (Relabelled to 30-Day Health Summary) */}
         <section aria-labelledby="factual-summary-title" style={{
           background: "#ffffff",
           border: "1px solid #cbd5e1",
@@ -270,7 +391,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           boxShadow: "0 4px 16px rgba(10, 37, 64, 0.02)"
         }}>
           <h3 id="factual-summary-title" style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.25rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "8px" }}>
-            📊 Factual Clinical Summary (Last 30 Days)
+            📊 30-Day Health Summary
           </h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "0.9rem" }}>
             {hasAnyFactualSummaryData ? (
@@ -326,102 +447,6 @@ const DashboardView: React.FC<DashboardViewProps> = ({
             </button>
           </div>
         )}
-
-        {/* Longitudinal Health History Chronological Record */}
-        <section aria-labelledby="health-history-title" style={{ borderTop: "1px solid var(--line)", paddingTop: "28px" }}>
-          <h2 id="health-history-title" style={{ margin: "0 0 8px 0", color: "var(--navy)", fontSize: "1.5rem", fontWeight: 800 }}>
-            🏥 Longitudinal Health History
-          </h2>
-          <p style={{ margin: "0 0 20px 0", color: "var(--muted)", fontSize: "0.95rem" }}>
-            Chronological journal of your recorded vitals and WhatsApp health submissions.
-          </p>
-
-          {timeline.length === 0 ? (
-            <div className="clinical-state-card clinical-state-card--empty">
-              <span className="clinical-state-card__icon" aria-hidden="true">◈</span>
-              <div className="clinical-state-card__content">
-                <h3 className="clinical-state-card__title">No Records Available</h3>
-                <p className="clinical-state-card__message">
-                  There are currently no physiological observations recorded in your history. Send a message on WhatsApp to begin!
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {timeline.slice(0, 8).map((record, index) => {
-                const displayParam = record.parameter.replace("_", " ").toUpperCase().replace(/\b\w/g, c => c.toUpperCase());
-                const dateStr = record.recordedAt ? formatRecordDateTime(record.recordedAt) : "—";
-
-                return (
-                  <div
-                    key={index}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "16px",
-                      background: "#ffffff",
-                      border: "1px solid var(--line, #e4e7eb)",
-                      borderRadius: "10px",
-                      transition: "all 0.15s ease"
-                    }}
-                    className="table-row-hover"
-                  >
-                    <div>
-                      <span style={{
-                        fontSize: "0.82rem",
-                        color: "#627d98",
-                        fontWeight: 800,
-                        display: "block",
-                        marginBottom: "4px"
-                      }}>
-                        {dateStr}
-                      </span>
-                      <span style={{
-                        fontSize: "1.05rem",
-                        color: "var(--navy, #0a2540)",
-                        fontWeight: 800,
-                        display: "block"
-                      }}>
-                        {displayParam}
-                      </span>
-                    </div>
-
-                    <div style={{ textAlign: "right" }}>
-                      <strong style={{
-                        fontSize: "1.25rem",
-                        color: "var(--navy, #0a2540)",
-                        fontWeight: 850
-                      }}>
-                        {record.value} <span style={{ fontSize: "0.8rem", fontWeight: 650, color: "var(--muted)" }}>{record.unit}</span>
-                        {record.parameter === "blood_sugar" && record.context && formatGlucoseContext(record.context) ? (
-                          <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--muted)", marginLeft: "4px" }}> · {formatGlucoseContext(record.context)}</span>
-                        ) : null}
-                      </strong>
-                    </div>
-                  </div>
-                );
-              })}
-              {timeline.length > 8 && (
-                <button
-                  onClick={() => onTabChange && onTabChange("trends")}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#0080ff",
-                    fontWeight: 750,
-                    fontSize: "0.92rem",
-                    cursor: "pointer",
-                    marginTop: "10px",
-                    textAlign: "center"
-                  }}
-                >
-                  Show all history records in Health / Trends →
-                </button>
-              )}
-            </div>
-          )}
-        </section>
       </div>
     );
   }

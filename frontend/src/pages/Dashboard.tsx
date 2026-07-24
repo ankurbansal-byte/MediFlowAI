@@ -43,6 +43,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
   });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [selectedHistoryDate, setSelectedHistoryDate] = useState<string | null>(null);
 
   // States for Doctor Workspace overlay/subview
   const [workspacePatientId, setWorkspacePatientId] = useState<string | null>(null);
@@ -184,6 +185,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
             visibleTimeline={visibleTimeline}
             setIsModalOpen={setIsModalOpen}
             onTabChange={handleTabChange}
+            setSelectedHistoryDate={setSelectedHistoryDate}
           />
         );
       case "today-patients":
@@ -218,6 +220,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
             hasTrendError={hasTrendError}
             trend={trend}
             timeline={timeline}
+            selectedHistoryDate={selectedHistoryDate}
+            setSelectedHistoryDate={setSelectedHistoryDate}
           />
         );
       case "ai-insights":
