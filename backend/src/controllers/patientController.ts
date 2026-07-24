@@ -31,6 +31,7 @@ for (const r of demoRecords) {
     parameter: r.parameter,
     value: r.value,
     unit: r.unit,
+    context: (r as any).context,
     recordedAt: r.recordedAt,
     source: r.source,
     confidence: r.confidence,
@@ -976,7 +977,7 @@ export const getPatientTimeline = async (
         recordedAt: -1,
       })
       .select(
-        "-_id parameter value unit recordedAt source confidence originalMessage encounterId hospitalId doctorId recordedBy"
+        "-_id parameter value unit context recordedAt source confidence originalMessage encounterId hospitalId doctorId recordedBy"
       );
 
     return res.status(200).json({
@@ -1022,6 +1023,7 @@ export const getPatientSummary = async (
         latest[record.parameter] = {
           value: record.value,
           unit: record.unit,
+          context: record.context,
           recordedAt: record.recordedAt,
           source: record.source,
           confidence: record.confidence,
@@ -1049,6 +1051,7 @@ export const getPatientSummary = async (
         latest[record.parameter] = {
           value: record.value,
           unit: record.unit,
+          context: record.context,
           recordedAt: record.recordedAt,
           source: record.source,
           confidence: record.confidence,
@@ -1097,6 +1100,7 @@ export const getParameterTrend = async (
       .map((r: any) => ({
         value: r.value,
         unit: r.unit,
+        context: r.context,
         recordedAt: r.recordedAt,
       }));
 
@@ -1123,7 +1127,7 @@ export const getParameterTrend = async (
       .sort({
         recordedAt: 1,
       })
-      .select("-_id value unit recordedAt");
+      .select("-_id value unit context recordedAt");
 
     return res.json({
       success: true,
