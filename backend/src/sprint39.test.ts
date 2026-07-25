@@ -198,7 +198,7 @@ async function runSprint39Tests() {
       })
     );
     await receiveMessage(makePayload("917618432290", "oxygen 97 hai", "msg-o2-2", referenceTimestamp), mockResponse() as any);
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Oxygen 97 % save ho gaya."), "SpO2 Hinglish: Confirmed in Hinglish");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("Oxygen 97% save ho gaya."), "SpO2 Hinglish: Confirmed in Hinglish");
 
     // ऑक्सीजन 97 है (Hindi)
     resetState();
@@ -212,7 +212,7 @@ async function runSprint39Tests() {
       })
     );
     await receiveMessage(makePayload("917618432290", "ऑक्सीजन 97 है", "msg-o2-3", referenceTimestamp), mockResponse() as any);
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Done 👍 ऑक्सीजन 97 % सेव हो गया।"), "SpO2 Hindi: Confirmed in Hindi");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("Done 👍 ऑक्सीजन 97% सेव हो गया।"), "SpO2 Hindi: Confirmed in Hindi");
 
     // AI failure fallback for oxygen
     resetState();

@@ -190,7 +190,7 @@ async function runSprint38Tests() {
     );
     await receiveMessage(makePayload("917618432290", "Oxygen level 98", "msg-eng-o2", referenceTimestamp), mockResponse() as any);
     assert(MOCK_RECORDS["PAT-101"]?.[0]?.parameter === "oxygen_saturation", "English: Saved Oxygen");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Oxygen 98 % saved successfully"), "English: Oxygen confirmation style is correct");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("Oxygen 98% saved successfully"), "English: Oxygen confirmation style is correct");
 
     // Turn 6: temperature
     resetState();
@@ -290,7 +290,7 @@ async function runSprint38Tests() {
       })
     );
     await receiveMessage(makePayload("917618432290", "oxygen 97 hai", "msg-hing-o2", referenceTimestamp), mockResponse() as any);
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Oxygen 97 % save ho gaya."), "Hinglish: Oxygen confirmation style is correct");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("Oxygen 97% save ho gaya."), "Hinglish: Oxygen confirmation style is correct");
 
     resetState();
     setMockExtractHealthData(async () =>

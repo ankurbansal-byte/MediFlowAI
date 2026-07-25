@@ -60,7 +60,8 @@ export function formatConfirmation(records: any[], lang: LanguageStyle): string 
 
     // Capitalize first letter of parameter name for English and Hinglish in confirmation
     const capName = (lang !== "hindi" && name.length > 0) ? name.charAt(0).toUpperCase() + name.slice(1) : name;
-    return `${capName} ${r.value} ${unit}${contextStr}`.trim();
+    const space = unit === "%" ? "" : " ";
+    return `${capName} ${r.value}${space}${unit}${contextStr}`.trim();
   });
 
   if (lang === "hindi") {
@@ -133,10 +134,10 @@ export function getBodyTemperatureClarification(lang: LanguageStyle, value?: any
 
   if (lang === "hindi") {
     const prefix = displayVal ? `तापमान ${displayVal} ` : "तापमान ";
-    return `${prefix}नोट कर लूँ 👍 बस बताइए — °C है या °F? क्या तापमान ${displayVal} °C था या °F?`;
+    return `${prefix}नोट कर लूँ 👍 बस बताइए — °C है या °F?`;
   } else if (lang === "hinglish") {
     const prefix = displayVal ? `Temperature ${displayVal} ` : "Temperature ";
-    return `${prefix}note kar loon 👍 Bas bata dijiye — °C hai ya °F? Temperature ${displayVal} °C tha ya °F?`;
+    return `${prefix}note kar loon 👍 Bas bata dijiye — °C hai ya °F?`;
   } else {
     const prefix = displayVal ? `Got it — temperature is ${displayVal}. ` : "Got it — temperature is noted. ";
     return `${prefix}Was the temperature ${displayVal} °C or °F?`;

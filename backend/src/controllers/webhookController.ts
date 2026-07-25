@@ -158,6 +158,39 @@ async function processMessageFlow(
       reason = fallbackResult.reason;
       aiUnresolved = fallbackResult.unresolvedMeasurements;
     }
+  } else {
+    // If AI succeeded, also merge any additional deterministic candidates (same-parameter multi-observation support)
+    const fallbackResult = deterministicExtract(message);
+    if (fallbackResult && fallbackResult.candidateRecords && fallbackResult.candidateRecords.length > 0) {
+      for (const fbRecord of fallbackResult.candidateRecords) {
+        const exists = candidateRecords.some(cRecord => {
+          if (cRecord.parameter !== fbRecord.parameter) return false;
+          if (fbRecord.parameter === "blood_pressure") {
+            return cRecord.systolic === fbRecord.systolic && cRecord.diastolic === fbRecord.diastolic;
+          } else {
+            return cRecord.value === fbRecord.value;
+          }
+        });
+        if (!exists) {
+          console.log(`[Parser] Merging missing deterministic candidate:`, fbRecord.parameter);
+          candidateRecords.push(fbRecord);
+          if (fbRecord.parameter === "blood_sugar" && fbRecord.context === "unknown" && !missingFields.includes("glucose_context")) {
+            missingFields.push("glucose_context");
+          }
+          if (fbRecord.parameter === "blood_pressure" && fbRecord.diastolic === undefined && !missingFields.includes("diastolic")) {
+            missingFields.push("diastolic");
+          }
+          if (fbRecord.parameter === "body_temperature" && fbRecord.unit === "unknown" && !missingFields.includes("temperature_unit")) {
+            missingFields.push("temperature_unit");
+          }
+        }
+      }
+      missingFields = Array.from(new Set(missingFields));
+      if (candidateRecords.length > 0 && action === "IGNORE") {
+        action = missingFields.length > 0 ? "CLARIFY" : "RECORD";
+        intent = "health_measurement";
+      }
+    }
   }
 
   // Find unresolved measurements using deterministic rules combined with AI

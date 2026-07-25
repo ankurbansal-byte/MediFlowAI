@@ -118,352 +118,366 @@ export function deterministicExtract(message: string): any {
   const candidateRecords: any[] = [];
   const missingFields: string[] = [];
 
-  // Strip dates and times first to avoid extracting time/date numbers as vitals
-  const cleanedText = stripNumbersBelongingToDatesAndTimes(message);
+  const keywordMap: Record<string, string[]> = {
+    blood_sugar: ["sugar", "glucose", "sugar level", "shugar", "cheeni", "schugar", "शुगर", "सीनी", "चीनी"],
+    blood_pressure: ["bp", "blood pressure", "pressure", "बीपी", "रक्तचाप"],
+    heart_rate: ["pulse", "heart rate", "hr", "bpm", "dhadkan", "पल्स", "धड़कन"],
+    oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन"],
+    body_temperature: ["temp", "temperature", "fever", "body temp", "bukhar", "bukhaar", "tapman", "तापमान", "बुखार"],
+    weight: ["weight", "vajan", "wajan", "kg", "vazan", "वजन"],
+    respiratory_rate: ["breath", "resp", "respiratory", "rr", "saans", "सांस की दर"],
+    height: ["height", "lambai", "kad", "हाइट", "लंबाई", "कद"]
+  };
 
-  // 1. Blood Sugar Check
-  const sugarRegexes = [
-    /(?:sugar|blood\s*sugar|sugar\s*level|shugar|glucose|schugar|cheeni|शुगर|सीनी|चीनी)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d+(?:\.\d+)?)/i,
-    /(\d+(?:\.\d+)?)\s*(?:mg\/dl)?\s*(?:sugar|blood\s*sugar|sugar\s*level|shugar|glucose|schugar|cheeni|शुगर|सीनी|चीनी)/i
-  ];
-
-  let sugarValue: number | null = null;
-  for (const rx of sugarRegexes) {
-    const match = cleanedText.match(rx);
-    if (match) {
-      const val = parseFloat(match[1]);
-      if (val >= 30 && val <= 500) {
-        sugarValue = val;
-        break;
+  function detectSegmentParameter(text: string): string | null {
+    const cleanSeg = text.toLowerCase();
+    for (const [param, keywords] of Object.entries(keywordMap)) {
+      for (const kw of keywords) {
+        if (/[\u0900-\u097F]/.test(kw)) {
+          if (cleanSeg.includes(kw)) {
+            return param;
+          }
+        } else {
+          const rx = new RegExp(`\\b${kw}\\b`, "i");
+          if (rx.test(cleanSeg)) {
+            return param;
+          }
+        }
       }
     }
+    return null;
   }
 
-  if (sugarValue !== null) {
-    const context = parseGlucoseContext(message);
-    if (context) {
-      candidateRecords.push({
-        parameter: "blood_sugar",
-        value: sugarValue,
-        unit: "mg/dL",
-        context: context,
-        recordedAt: null,
-        confidence: 0.99
-      });
-    } else {
-      candidateRecords.push({
-        parameter: "blood_sugar",
-        value: sugarValue,
-        unit: "mg/dL",
-        context: "unknown",
-        recordedAt: null,
-        confidence: 0.99
-      });
-      missingFields.push("glucose_context");
+  function hasConflictingParameterKeywords(text: string, currentParam: string): boolean {
+    const cleanSeg = text.toLowerCase();
+    for (const [param, keywords] of Object.entries(keywordMap)) {
+      if (param === currentParam) continue;
+      for (const kw of keywords) {
+        if (/[\u0900-\u097F]/.test(kw)) {
+          if (cleanSeg.includes(kw)) {
+            return true;
+          }
+        } else {
+          const rx = new RegExp(`\\b${kw}\\b`, "i");
+          if (rx.test(cleanSeg)) {
+            return true;
+          }
+        }
+      }
     }
+    return false;
   }
 
-  // 2. Blood Pressure Check
-  const bpRegexes = [
-    /(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3})\s*(?:\/|\\|h|by|and|aur|\s+)\s*(\d{2,3})/i,
-    /(\d{2,3})\s*(?:\/|\\|h|by|and|aur|\s+)\s*(\d{2,3})\s*(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप)/i,
-    /\b(\d{2,3})\s*[\/\\]\s*(\d{2,3})\b/
-  ];
+  function extractTemporalInfo(text: string): string | null {
+    const cleanSeg = text.toLowerCase();
+    const timeMatch = cleanSeg.match(/\b\d{1,2}(?:[:.]\d{2})?\s*(?:am|pm)\b/i);
+    if (timeMatch) {
+      return timeMatch[0];
+    }
+    if (cleanSeg.includes("morning") || cleanSeg.includes("subah") || cleanSeg.includes("सुबह")) {
+      return "morning";
+    }
+    if (cleanSeg.includes("evening") || cleanSeg.includes("shaam") || cleanSeg.includes("शाम")) {
+      return "evening";
+    }
+    if (cleanSeg.includes("afternoon") || cleanSeg.includes("dopahar") || cleanSeg.includes("दोपहर")) {
+      return "afternoon";
+    }
+    if (cleanSeg.includes("night") || cleanSeg.includes("raat") || cleanSeg.includes("रात")) {
+      if (cleanSeg.includes("yesterday") || cleanSeg.includes("kal")) {
+        return "yesterday night";
+      }
+      return "night";
+    }
+    if (cleanSeg.includes("yesterday") || cleanSeg.includes("kal") || cleanSeg.includes("कल")) {
+      return "yesterday";
+    }
+    return null;
+  }
 
-  let bpMatched = false;
-  for (const rx of bpRegexes) {
-    const match = cleanedText.match(rx);
-    if (match) {
-      const systolic = parseInt(match[1], 10);
-      const diastolic = parseInt(match[2], 10);
-      if (systolic >= 70 && systolic <= 250 && diastolic >= 40 && diastolic <= 150) {
+  // Split by clause separators, using non-word-boundary patterns for Devanagari words
+  const rawSegments = message.split(/[,;।।]|\b(?:and|aur|or|&|\+|then|fir|phir)\b|(?:^|\s+)(?:था|और)(?:\s+|$)/i);
+
+  let runningParameter: string | null = null;
+
+  for (const rawSeg of rawSegments) {
+    const trimmedSeg = rawSeg.trim();
+    if (!trimmedSeg) continue;
+
+    let segmentParam = detectSegmentParameter(trimmedSeg);
+    if (segmentParam) {
+      runningParameter = segmentParam;
+    } else if (runningParameter && !hasConflictingParameterKeywords(trimmedSeg, runningParameter)) {
+      segmentParam = runningParameter;
+    }
+
+    // Also check for standalone BP patterns, which can implicitly establish BP context
+    const cleanedSegment = stripNumbersBelongingToDatesAndTimes(trimmedSeg);
+    const hasStandaloneBpPattern = /\b(\d{2,3})\s*[\/\\]\s*(\d{2,3})\b/.test(cleanedSegment);
+    if (!segmentParam && hasStandaloneBpPattern) {
+      segmentParam = "blood_pressure";
+      runningParameter = "blood_pressure";
+    }
+
+    if (!segmentParam) continue;
+
+    const tempInfo = extractTemporalInfo(trimmedSeg);
+
+    if (segmentParam === "blood_pressure") {
+      const bpPairRegexes = [
+        /(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप)?\s*(\d{2,3})\s*(?:\/|\\|h|by|and|aur|\s+)\s*(\d{2,3})\b/i,
+        /\b(\d{2,3})\s*[\/\\]\s*(\d{2,3})\b/
+      ];
+      let bpMatched = false;
+      for (const rx of bpPairRegexes) {
+        const match = cleanedSegment.match(rx);
+        if (match) {
+          const systolic = parseInt(match[1], 10);
+          const diastolic = parseInt(match[2], 10);
+          if (systolic >= 70 && systolic <= 250 && diastolic >= 40 && diastolic <= 150) {
+            candidateRecords.push({
+              parameter: "blood_pressure",
+              systolic,
+              diastolic,
+              unit: "mmHg",
+              recordedAt: tempInfo,
+              confidence: 0.99
+            });
+            bpMatched = true;
+            break;
+          }
+        }
+      }
+
+      if (!bpMatched) {
+        const incompleteBpRegex = /(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3})\b/i;
+        const match = cleanedSegment.match(incompleteBpRegex);
+        if (match) {
+          const systolic = parseInt(match[1], 10);
+          if (systolic >= 70 && systolic <= 250) {
+            candidateRecords.push({
+              parameter: "blood_pressure",
+              systolic,
+              unit: "mmHg",
+              recordedAt: tempInfo,
+              confidence: 0.99
+            });
+            missingFields.push("diastolic");
+          }
+        }
+      }
+    }
+
+    else if (segmentParam === "blood_sugar") {
+      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
+      for (const numStr of numbersInSeg) {
+        const val = parseFloat(numStr);
+        if (val >= 30 && val <= 500) {
+          const context = parseGlucoseContext(trimmedSeg) || parseGlucoseContext(message);
+          if (context) {
+            candidateRecords.push({
+              parameter: "blood_sugar",
+              value: val,
+              unit: "mg/dL",
+              context: context,
+              recordedAt: tempInfo,
+              confidence: 0.99
+            });
+          } else {
+            candidateRecords.push({
+              parameter: "blood_sugar",
+              value: val,
+              unit: "mg/dL",
+              context: "unknown",
+              recordedAt: tempInfo,
+              confidence: 0.99
+            });
+            missingFields.push("glucose_context");
+          }
+        }
+      }
+    }
+
+    else if (segmentParam === "heart_rate") {
+      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
+      for (const numStr of numbersInSeg) {
+        const val = parseInt(numStr, 10);
+        if (val >= 30 && val <= 250) {
+          candidateRecords.push({
+            parameter: "heart_rate",
+            value: val,
+            unit: "bpm",
+            recordedAt: tempInfo,
+            confidence: 0.99
+          });
+        }
+      }
+    }
+
+    else if (segmentParam === "oxygen_saturation") {
+      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
+      for (const numStr of numbersInSeg) {
+        const val = parseInt(numStr, 10);
+        if (val >= 50 && val <= 100) {
+          candidateRecords.push({
+            parameter: "oxygen_saturation",
+            value: val,
+            unit: "%",
+            recordedAt: tempInfo,
+            confidence: 0.99
+          });
+        }
+      }
+    }
+
+    else if (segmentParam === "body_temperature") {
+      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
+      for (const numStr of numbersInSeg) {
+        const val = parseFloat(numStr);
+        if (val >= 30 && val <= 110) {
+          let tempUnit: string | null = null;
+          const hasExplicitC = /\b(?:°?c|celsius|celcius)\b/i.test(trimmedSeg) || trimmedSeg.includes("°c") || trimmedSeg.includes("celsius") || trimmedSeg.includes("सेल्सियस");
+          const hasExplicitF = /\b(?:°?f|fahrenheit|farenheit)\b/i.test(trimmedSeg) || trimmedSeg.includes("°f") || trimmedSeg.includes("fahrenheit") || trimmedSeg.includes("फ़ारेनहाइट") || trimmedSeg.includes("फारेनहाइट");
+
+          if (hasExplicitC) {
+            tempUnit = "°C";
+          } else if (hasExplicitF) {
+            tempUnit = "°F";
+          } else {
+            if (val === 98.6) {
+              tempUnit = "°F";
+            } else {
+              tempUnit = "unknown";
+            }
+          }
+
+          if (tempUnit === "°F") {
+            const celsiusVal = parseFloat(((val - 32) * 5 / 9).toFixed(1));
+            candidateRecords.push({
+              parameter: "body_temperature",
+              value: celsiusVal,
+              unit: "°C",
+              recordedAt: tempInfo,
+              confidence: 0.99
+            });
+          } else if (tempUnit === "°C") {
+            candidateRecords.push({
+              parameter: "body_temperature",
+              value: val,
+              unit: "°C",
+              recordedAt: tempInfo,
+              confidence: 0.99
+            });
+          } else {
+            candidateRecords.push({
+              parameter: "body_temperature",
+              value: val,
+              unit: "unknown",
+              recordedAt: tempInfo,
+              confidence: 0.99
+            });
+            missingFields.push("temperature_unit");
+          }
+        }
+      }
+    }
+
+    else if (segmentParam === "weight") {
+      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
+      for (const numStr of numbersInSeg) {
+        const val = parseFloat(numStr);
+        if (val >= 10 && val <= 300) {
+          const isLbs = trimmedSeg.includes("lbs");
+          if (isLbs) {
+            const kgVal = parseFloat((val * 0.45359237).toFixed(1));
+            candidateRecords.push({
+              parameter: "weight",
+              value: kgVal,
+              unit: "kg",
+              recordedAt: tempInfo,
+              confidence: 0.99
+            });
+          } else {
+            candidateRecords.push({
+              parameter: "weight",
+              value: val,
+              unit: "kg",
+              recordedAt: tempInfo,
+              confidence: 0.99
+            });
+          }
+        }
+      }
+    }
+
+    else if (segmentParam === "respiratory_rate") {
+      const isRrSymptomOnly = clean.includes("saans lene mein") || clean.includes("saans phool") || clean.includes("breathing difficulty") || clean.includes("shortness of breath");
+      if (!isRrSymptomOnly) {
+        const numbersInSeg = cleanedSegment.match(/\b\d+\b/g) || [];
+        for (const numStr of numbersInSeg) {
+          const val = parseInt(numStr, 10);
+          if (val >= 10 && val <= 40) {
+            candidateRecords.push({
+              parameter: "respiratory_rate",
+              value: val,
+              unit: "breaths/min",
+              recordedAt: tempInfo,
+              confidence: 0.99
+            });
+          }
+        }
+      }
+    }
+
+    else if (segmentParam === "height") {
+      let heightValue: number | null = null;
+      const feetInchesRegexes = [
+        /\b(\d+)\s*'\s*(\d+)(?:"|in|inch|inches)?\b/i,
+        /\b(\d+)\s*(?:feet|foot|ft|फ़ीट|फुट)\s*(\d+)\s*(?:inches|inch|in|इंच)?\b/iu
+      ];
+      for (const rx of feetInchesRegexes) {
+        const match = trimmedSeg.match(rx);
+        if (match) {
+          const ft = parseInt(match[1], 10);
+          const inch = parseInt(match[2], 10);
+          if (ft >= 3 && ft <= 8 && inch >= 0 && inch < 12) {
+            heightValue = parseFloat(((ft * 12 + inch) * 2.54).toFixed(1));
+            break;
+          }
+        }
+      }
+
+      if (heightValue === null) {
+        const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
+        for (const numStr of numbersInSeg) {
+          const val = parseFloat(numStr);
+          if (val >= 50 && val <= 250) {
+            heightValue = val;
+            break;
+          } else if (val >= 0.5 && val <= 2.5) {
+            heightValue = parseFloat((val * 100).toFixed(1));
+            break;
+          }
+        }
+      }
+
+      if (heightValue !== null) {
         candidateRecords.push({
-          parameter: "blood_pressure",
-          systolic,
-          diastolic,
-          unit: "mmHg",
-          recordedAt: null,
+          parameter: "height",
+          value: heightValue,
+          unit: "cm",
+          recordedAt: tempInfo,
           confidence: 0.99
         });
-        bpMatched = true;
-        break;
       }
     }
-  }
-
-  if (!bpMatched) {
-    const incompleteBpRegex = /(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3})\b/i;
-    const match = cleanedText.match(incompleteBpRegex);
-    if (match) {
-      const systolic = parseInt(match[1], 10);
-      if (systolic >= 70 && systolic <= 250) {
-        candidateRecords.push({
-          parameter: "blood_pressure",
-          systolic,
-          unit: "mmHg",
-          recordedAt: null,
-          confidence: 0.99
-        });
-        missingFields.push("diastolic");
-      }
-    }
-  }
-
-  // 3. Heart Rate / Pulse Check
-  const hrRegexes = [
-    /(?:pulse|heart\s*rate|hr|bpm|dhadkan|पल्स|धड़कन)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3})\b/i,
-    /(\d{2,3})\s*(?:bpm)?\s*(?:pulse|heart\s*rate|hr|dhadkan|पल्स|धड़कन)\b/i
-  ];
-
-  let hrValue: number | null = null;
-  for (const rx of hrRegexes) {
-    const match = cleanedText.match(rx);
-    if (match) {
-      const val = parseInt(match[1], 10);
-      if (val >= 30 && val <= 250) {
-        hrValue = val;
-        break;
-      }
-    }
-  }
-
-  if (hrValue !== null) {
-    candidateRecords.push({
-      parameter: "heart_rate",
-      value: hrValue,
-      unit: "bpm",
-      recordedAt: null,
-      confidence: 0.99
-    });
-  }
-
-  // 4. Body Temperature Check
-  const tempRegexes = [
-    /(?:temp|temperature|fever|body\s*temp|bukhar|bukhaar|tapman|तापमान|बुखार)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3}(?:\.\d+)?)\b/i,
-    /(\d{2,3}(?:\.\d+)?)\s*(?:°?[fF]|°?[cC])?\s*(?:temp|temperature|fever|body\s*temp|bukhar|bukhaar|tapman|तापमान|बुखार)\b/i
-  ];
-
-  let tempValue: number | null = null;
-  let tempUnit: string | null = null;
-
-  for (const rx of tempRegexes) {
-    const match = cleanedText.match(rx);
-    if (match) {
-      tempValue = parseFloat(match[1]);
-      break;
-    }
-  }
-
-  if (tempValue !== null) {
-    const hasExplicitC = /\b(?:°?c|celsius|celcius)\b/i.test(cleanedText) || clean.includes("°c") || clean.includes(" c ") || clean.endsWith("c") || clean.includes("celsius") || clean.includes("celcius") || clean.includes("सेल्सियस");
-    const hasExplicitF = /\b(?:°?f|fahrenheit|farenheit)\b/i.test(cleanedText) || clean.includes("°f") || clean.includes(" f ") || clean.endsWith("f") || clean.includes("fahrenheit") || clean.includes("farenheit") || clean.includes("फ़ारेनहाइट") || clean.includes("फारेनहाइट");
-
-    if (hasExplicitC) {
-      tempUnit = "°C";
-    } else if (hasExplicitF) {
-      tempUnit = "°F";
-    } else {
-      if (tempValue === 98.6) {
-        tempUnit = "°F";
-      } else {
-        tempUnit = "unknown";
-      }
-    }
-
-    if (tempUnit === "°F") {
-      const celsiusVal = parseFloat(((tempValue - 32) * 5 / 9).toFixed(1));
-      candidateRecords.push({
-        parameter: "body_temperature",
-        value: celsiusVal,
-        unit: "°C",
-        recordedAt: null,
-        confidence: 0.99
-      });
-    } else if (tempUnit === "°C") {
-      candidateRecords.push({
-        parameter: "body_temperature",
-        value: tempValue,
-        unit: "°C",
-        recordedAt: null,
-        confidence: 0.99
-      });
-    } else {
-      candidateRecords.push({
-        parameter: "body_temperature",
-        value: tempValue,
-        unit: "unknown",
-        recordedAt: null,
-        confidence: 0.99
-      });
-      missingFields.push("temperature_unit");
-    }
-  }
-
-  // 5. Oxygen Saturation Check
-  const o2Regexes = [
-    /(?:oxygen|spo2|o2|saturation|oxigen|ऑक्सीजन)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3})%?\b/i,
-    /(\d{2,3})\s*%?\s*(?:oxygen|spo2|o2|saturation|oxigen|ऑक्सीजन)\b/i
-  ];
-
-  let o2Value: number | null = null;
-  for (const rx of o2Regexes) {
-    const match = cleanedText.match(rx);
-    if (match) {
-      const val = parseInt(match[1], 10);
-      if (val >= 50 && val <= 100) {
-        o2Value = val;
-        break;
-      }
-    }
-  }
-
-  if (o2Value !== null) {
-    candidateRecords.push({
-      parameter: "oxygen_saturation",
-      value: o2Value,
-      unit: "%",
-      recordedAt: null,
-      confidence: 0.99
-    });
-  }
-
-  // 6. Weight Check
-  const weightRegexes = [
-    /(?:weight|vajan|wajan|vazan|वजन)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3}(?:\.\d+)?)\s*(?:kg|lbs|kilo)?\b/i,
-    /(\d{2,3}(?:\.\d+)?)\s*(?:kg|lbs|kilo)?\s*(?:weight|vajan|wajan|vazan|वजन)\b/i
-  ];
-
-  let weightValue: number | null = null;
-  let weightUnit: string = "kg";
-
-  for (const rx of weightRegexes) {
-    const match = cleanedText.match(rx);
-    if (match) {
-      weightValue = parseFloat(match[1]);
-      if (clean.includes("lbs")) {
-        weightUnit = "lbs";
-      }
-      break;
-    }
-  }
-
-  if (weightValue !== null) {
-    if (weightUnit === "lbs") {
-      const kgVal = parseFloat((weightValue * 0.45359237).toFixed(1));
-      candidateRecords.push({
-        parameter: "weight",
-        value: kgVal,
-        unit: "kg",
-        recordedAt: null,
-        confidence: 0.99
-      });
-    } else {
-      candidateRecords.push({
-        parameter: "weight",
-        value: weightValue,
-        unit: "kg",
-        recordedAt: null,
-        confidence: 0.99
-      });
-    }
-  }
-
-  // 7. Respiratory Rate Check
-  const rrRegexes = [
-    /(?:respiratory\s*rate|breathing\s*rate|rr|सांस\s*की\s*दर)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{1,2})(?:\/min)?\b/i,
-    /(\d{1,2})\s*(?:\/min)?\s*(?:respiratory\s*rate|breathing\s*rate|rr|सांस\s*की\s*दर)\b/i
-  ];
-  let rrValue: number | null = null;
-  const isRrSymptomOnly = clean.includes("saans lene mein") || clean.includes("saans phool") || clean.includes("breathing difficulty") || clean.includes("shortness of breath");
-  if (!isRrSymptomOnly) {
-    for (const rx of rrRegexes) {
-      const match = cleanedText.match(rx);
-      if (match) {
-        const val = parseInt(match[1], 10);
-        if (val >= 10 && val <= 40) {
-          rrValue = val;
-          break;
-        }
-      }
-    }
-  }
-  if (rrValue !== null) {
-    candidateRecords.push({
-      parameter: "respiratory_rate",
-      value: rrValue,
-      unit: "breaths/min",
-      recordedAt: null,
-      confidence: 0.99
-    });
-  }
-
-  // 8. Height Check
-  let heightValue: number | null = null;
-  const feetInchesRegexes = [
-    /\b(\d+)\s*'\s*(\d+)(?:"|in|inch|inches)?\b/i,
-    /\b(\d+)\s*(?:feet|foot|ft|फ़ीट|फुट)\s*(\d+)\s*(?:inches|inch|in|इंच)?\b/iu
-  ];
-  for (const rx of feetInchesRegexes) {
-    const match = cleanedText.match(rx);
-    if (match) {
-      const ft = parseInt(match[1], 10);
-      const inch = parseInt(match[2], 10);
-      if (ft >= 3 && ft <= 8 && inch >= 0 && inch < 12) {
-        heightValue = parseFloat(((ft * 12 + inch) * 2.54).toFixed(1));
-        break;
-      }
-    }
-  }
-
-  if (heightValue === null) {
-    const cmRegexes = [
-      /(?:height|lambai|kad|हाइट|लंबाई|कद)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3})\s*(?:cm|seme|सेमी)?\b/iu,
-      /(\d{2,3})\s*(?:cm|seme|सेमी)?\s*(?:height|lambai|kad|हाइट|लंबाई|कद)\b/iu
-    ];
-    for (const rx of cmRegexes) {
-      const match = cleanedText.match(rx);
-      if (match) {
-        const val = parseInt(match[1], 10);
-        if (val >= 50 && val <= 250) {
-          heightValue = val;
-          break;
-        }
-      }
-    }
-  }
-
-  if (heightValue === null) {
-    const mRegexes = [
-      /(?:height|lambai|kad|हाइट|लंबाई|कद)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d\.\d{1,2})\s*(?:m|meters|meter|मीटर)\b/iu,
-      /(\d\.\d{1,2})\s*(?:m|meters|meter|मीटर)\s*(?:height|lambai|kad|हाइट|लंबाई|कद)\b/iu
-    ];
-    for (const rx of mRegexes) {
-      const match = cleanedText.match(rx);
-      if (match) {
-        const val = parseFloat(match[1]);
-        if (val >= 0.5 && val <= 2.5) {
-          heightValue = parseFloat((val * 100).toFixed(1));
-          break;
-        }
-      }
-    }
-  }
-
-  if (heightValue !== null) {
-    candidateRecords.push({
-      parameter: "height",
-      value: heightValue,
-      unit: "cm",
-      recordedAt: null,
-      confidence: 0.99
-    });
   }
 
   if (candidateRecords.length > 0) {
     result.action = missingFields.length > 0 ? "CLARIFY" : "RECORD";
     result.intent = "health_measurement";
     result.candidateRecords = candidateRecords;
-    result.missingFields = missingFields;
+    result.missingFields = Array.from(new Set(missingFields));
   }
 
   return result;
@@ -506,6 +520,36 @@ export function stripNumbersBelongingToDatesAndTimes(msg: string): string {
   return cleaned;
 }
 
+export function applyTimeStringToDate(date: Date, timeStr: string): Date {
+  const clean = timeStr.toLowerCase().trim();
+  const res = new Date(date);
+
+  // Try 9:30 AM or 9.30 AM or 9:30 or 12:30 PM
+  const colonMatch = clean.match(/\b(\d{1,2})[:.](\d{2})\s*(am|pm)?\b/);
+  if (colonMatch) {
+    let hr = parseInt(colonMatch[1], 10);
+    const min = parseInt(colonMatch[2], 10);
+    const ampm = colonMatch[3];
+    if (ampm === "pm" && hr < 12) hr += 12;
+    if (ampm === "am" && hr === 12) hr = 0;
+    res.setHours(hr, min, 0, 0);
+    return res;
+  }
+
+  // Try 9 AM or 9am
+  const simpleMatch = clean.match(/\b(\d{1,2})\s*(am|pm)\b/);
+  if (simpleMatch) {
+    let hr = parseInt(simpleMatch[1], 10);
+    const ampm = simpleMatch[2];
+    if (ampm === "pm" && hr < 12) hr += 12;
+    if (ampm === "am" && hr === 12) hr = 0;
+    res.setHours(hr, 0, 0, 0);
+    return res;
+  }
+
+  return res;
+}
+
 /**
  * Deterministically resolves relative and historical dates from the original message.
  * - Relative terms such as "Aaj", "Today", "aaj", "today", "now", "abhi", "subah", "dopahar", "shaam", "raat", "morning", "evening", "afternoon", "night", "this morning" resolve to messageDate.
@@ -545,10 +589,16 @@ export function resolveRecordedAt(
         }
       }
       if (!isHallucination) {
-        return parsed;
+        const hasDateSeparator = extractedRecordedAt.includes("-") || extractedRecordedAt.includes("/");
+        if (hasDateSeparator && extractedRecordedAt.length >= 8) {
+          return parsed;
+        }
       }
     }
   }
+
+  let baseDate = new Date(messageDate);
+  let baseDateResolved = false;
 
   // 2. If no extracted recordedAt or it was a hallucinated date, check for explicit absolute dates in the original message
   // Pattern: DD/MM/YYYY
@@ -558,77 +608,94 @@ export function resolveRecordedAt(
     const month = parseInt(slashDateMatch[2], 10) - 1; // 0-based
     const year = parseInt(slashDateMatch[3], 10);
     const d = new Date(year, month, day, 12, 0, 0); // use mid-day to avoid TZ issues
-    if (!isNaN(d.getTime())) return d;
-  }
-
-  // Pattern: DD/MM (like 20/07)
-  const shortSlashDateMatch = originalMessage.match(/\b(\d{1,2})\/(\d{1,2})\b/);
-  if (shortSlashDateMatch) {
-    const first = parseInt(shortSlashDateMatch[1], 10);
-    const second = parseInt(shortSlashDateMatch[2], 10);
-    if (first <= 31 && second <= 12) {
-      const year = messageDate.getFullYear();
-      const d = new Date(year, second - 1, first, 12, 0, 0);
-      if (!isNaN(d.getTime())) return d;
+    if (!isNaN(d.getTime())) {
+      baseDate = d;
+      baseDateResolved = true;
     }
   }
 
-  // Pattern: DD Month YYYY or DD Month (e.g., "20 July 2026" or "20 July")
-  const monthsList = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december",
-                      "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-  const monthRegex = new RegExp(`\\b(\\d{1,2})\\s+(${monthsList.join("|")})\\s*(\\d{4})?\\b`, "i");
-  const monthMatch = originalMessage.match(monthRegex);
-  if (monthMatch) {
-    const day = parseInt(monthMatch[1], 10);
-    const monthStr = monthMatch[2].toLowerCase();
-    let monthIdx = monthsList.indexOf(monthStr);
-    if (monthIdx >= 12) monthIdx -= 12; // Handle shorthand months
-    const year = monthMatch[3] ? parseInt(monthMatch[3], 10) : messageDate.getFullYear();
-    const d = new Date(year, monthIdx, day, 12, 0, 0);
-    if (!isNaN(d.getTime())) return d;
+  if (!baseDateResolved) {
+    // Pattern: DD/MM (like 20/07)
+    const shortSlashDateMatch = originalMessage.match(/\b(\d{1,2})\/(\d{1,2})\b/);
+    if (shortSlashDateMatch) {
+      const first = parseInt(shortSlashDateMatch[1], 10);
+      const second = parseInt(shortSlashDateMatch[2], 10);
+      if (first <= 31 && second <= 12) {
+        const year = messageDate.getFullYear();
+        const d = new Date(year, second - 1, first, 12, 0, 0);
+        if (!isNaN(d.getTime())) {
+          baseDate = d;
+          baseDateResolved = true;
+        }
+      }
+    }
   }
 
-  // 3. Relative historical checks (yesterday, kal, last night, kal raat, yesterday morning)
-  const isYesterday = msgLower.includes("yesterday") ||
-                      msgLower.includes("kal") ||
-                      msgLower.includes("कल") ||
-                      msgLower.includes("last night") ||
-                      msgLower.includes("kal raat") ||
-                      msgLower.includes("कल रात") ||
-                      msgLower.includes("yesterday morning");
+  if (!baseDateResolved) {
+    // Pattern: DD Month YYYY or DD Month (e.g., "20 July 2026" or "20 July")
+    const monthsList = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december",
+                        "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+    const monthRegex = new RegExp(`\\b(\\d{1,2})\\s+(${monthsList.join("|")})\\s*(\\d{4})?\\b`, "i");
+    const monthMatch = originalMessage.match(monthRegex);
+    if (monthMatch) {
+      const day = parseInt(monthMatch[1], 10);
+      const monthStr = monthMatch[2].toLowerCase();
+      let monthIdx = monthsList.indexOf(monthStr);
+      if (monthIdx >= 12) monthIdx -= 12; // Handle shorthand months
+      const year = monthMatch[3] ? parseInt(monthMatch[3], 10) : messageDate.getFullYear();
+      const d = new Date(year, monthIdx, day, 12, 0, 0);
+      if (!isNaN(d.getTime())) {
+        baseDate = d;
+        baseDateResolved = true;
+      }
+    }
+  }
 
-  if (isYesterday) {
-    const date = new Date(messageDate);
-    date.setDate(date.getDate() - 1);
-    return date;
+  if (!baseDateResolved) {
+    // 3. Relative historical checks (yesterday, kal, last night, kal raat, yesterday morning)
+    const isYesterday = msgLower.includes("yesterday") ||
+                        msgLower.includes("kal") ||
+                        msgLower.includes("कल") ||
+                        msgLower.includes("last night") ||
+                        msgLower.includes("kal raat") ||
+                        msgLower.includes("कल रात") ||
+                        msgLower.includes("yesterday morning");
+
+    if (isYesterday) {
+      baseDate = new Date(messageDate);
+      baseDate.setDate(baseDate.getDate() - 1);
+      baseDateResolved = true;
+    }
   }
 
   // Relative current day checks
-  const isToday = msgLower.includes("today") ||
-                  msgLower.includes("aaj") ||
-                  msgLower.includes("आज") ||
-                  msgLower.includes("now") ||
-                  msgLower.includes("abhi") ||
-                  msgLower.includes("morning") ||
-                  msgLower.includes("subah") ||
-                  msgLower.includes("सुबह") ||
-                  msgLower.includes("dopahar") ||
-                  msgLower.includes("दोपहर") ||
-                  msgLower.includes("shaam") ||
-                  msgLower.includes("शाम") ||
-                  msgLower.includes("raat") ||
-                  msgLower.includes("रात") ||
-                  msgLower.includes("this morning") ||
-                  msgLower.includes("afternoon") ||
-                  msgLower.includes("evening") ||
-                  msgLower.includes("night");
+  if (!baseDateResolved) {
+    const isToday = msgLower.includes("today") ||
+                    msgLower.includes("aaj") ||
+                    msgLower.includes("आज") ||
+                    msgLower.includes("now") ||
+                    msgLower.includes("abhi") ||
+                    msgLower.includes("morning") ||
+                    msgLower.includes("subah") ||
+                    msgLower.includes("सुबह") ||
+                    msgLower.includes("dopahar") ||
+                    msgLower.includes("दोपहर") ||
+                    msgLower.includes("shaam") ||
+                    msgLower.includes("शाम") ||
+                    msgLower.includes("raat") ||
+                    msgLower.includes("रात") ||
+                    msgLower.includes("this morning") ||
+                    msgLower.includes("afternoon") ||
+                    msgLower.includes("evening") ||
+                    msgLower.includes("night");
 
-  if (isToday) {
-    return new Date(messageDate);
+    if (isToday) {
+      baseDate = new Date(messageDate);
+    }
   }
 
-  // Default to messageDate
-  return new Date(messageDate);
+  // Apply explicit clock time if present
+  return applyTimeStringToDate(baseDate, extractedRecordedAt || originalMessage);
 }
 
 /**
