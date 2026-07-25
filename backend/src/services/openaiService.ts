@@ -6,6 +6,7 @@ dotenv.config();
 const client = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY || "dummy-key",
   baseURL: "https://openrouter.ai/api/v1",
+  timeout: 15000, // 15 seconds timeout
 });
 
 // Testing / Mock support
@@ -25,6 +26,7 @@ export async function getAIReply(userMessage: string): Promise<string> {
     const modelName = process.env.OPENROUTER_MODEL || "tencent/hy3";
     const completion = await client.chat.completions.create({
       model: modelName,
+      max_tokens: 300,
       messages: [
         {
           role: "system",
@@ -72,6 +74,7 @@ export async function extractHealthData(
     const modelName = process.env.OPENROUTER_MODEL || "tencent/hy3";
     const completion = await client.chat.completions.create({
       model: modelName,
+      max_tokens: 1000,
       messages: [
         {
           role: "system",

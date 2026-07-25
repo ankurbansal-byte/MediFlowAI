@@ -5,6 +5,9 @@ import {
   resolveRecordedAt,
   isValueSupportedByMessage,
   findUnresolvedPlausibleNumbers,
+  deterministicExtract,
+  parseGlucoseContext,
+  detectLanguageStyle,
 } from "../utils/healthRecordParser";
 import axios from "axios";
 import fs from "fs";
@@ -61,23 +64,6 @@ export const verifyWebhook = (req: Request, res: Response) => {
 
   return res.sendStatus(403);
 };
-
-// Helper to detect user language style
-export function detectLanguageStyle(text: string): "english" | "hindi" | "hinglish" {
-  const clean = text.toLowerCase();
-  if (/[\u0900-\u097F]/.test(text)) {
-    return "hindi";
-  }
-  const hinglishWords = [
-    "hai", "thi", "tha", "mer", "mera", "meri", "ko", "ki", "ka", "pehle", "baad", "aur", "hota", "bata", "bataiye", "liya", "diye", "gaya", "gayi", "ho", "aaj", "kal", "subah", "dopahar", "shaam", "raat", "chal", "kya", "sath", "se", "rehne", "do", "kabhi"
-  ];
-  const words = clean.split(/\s+/);
-  const hasHinglish = words.some(w => hinglishWords.includes(w));
-  if (hasHinglish) {
-    return "hinglish";
-  }
-  return "english";
-}
 
 // Resolve language style with fallback to detection
 export function resolveLanguageStyle(msg: string, aiLanguage?: string): string {
@@ -175,7 +161,13 @@ async function processMessageFlow(
   messageDate: Date,
   pendingToResolve?: any
 ) {
-  const extractedData = await extractHealthData(message);
+  let extractedData = "";
+  try {
+    extractedData = await extractHealthData(message);
+  } catch (err: any) {
+    console.error("❌ AI extraction error caught in processMessageFlow pipeline:", err?.message || err);
+  }
+
   console.log("🧠 Extracted Health Record:");
   console.log(extractedData);
 
@@ -187,19 +179,38 @@ async function processMessageFlow(
   let aiUnresolved: number[] = [];
   let intent: MessageIntent = "health_measurement";
 
+  let parseSuccess = false;
   try {
-    const parsedAI = JSON.parse(extractedData);
-    if (parsedAI) {
-      if (parsedAI.action) action = parsedAI.action;
-      if (parsedAI.intent) intent = parsedAI.intent;
-      if (Array.isArray(parsedAI.missingFields)) missingFields = parsedAI.missingFields;
-      if (parsedAI.language) language = parsedAI.language;
-      if (Array.isArray(parsedAI.candidateRecords)) candidateRecords = parsedAI.candidateRecords;
-      if (parsedAI.reason) reason = parsedAI.reason;
-      if (Array.isArray(parsedAI.unresolvedMeasurements)) aiUnresolved = parsedAI.unresolvedMeasurements;
+    if (extractedData) {
+      const parsedAI = JSON.parse(extractedData);
+      if (parsedAI) {
+        if (parsedAI.action) action = parsedAI.action;
+        if (parsedAI.intent) intent = parsedAI.intent;
+        if (Array.isArray(parsedAI.missingFields)) missingFields = parsedAI.missingFields;
+        if (parsedAI.language) language = parsedAI.language;
+        if (Array.isArray(parsedAI.candidateRecords)) candidateRecords = parsedAI.candidateRecords;
+        if (parsedAI.reason) reason = parsedAI.reason;
+        if (Array.isArray(parsedAI.unresolvedMeasurements)) aiUnresolved = parsedAI.unresolvedMeasurements;
+        parseSuccess = true;
+      }
     }
   } catch (e) {
-    // Handled gracefully
+    console.error("⚠️ AI JSON Parse Error, falling back to deterministic local extraction.");
+  }
+
+  // Fallback to local deterministic extraction if AI failed, errored, or returned empty/invalid response
+  if (!parseSuccess) {
+    const fallbackResult = deterministicExtract(message);
+    if (fallbackResult && fallbackResult.candidateRecords && fallbackResult.candidateRecords.length > 0) {
+      console.log("🛠️ Falling back to deterministic local extraction:", JSON.stringify(fallbackResult, null, 2));
+      action = fallbackResult.action;
+      intent = fallbackResult.intent;
+      missingFields = fallbackResult.missingFields;
+      language = fallbackResult.language;
+      candidateRecords = fallbackResult.candidateRecords;
+      reason = fallbackResult.reason;
+      aiUnresolved = fallbackResult.unresolvedMeasurements;
+    }
   }
 
   // Find unresolved measurements using deterministic rules combined with AI
@@ -425,16 +436,21 @@ function isGreetingMessage(msg: string): boolean {
 
 // Receive WhatsApp Messages
 export const receiveMessage = async (req: Request, res: Response) => {
+  console.log(`🔍 [Webhook Diagnostic] [Phase A: Request Received] Path: ${req.originalUrl}, Method: ${req.method}`);
   console.log("📩 Incoming Webhook:");
   console.log(JSON.stringify(req.body, null, 2));
 
   try {
     const value = req.body?.entry?.[0]?.changes?.[0]?.value;
 
+    if (!value) {
+      console.log("🔍 [Webhook Diagnostic] [Phase B: Empty Value] Request value payload missing.");
+    }
+
     // A. Check if this is a WhatsApp status event (sent, delivered, read)
     const isStatusEvent = !!value?.statuses?.[0];
     if (isStatusEvent) {
-      console.log("ℹ️ WhatsApp Status Event received, skipping processing.");
+      console.log("🔍 [Webhook Diagnostic] [Phase B: Status Event] WhatsApp status event received, skipping processing.");
       return res.sendStatus(200);
     }
 
@@ -446,6 +462,8 @@ export const receiveMessage = async (req: Request, res: Response) => {
 
     const audioId = incomingMessage?.audio?.id;
     const messageType = incomingMessage?.type;
+
+    console.log(`🔍 [Webhook Diagnostic] [Phase C: Message Identified] MsgId: ${whatsappMessageId || "none"}, From: ${from || "none"}, Type: ${messageType || "none"}`);
 
     // Extract timestamp from incomingMessage to preserve precision
     let messageDate = new Date();
@@ -460,12 +478,12 @@ export const receiveMessage = async (req: Request, res: Response) => {
     // B. Check for duplicate messages using whatsappMessageId
     if (whatsappMessageId) {
       if (processingMessageIds.has(whatsappMessageId)) {
-        console.log(`⏳ Message is already being processed (concurrent duplicate): ${whatsappMessageId}`);
+        console.log(`🔍 [Webhook Diagnostic] [Phase D: Concurrent Duplicate Caught] Message ID: ${whatsappMessageId}`);
         return res.sendStatus(200);
       }
 
       if (processedMessageIds.has(whatsappMessageId)) {
-        console.log(`⚠️ Message has already been processed (cached duplicate): ${whatsappMessageId}`);
+        console.log(`🔍 [Webhook Diagnostic] [Phase D: Cached Duplicate Caught] Message ID: ${whatsappMessageId}`);
         return res.sendStatus(200);
       }
 
@@ -493,7 +511,7 @@ export const receiveMessage = async (req: Request, res: Response) => {
       }
 
       if (existsInDb) {
-        console.log(`⚠️ Message has already been processed (DB duplicate): ${whatsappMessageId}`);
+        console.log(`🔍 [Webhook Diagnostic] [Phase D: DB Duplicate Caught] Message ID: ${whatsappMessageId}`);
         markMessageAsProcessed(whatsappMessageId);
         return res.sendStatus(200);
       }
@@ -525,12 +543,16 @@ export const receiveMessage = async (req: Request, res: Response) => {
       if (message && from) {
         console.log("👤 User:", message);
 
+        console.log(`🔍 [Webhook Diagnostic] [Phase E: Patient Lookup] Phone: ${from}`);
         // Resolve WhatsApp sender to an enrolled patient user (fail safely if not found or ambiguous)
         const patient = await findEnrolledPatientByWhatsApp(from);
         if (!patient) {
+          console.log(`🔍 [Webhook Diagnostic] [Phase E: Patient Lookup Failed] No patient linked to WhatsApp: ${from}`);
           // Safe fail. Preserve normal webhook acknowledgement behavior (200 OK)
           return res.sendStatus(200);
         }
+
+        console.log(`🔍 [Webhook Diagnostic] [Phase E: Patient Found] PatientId: ${patient.patientId}, Name: ${patient.fullName}`);
 
         const pending = getPendingClarification(patient.patientId);
 
@@ -570,6 +592,7 @@ export const receiveMessage = async (req: Request, res: Response) => {
 
           if (hijack) {
             console.log("⚠️ Context hijack / conversational bypass detected. Clearing pending clarification bypassed to preserve old pending state.");
+            console.log(`🔍 [Webhook Diagnostic] [Phase F: Processing Hijacked Message as Fresh] MsgId: ${whatsappMessageId || "none"}`);
             // Process the follow-up message as a fresh message
             await processMessageFlow(message, patient, from, whatsappMessageId, messageDate);
           } else {
@@ -633,6 +656,7 @@ export const receiveMessage = async (req: Request, res: Response) => {
             }
 
             if (consumed) {
+              console.log(`🔍 [Webhook Diagnostic] [Phase F: Consumed Deterministically] MsgId: ${whatsappMessageId || "none"}`);
               if (whatsappMessageId) {
                 markMessageAsProcessed(whatsappMessageId);
               }
@@ -642,10 +666,12 @@ export const receiveMessage = async (req: Request, res: Response) => {
             // 3. Not resolved deterministically. Proceed to progressive / follow-up resolution: merge message with original source text
             const combinedMessage = `${pending.originalSourceText} ${message}`;
             console.log(`🔄 Processing combined clarification message: "${combinedMessage}"`);
+            console.log(`🔍 [Webhook Diagnostic] [Phase F: Processing Combined Pending Message] MsgId: ${whatsappMessageId || "none"}`);
             await processMessageFlow(combinedMessage, patient, from, whatsappMessageId, messageDate, pending);
           }
         } else {
           // Fresh message flow
+          console.log(`🔍 [Webhook Diagnostic] [Phase F: Fresh Message Flow] MsgId: ${whatsappMessageId || "none"}`);
           await processMessageFlow(message, patient, from, whatsappMessageId, messageDate);
         }
       }
@@ -684,65 +710,6 @@ export function isCancelCommand(msg: string): boolean {
   return cancelPhrases.includes(clean);
 }
 
-export function parseGlucoseContext(msg: string): GlucoseContext | null {
-  const clean = msg.toLowerCase().trim();
-
-  // Fasting
-  if (
-    clean.includes("fasting") ||
-    clean.includes("khali pet") ||
-    clean.includes("खाली पेट") ||
-    clean === "fast" ||
-    clean === "fating" ||
-    clean === "fastg"
-  ) {
-    return "fasting";
-  }
-
-  // Pre-meal
-  if (
-    clean.includes("before food") ||
-    clean.includes("before breakfast") ||
-    clean.includes("before lunch") ||
-    clean.includes("before dinner") ||
-    clean.includes("before meal") ||
-    clean.includes("pre-meal") ||
-    clean.includes("pre_meal") ||
-    clean.includes("premeal") ||
-    clean.includes("khane se pehle") ||
-    clean.includes("खाने से पहले")
-  ) {
-    return "pre_meal";
-  }
-
-  // Post-meal
-  if (
-    clean.includes("after food") ||
-    clean.includes("after breakfast") ||
-    clean.includes("after lunch") ||
-    clean.includes("after dinner") ||
-    clean.includes("after meal") ||
-    clean.includes("post-meal") ||
-    clean.includes("post_meal") ||
-    clean.includes("postmeal") ||
-    clean.includes("khane ke baad") ||
-    clean.includes("खाने के बाद") ||
-    clean.includes("2 hours after meal")
-  ) {
-    return "post_meal";
-  }
-
-  // Random
-  if (
-    clean.includes("random") ||
-    clean.includes("random tha") ||
-    clean.includes("रैंडम")
-  ) {
-    return "random";
-  }
-
-  return null;
-}
 
 export function extractDiastolicNumber(msg: string): number | null {
   const numbers = msg.match(/\b\d+\b/g);
@@ -924,6 +891,7 @@ async function saveAndAcknowledgeRecords(
 
       if (existingRecord) {
         console.log("⚠️ Duplicate Record Skipped in merge save:", recordPayload.parameter);
+        console.log(`🔍 [Webhook Diagnostic] [Phase G: Skip Duplicate Record] Parameter: ${recordPayload.parameter}`);
         continue;
       }
 
@@ -937,6 +905,7 @@ async function saveAndAcknowledgeRecords(
       }
       savedRecords.push(recordPayload);
       console.log("✅ Saved merged record:", recordPayload.parameter);
+      console.log(`🔍 [Webhook Diagnostic] [Phase G: Record Saved Successfully] PatientId: ${recordPayload.patientId}, Parameter: ${recordPayload.parameter}`);
     }
 
     completePendingClarification(patient.patientId);
@@ -959,6 +928,7 @@ async function saveAndAcknowledgeRecords(
 }
 
 async function sendWhatsAppMessage(to: string, message: string) {
+  console.log(`🔍 [Webhook Diagnostic] [Phase H: Outbound WhatsApp Attempt] To: ${to}`);
   try {
     await axios.post(
       `https://graph.facebook.com/v23.0/${process.env.PHONE_NUMBER_ID}/messages`,
@@ -974,10 +944,13 @@ async function sendWhatsAppMessage(to: string, message: string) {
           Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
           "Content-Type": "application/json",
         },
+        timeout: 10000, // 10 seconds timeout
       }
     );
+    console.log(`🔍 [Webhook Diagnostic] [Phase H: Outbound WhatsApp Succeeded] To: ${to}`);
   } catch (err: any) {
     console.error("Failed to send WhatsApp message:", err?.message || err);
+    console.log(`🔍 [Webhook Diagnostic] [Phase H: Outbound WhatsApp Failed] Error: ${err?.message || err}`);
   }
 }
 
@@ -993,6 +966,7 @@ async function downloadWhatsAppAudio(mediaId: string) {
       headers: {
         Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
       },
+      timeout: 15000, // 15 seconds timeout
     }
   );
 
@@ -1004,6 +978,7 @@ async function downloadWhatsAppAudio(mediaId: string) {
     headers: {
       Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
     },
+    timeout: 15000, // 15 seconds timeout
   });
 
   // Step 3 - Create uploads folder if not exists
