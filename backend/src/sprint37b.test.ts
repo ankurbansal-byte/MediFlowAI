@@ -280,6 +280,123 @@ async function runSprint37BTests() {
     await receiveMessage(makePayload("917618432290", "Pulse 80", "msg-id-2", referenceTimestamp), mockResponse() as any);
     assert(MOCK_RECORDS["PAT-101"]?.length === 2, "Two different message IDs for the same user saved two distinct records");
 
+    // =========================================================================
+    // 11. Sprint 37B.1 Pending Parameter Resolution Regression
+    // =========================================================================
+    resetState();
+    // Turn 1: User says "145, 135/85"
+    setMockExtractHealthData(async (msg) => {
+      const clean = msg.toLowerCase().trim();
+      if (clean === "sugar" || clean === "random") {
+        return JSON.stringify({
+          language: "english",
+          action: "IGNORE",
+          intent: "conversational",
+          candidateRecords: [],
+          missingFields: [],
+          unresolvedMeasurements: [],
+        });
+      }
+      return JSON.stringify({
+        language: "english",
+        action: "CLARIFY",
+        intent: "ambiguous_health_message",
+        candidateRecords: [{ parameter: "blood_pressure", systolic: 135, diastolic: 85, unit: "mmHg", confidence: 0.99 }],
+        missingFields: [],
+        unresolvedMeasurements: [145],
+        reason: "Unresolved 145",
+      });
+    });
+
+    await receiveMessage(makePayload("917618432290", "145, 135/85", "flow-step-1", referenceTimestamp), mockResponse() as any);
+    assert(MOCK_RECORDS["PAT-101"]?.length === 1, "BP 135/85 saved immediately on Turn 1");
+    assert(MOCK_RECORDS["PAT-101"]?.[0]?.parameter === "blood_pressure", "Saved parameter is blood_pressure");
+    assert(MOCK_RECORDS["PAT-101"]?.[0]?.value === "135/85", "Saved value is 135/85");
+
+    const pendingAfterTurn1 = getPendingClarification("PAT-101");
+    assert(pendingAfterTurn1 !== null, "Pending state contains unresolved 145");
+    assert(pendingAfterTurn1?.unresolvedMeasurements?.[0] === 145, "Unresolved measurement 145 is tracked");
+
+    // Reset outbound message logs
+    axiosPostCalls = [];
+
+    // Turn 2: User says "sugar"
+    await receiveMessage(makePayload("917618432290", "sugar", "flow-step-2", referenceTimestamp), mockResponse() as any);
+    assert(MOCK_RECORDS["PAT-101"]?.length === 1, "BP is saved exactly once (not duplicated on progressive step)");
+
+    // Check that we transitioned to glucose-context clarification
+    const pendingAfterTurn2 = getPendingClarification("PAT-101");
+    assert(pendingAfterTurn2 !== null, "Pending state is still active");
+    assert(pendingAfterTurn2?.unresolvedMeasurements?.length === 0, "145 is resolved (no longer in unresolved list)");
+    assert(pendingAfterTurn2?.candidateRecords?.[0]?.parameter === "blood_sugar", "Incomplete candidate record is blood_sugar");
+    assert(pendingAfterTurn2?.candidateRecords?.[0]?.value === 145, "Pending sugar value is 145");
+    assert(pendingAfterTurn2?.missingFields?.includes("glucose_context"), "glucose_context is requested");
+
+    // Verify response
+    assert(axiosPostCalls.length === 1, "Clarification response was sent");
+    assert(
+      axiosPostCalls[0]?.data?.text?.body.includes("Got it — sugar is 145. Was this glucose reading fasting, before a meal, after a meal, or random?"),
+      "Asked glucose context naturally and didn't repeat 'What does 145 represent?'"
+    );
+
+    // Reset outbound message logs
+    axiosPostCalls = [];
+
+    // Turn 3: User says "random"
+    await receiveMessage(makePayload("917618432290", "random", "flow-step-3", referenceTimestamp), mockResponse() as any);
+    assert(MOCK_RECORDS["PAT-101"]?.length === 2, "Sugar is successfully saved (total 2 records)");
+    assert(MOCK_RECORDS["PAT-101"]?.[1]?.parameter === "blood_sugar", "Saved record is blood_sugar");
+    assert(MOCK_RECORDS["PAT-101"]?.[1]?.value === 145, "Saved sugar value is 145");
+    assert(MOCK_RECORDS["PAT-101"]?.[1]?.context === "random", "Saved sugar context is random");
+    assert(MOCK_RECORDS["PAT-101"]?.[1]?.recordedAt?.getTime() === refDate.getTime(), "Original message timestamp preserved");
+
+    const pendingAfterTurn3 = getPendingClarification("PAT-101");
+    assert(pendingAfterTurn3 === null, "Pending state cleared after completion");
+
+    // =========================================================================
+    // 12. Standalone "sugar" without pending value does not invent a reading
+    // =========================================================================
+    resetState();
+    setMockExtractHealthData(async (msg) => {
+      return JSON.stringify({
+        language: "english",
+        action: "IGNORE",
+        intent: "conversational",
+        candidateRecords: [],
+        missingFields: [],
+        unresolvedMeasurements: [],
+      });
+    });
+
+    await receiveMessage(makePayload("917618432290", "sugar", "standalone-sugar-msg", referenceTimestamp), mockResponse() as any);
+    assert(MOCK_RECORDS["PAT-101"] === undefined || MOCK_RECORDS["PAT-101"]?.length === 0, "Standalone 'sugar' with no pending value does not save anything");
+    assert(getPendingClarification("PAT-101") === null, "No pending clarification created for standalone 'sugar'");
+
+    // =========================================================================
+    // 13. Pending 145 + "pulse" resolves correctly according to existing supported behavior
+    // =========================================================================
+    resetState();
+    // Turn 1: 145
+    setMockExtractHealthData(async (msg) => {
+      return JSON.stringify({
+        language: "english",
+        action: "CLARIFY",
+        intent: "ambiguous_health_message",
+        candidateRecords: [],
+        missingFields: [],
+        unresolvedMeasurements: [145],
+        reason: "Unresolved 145",
+      });
+    });
+    await receiveMessage(makePayload("917618432290", "145", "flow-pulse-1", referenceTimestamp), mockResponse() as any);
+
+    // Turn 2: "pulse"
+    await receiveMessage(makePayload("917618432290", "pulse", "flow-pulse-2", referenceTimestamp), mockResponse() as any);
+    assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Pulse resolved and saved immediately");
+    assert(MOCK_RECORDS["PAT-101"]?.[0]?.parameter === "heart_rate", "Parameter is heart_rate");
+    assert(MOCK_RECORDS["PAT-101"]?.[0]?.value === 145, "Value is 145");
+    assert(getPendingClarification("PAT-101") === null, "Pending state cleared after pulse resolution");
+
   } catch (error: any) {
     console.error("💥 Unhandled Error during Sprint 37B Tests:", error?.message || error);
     testsFailed++;
