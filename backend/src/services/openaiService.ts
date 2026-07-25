@@ -116,6 +116,14 @@ Rules for Classification:
    - Example: "BP 128/82 pulse 74" -> action "RECORD", multiple candidate records (blood_pressure and heart_rate).
    - Example: "Oxygen 97%" -> action "RECORD", parameter "oxygen_saturation", value 97, unit "%".
    - Example: "Weight 72.4 kg" -> action "RECORD", parameter "weight", value 72.4, unit "kg".
+   - Multiple Same-Parameter Observations:
+     - Patients can report multiple observations of the same parameter (e.g., "BP morning 130/80, evening 140/90", "pulse 78 morning, 84 evening", "oxygen 97 at 9 AM, 98 at 6 PM", "sugar fasting 110, after meal 155").
+     - You MUST extract ALL of them as separate candidate records in the "candidateRecords" array.
+     - Associate each observation with its respective temporal/context language if provided (e.g. "recordedAt": "morning", "recordedAt": "evening", "recordedAt": "9 AM", "recordedAt": "6 PM", and for blood_sugar, context "fasting" or "post_meal").
+     - Example: "BP morning 130/80, evening 140/90" -> action "RECORD", candidateRecords: [
+         { "parameter": "blood_pressure", "systolic": 130, "diastolic": 80, "unit": "mmHg", "recordedAt": "morning" },
+         { "parameter": "blood_pressure", "systolic": 140, "diastolic": 90, "unit": "mmHg", "recordedAt": "evening" }
+       ], "unresolvedMeasurements": []
 
 2. action = "CLARIFY":
    - Use when the message contains health parameter mentions, but important required fields for safe recording are missing/ambiguous, OR when there are unresolved plausible health measurements in the message.
