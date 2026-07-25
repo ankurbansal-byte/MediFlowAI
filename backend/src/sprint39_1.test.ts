@@ -198,7 +198,7 @@ async function runSprint39_1Tests() {
     const pendingState = getPendingClarification("PAT-101");
     assert(pendingState !== null, "Test 5: Pending state created");
     assert(
-      pendingState?.unresolvedMeasurements?.includes(145),
+      !!pendingState?.unresolvedMeasurements?.includes(145),
       "Test 5: 145 remains unresolved"
     );
     assert(
@@ -271,7 +271,7 @@ async function runSprint39_1Tests() {
     const pendingAmbig = getPendingClarification("PAT-101");
     assert(pendingAmbig !== null, "Test 9: Created pending clarification for ambiguous numbers");
     assert(
-      pendingAmbig?.unresolvedMeasurements?.includes(120) && pendingAmbig?.unresolvedMeasurements?.includes(150),
+      !!(pendingAmbig?.unresolvedMeasurements?.includes(120) && pendingAmbig?.unresolvedMeasurements?.includes(150)),
       "Test 9: Both 120 and 150 remain unresolved"
     );
 

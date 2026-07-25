@@ -14,6 +14,15 @@ export interface PendingClarification {
   expiresAt: Date;
   originalMessageDate: Date; // Preserves the original message arrival date for timeline accuracy
   status: "pending" | "completed" | "expired" | "cancelled";
+
+  // Sprint 40 Correction Fields
+  isCorrection?: boolean;
+  oldValue?: string | number | null;
+  newValue?: string | number | null;
+  parameter?: string | null;
+  candidateTargets?: any[]; // Stores ambiguous match targets
+  proposedNewContext?: string | null;
+  proposedNewTimeContext?: string | null;
 }
 
 // In-memory store of pending clarifications mapped by patientId (strict patient scoping)

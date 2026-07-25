@@ -80,6 +80,24 @@ whatsappMessageId: {
       required: false,
     },
 
+    corrections: [
+      {
+        originalValue: mongoose.Schema.Types.Mixed,
+        originalContext: String,
+        originalTimeContext: String,
+        originalMessage: String,
+        correctedAt: {
+          type: Date,
+          default: Date.now,
+        },
+        source: {
+          type: String,
+          default: "whatsapp",
+        },
+        whatsappMessageId: String,
+      }
+    ],
+
   },
   {
     timestamps: true,

@@ -9,6 +9,8 @@ import {
   parseGlucoseContext,
   detectLanguageStyle,
   isCorrectionMessage,
+  parseCorrectionMessage,
+  ParsedCorrection,
 } from "../utils/healthRecordParser";
 import axios from "axios";
 import fs from "fs";
@@ -77,7 +79,10 @@ import {
   getCancellationAcknowledgement,
   getGenericFailureMessage,
   getConversationalIgnoreMessage,
-  getFriendlyName
+  getFriendlyName,
+  formatCorrectionConfirmation,
+  getAmbiguousCorrectionClarification,
+  getCorrectionTargetNotFoundMessage
 } from "../utils/whatsappResponses";
 
 // Resolve language style with fallback to detection, prioritizing pending state's language if available
@@ -454,6 +459,288 @@ export function hasOtherNumbers(msg: string, allowedNumbers: number[]): boolean 
   return false;
 }
 
+async function getPatientRecords(patientId: string, hospitalId: string): Promise<any[]> {
+  if (process.env.USE_MOCK_DATA === "true") {
+    return [...(MOCK_RECORDS[patientId] || [])]
+      .filter(r => r.hospitalId === hospitalId)
+      .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime());
+  }
+  return await HealthRecord.find({ patientId, hospitalId }).sort({ recordedAt: -1 });
+}
+
+async function resolveTargetRecord(
+  patient: any,
+  parsed: ParsedCorrection,
+  records: any[]
+): Promise<{ targets: any[] }> {
+  let candidates = records;
+  if (parsed.parameter) {
+    candidates = candidates.filter(r => r.parameter === parsed.parameter);
+  }
+
+  // Filter by oldValue if we have it
+  if (parsed.oldValue !== null && parsed.oldValue !== undefined) {
+    const oldStr = String(parsed.oldValue).trim();
+    candidates = candidates.filter(r => {
+      const valStr = String(r.value).trim();
+      // Exact match
+      if (valStr === oldStr) return true;
+      // Match parts of BP if oldValue is a number and r is blood_pressure
+      if (r.parameter === "blood_pressure" && !isNaN(Number(oldStr))) {
+        const parts = valStr.split("/");
+        if (parts.includes(oldStr)) return true;
+      }
+      return false;
+    });
+  }
+
+  // Filter by oldContext if specified
+  if (parsed.oldContext) {
+    candidates = candidates.filter(r => r.context === parsed.oldContext);
+  }
+
+  // Filter by oldTimeContext if specified
+  if (parsed.oldTimeContext) {
+    candidates = candidates.filter(r => r.timeContext === parsed.oldTimeContext);
+  }
+
+  return { targets: candidates };
+}
+
+async function saveCorrectedRecord(
+  targetRecord: any,
+  parsed: ParsedCorrection,
+  whatsappMessageId: string,
+  correctionMsgText: string,
+  patientId: string
+) {
+  let finalNewValue = parsed.newValue ?? targetRecord.value;
+  if (targetRecord.parameter === "body_temperature") {
+    const valNum = Number(finalNewValue);
+    if (valNum > 50) {
+      finalNewValue = parseFloat(((valNum - 32) * 5 / 9).toFixed(1));
+    }
+  }
+
+  if (targetRecord.parameter === "blood_pressure") {
+    finalNewValue = String(finalNewValue).replace(/\s*[\/\\]\s*/g, "/");
+  } else if (finalNewValue !== null && finalNewValue !== undefined) {
+    const valNum = Number(finalNewValue);
+    if (!isNaN(valNum)) {
+      finalNewValue = valNum;
+    }
+  }
+
+  const finalNewContext = parsed.newContext || targetRecord.context;
+  const finalNewTimeContext = parsed.newTimeContext || targetRecord.timeContext;
+
+  const auditObj = {
+    originalValue: targetRecord.value,
+    originalContext: targetRecord.context,
+    originalTimeContext: targetRecord.timeContext,
+    originalMessage: targetRecord.originalMessage,
+    correctedAt: new Date(),
+    source: "whatsapp",
+    whatsappMessageId: whatsappMessageId,
+  };
+
+  if (process.env.USE_MOCK_DATA === "true") {
+    const records = MOCK_RECORDS[patientId] || [];
+    const idx = records.findIndex(r => r.whatsappMessageId === targetRecord.whatsappMessageId);
+    if (idx !== -1) {
+      const rec = records[idx];
+      const alreadyCorrected = rec.corrections?.some((c: any) => c.whatsappMessageId === whatsappMessageId);
+      if (alreadyCorrected) {
+        return rec;
+      }
+      rec.corrections = rec.corrections || [];
+      rec.corrections.push(auditObj);
+      rec.value = finalNewValue;
+      rec.context = finalNewContext;
+      rec.timeContext = finalNewTimeContext;
+      rec.originalMessage = correctionMsgText;
+      return rec;
+    }
+    return targetRecord;
+  } else {
+    const rec = await HealthRecord.findById(targetRecord._id);
+    if (rec) {
+      const alreadyCorrected = rec.corrections?.some((c: any) => c.whatsappMessageId === whatsappMessageId);
+      if (alreadyCorrected) {
+        return rec;
+      }
+      rec.corrections = rec.corrections || [];
+      rec.corrections.push(auditObj);
+      rec.value = finalNewValue;
+      rec.context = finalNewContext;
+      rec.timeContext = finalNewTimeContext;
+      rec.originalMessage = correctionMsgText;
+      await rec.save();
+      return rec;
+    }
+    return targetRecord;
+  }
+}
+
+function matchFollowUpToTarget(reply: string, targets: any[]): any | null {
+  const clean = reply.toLowerCase().trim();
+
+  for (const t of targets) {
+    const tc = String(t.timeContext || "").toLowerCase();
+    const ctx = String(t.context || "").toLowerCase();
+
+    if (tc && (clean.includes(tc) || (tc === "morning" && (clean.includes("subah") || clean.includes("सुबह"))))) {
+      return t;
+    }
+    if (ctx && (clean.includes(ctx) || (ctx === "fasting" && (clean.includes("khali") || clean.includes("खाली"))))) {
+      return t;
+    }
+  }
+
+  const numbers = clean.match(/\b\d+\b/);
+  if (numbers) {
+    const idx = parseInt(numbers[0], 10) - 1;
+    if (idx >= 0 && idx < targets.length) {
+      return targets[idx];
+    }
+  }
+
+  return null;
+}
+
+async function handleCorrectionFlow(
+  message: string,
+  patient: any,
+  from: string,
+  whatsappMessageId: string,
+  messageDate: Date
+) {
+  const resolvedLang = detectLanguageStyle(message);
+  const parsed = parseCorrectionMessage(message);
+
+  console.log("DEBUG handleCorrectionFlow:", { message, parsed });
+
+  const records = await getPatientRecords(patient.patientId, patient.hospitalId);
+  console.log("DEBUG patient records count:", records.length, records);
+
+  const { targets } = await resolveTargetRecord(patient, parsed, records);
+  console.log("DEBUG targets count:", targets.length, targets);
+
+  if (targets.length === 1) {
+    const target = targets[0];
+    const oldValueBeforeUpdate = target.value;
+    const updated = await saveCorrectedRecord(target, parsed, whatsappMessageId, message, patient.patientId);
+
+    const unit = PARAMETER_REGISTRY[target.parameter]?.defaultUnit || "";
+    const confirmationMsg = formatCorrectionConfirmation(
+      target.parameter,
+      oldValueBeforeUpdate,
+      updated.value,
+      unit,
+      resolvedLang,
+      updated.timeContext,
+      updated.context
+    );
+    await sendWhatsAppMessage(from, confirmationMsg);
+  } else if (targets.length > 1) {
+    setPendingClarification(patient.patientId, {
+      patientId: patient.patientId,
+      hospitalId: patient.hospitalId,
+      originalSourceText: message,
+      originalWhatsappMessageId: whatsappMessageId,
+      language: resolvedLang,
+      candidateRecords: [],
+      missingFields: [],
+      clarificationReason: "ambiguous_correction",
+      originalMessageDate: messageDate,
+      isCorrection: true,
+      oldValue: parsed.oldValue,
+      newValue: parsed.newValue,
+      parameter: parsed.parameter || targets[0].parameter,
+      candidateTargets: targets.map(t => ({
+        whatsappMessageId: t.whatsappMessageId,
+        _id: t._id ? String(t._id) : undefined,
+        parameter: t.parameter,
+        value: t.value,
+        context: t.context,
+        timeContext: t.timeContext,
+        recordedAt: t.recordedAt,
+        originalMessage: t.originalMessage,
+      })),
+      proposedNewContext: parsed.newContext,
+      proposedNewTimeContext: parsed.newTimeContext,
+    });
+
+    const clarifMsg = getAmbiguousCorrectionClarification(
+      parsed.parameter || targets[0].parameter,
+      parsed.oldValue || targets[0].value,
+      targets,
+      resolvedLang
+    );
+    await sendWhatsAppMessage(from, clarifMsg);
+  } else {
+    const notFoundMsg = getCorrectionTargetNotFoundMessage(parsed.parameter || "", parsed.oldValue ?? null, resolvedLang);
+    await sendWhatsAppMessage(from, notFoundMsg);
+  }
+}
+
+async function handlePendingCorrectionFollowUp(
+  message: string,
+  patient: any,
+  from: string,
+  whatsappMessageId: string,
+  messageDate: Date,
+  pending: any
+) {
+  const resolvedPendingLang = (pending.language || "english") as LanguageStyle;
+  const target = matchFollowUpToTarget(message, pending.candidateTargets || []);
+
+  if (target) {
+    const records = await getPatientRecords(patient.patientId, patient.hospitalId);
+    const fullTarget = records.find(r => r.whatsappMessageId === target.whatsappMessageId);
+
+    if (fullTarget) {
+      const parsed: ParsedCorrection = {
+        parameter: pending.parameter || null,
+        oldValue: pending.oldValue || null,
+        newValue: pending.newValue || null,
+        oldContext: null,
+        newContext: pending.proposedNewContext as any,
+        newTimeContext: pending.proposedNewTimeContext as any,
+      };
+
+      const oldValueBeforeUpdate = fullTarget.value;
+      const updated = await saveCorrectedRecord(fullTarget, parsed, whatsappMessageId, message, patient.patientId);
+
+      completePendingClarification(patient.patientId);
+      clearPendingClarification(patient.patientId);
+
+      const unit = PARAMETER_REGISTRY[fullTarget.parameter]?.defaultUnit || "";
+      const confirmationMsg = formatCorrectionConfirmation(
+        fullTarget.parameter,
+        oldValueBeforeUpdate,
+        updated.value,
+        unit,
+        resolvedPendingLang,
+        updated.timeContext,
+        updated.context
+      );
+      await sendWhatsAppMessage(from, confirmationMsg);
+    } else {
+      clearPendingClarification(patient.patientId);
+      await sendWhatsAppMessage(from, getCorrectionTargetNotFoundMessage(pending.parameter || "", pending.oldValue ?? null, resolvedPendingLang));
+    }
+  } else {
+    const clarifMsg = getAmbiguousCorrectionClarification(
+      pending.parameter || "",
+      pending.oldValue || "",
+      pending.candidateTargets || [],
+      resolvedPendingLang
+    );
+    await sendWhatsAppMessage(from, clarifMsg);
+  }
+}
+
 // Receive WhatsApp Messages
 export const receiveMessage = async (req: Request, res: Response) => {
   console.log(`🔍 [Webhook Diagnostic] [Phase A: Request Received] Path: ${req.originalUrl}, Method: ${req.method}`);
@@ -513,7 +800,8 @@ export const receiveMessage = async (req: Request, res: Response) => {
           const match = MOCK_RECORDS[pId].find(
             (r: any) =>
               r.whatsappMessageId === whatsappMessageId ||
-              r.whatsappMessageId.startsWith(whatsappMessageId + "_")
+              r.whatsappMessageId.startsWith(whatsappMessageId + "_") ||
+              r.corrections?.some((c: any) => c.whatsappMessageId === whatsappMessageId)
           );
           if (match) {
             existsInDb = true;
@@ -523,7 +811,10 @@ export const receiveMessage = async (req: Request, res: Response) => {
       } else {
         const escapedId = whatsappMessageId.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
         const record = await HealthRecord.findOne({
-          whatsappMessageId: { $regex: `^${escapedId}(_|$)` }
+          $or: [
+            { whatsappMessageId: { $regex: `^${escapedId}(_|$)` } },
+            { "corrections.whatsappMessageId": whatsappMessageId }
+          ]
         }, { _id: 1 });
         if (record) {
           existsInDb = true;
@@ -574,19 +865,10 @@ export const receiveMessage = async (req: Request, res: Response) => {
 
         console.log(`🔍 [Webhook Diagnostic] [Phase E: Patient Found] PatientId: ${patient.patientId}, Name: ${patient.fullName}`);
 
-        // Temporary Correction Safeguard
+        // Correction Flow Integration
         if (isCorrectionMessage(message)) {
-          console.log("⚠️ Correction/Edit message detected, triggering safeguard.");
-          const style = detectLanguageStyle(message);
-          let replyMsg = "";
-          if (style === "hindi") {
-            replyMsg = "हेल्थ रिकॉर्ड को बदलना या सुधारना इस संस्करण में समर्थित नहीं है। कृपया एक नया सही संदेश भेजें।";
-          } else if (style === "hinglish") {
-            replyMsg = "Health records correct ya edit karna is version mein supported nahi hai. Kripya ek naya correct message bhejein.";
-          } else {
-            replyMsg = "Correction or editing of health records is not supported in this version. Please send a new, correct reading.";
-          }
-          await sendWhatsAppMessage(from, replyMsg);
+          console.log("⚠️ Correction/Edit message detected, executing correction workflow.");
+          await handleCorrectionFlow(message, patient, from, whatsappMessageId, messageDate);
           if (whatsappMessageId) {
             markMessageAsProcessed(whatsappMessageId);
           }
@@ -602,6 +884,15 @@ export const receiveMessage = async (req: Request, res: Response) => {
             cancelPendingClarification(patient.patientId);
             clearPendingClarification(patient.patientId);
             await sendWhatsAppMessage(from, getCancellationAcknowledgement(resolvedPendingLang));
+            if (whatsappMessageId) {
+              markMessageAsProcessed(whatsappMessageId);
+            }
+            return res.sendStatus(200);
+          }
+
+          if (pending.isCorrection) {
+            console.log("🔄 Processing follow-up for pending correction clarification.");
+            await handlePendingCorrectionFollowUp(message, patient, from, whatsappMessageId, messageDate, pending);
             if (whatsappMessageId) {
               markMessageAsProcessed(whatsappMessageId);
             }
