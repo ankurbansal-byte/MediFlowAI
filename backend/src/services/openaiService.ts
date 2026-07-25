@@ -96,6 +96,7 @@ Your job is to analyze the patient's incoming WhatsApp message, detect language,
       "unit": string,
       "context": "fasting" | "pre_meal" | "post_meal" | "random" | "unknown" (only for blood_sugar),
       "recordedAt": string | null,
+      "timeContext": "morning" | "afternoon" | "evening" | "night" | null,
       "confidence": number
     }
   ],
@@ -120,9 +121,10 @@ Rules for Classification:
      - Patients can report multiple observations of the same parameter (e.g., "BP morning 130/80, evening 140/90", "pulse 78 morning, 84 evening", "oxygen 97 at 9 AM, 98 at 6 PM", "sugar fasting 110, after meal 155").
      - You MUST extract ALL of them as separate candidate records in the "candidateRecords" array.
      - Associate each observation with its respective temporal/context language if provided (e.g. "recordedAt": "morning", "recordedAt": "evening", "recordedAt": "9 AM", "recordedAt": "6 PM", and for blood_sugar, context "fasting" or "post_meal").
+     - Populate "timeContext" with "morning", "afternoon", "evening", or "night" if imprecise temporal qualifiers are present in the observation context (e.g. "morning BP" -> timeContext: "morning", "evening" -> timeContext: "evening", "shaam ko" -> timeContext: "evening", "subah" -> timeContext: "morning", "kal raat" -> timeContext: "night").
      - Example: "BP morning 130/80, evening 140/90" -> action "RECORD", candidateRecords: [
-         { "parameter": "blood_pressure", "systolic": 130, "diastolic": 80, "unit": "mmHg", "recordedAt": "morning" },
-         { "parameter": "blood_pressure", "systolic": 140, "diastolic": 90, "unit": "mmHg", "recordedAt": "evening" }
+         { "parameter": "blood_pressure", "systolic": 130, "diastolic": 80, "unit": "mmHg", "recordedAt": "morning", "timeContext": "morning" },
+         { "parameter": "blood_pressure", "systolic": 140, "diastolic": 90, "unit": "mmHg", "recordedAt": "evening", "timeContext": "evening" }
        ], "unresolvedMeasurements": []
 
 2. action = "CLARIFY":

@@ -22,6 +22,7 @@ export interface CandidateRecord {
   unit: string;
   context?: GlucoseContext;
   recordedAt?: string | Date | null;
+  timeContext?: "morning" | "afternoon" | "evening" | "night";
   confidence: number;
   sourceText?: string;
 }

@@ -28,6 +28,12 @@ const healthRecordSchema = new mongoose.Schema(
       required: false,
     },
 
+    timeContext: {
+      type: String,
+      enum: ["morning", "afternoon", "evening", "night"],
+      required: false,
+    },
+
     recordedAt: {
       type: Date,
       default: Date.now,

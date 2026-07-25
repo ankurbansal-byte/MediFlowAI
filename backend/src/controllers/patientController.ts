@@ -32,6 +32,7 @@ for (const r of demoRecords) {
     value: r.value,
     unit: r.unit,
     context: (r as any).context,
+    timeContext: (r as any).timeContext,
     recordedAt: r.recordedAt,
     source: r.source,
     confidence: r.confidence,
@@ -96,6 +97,52 @@ MOCK_RECORDS["PAT-36B"] = [
     confidence: 1.0,
     originalMessage: "Legacy record",
     whatsappMessageId: "msg_sugar_5"
+  }
+];
+
+// Seed isolated PAT-101 patient records for Sprint 39.2 E2E visual verification
+MOCK_RECORDS["PAT-101"] = [
+  {
+    parameter: "blood_pressure",
+    value: "115/75",
+    unit: "mmHg",
+    recordedAt: new Date("2026-07-19T11:30:00.000Z"),
+    source: "portal",
+    confidence: 1.0,
+    originalMessage: "Legacy BP record",
+    whatsappMessageId: "msg_bp_legacy"
+  },
+  {
+    parameter: "blood_pressure",
+    value: "120/80",
+    unit: "mmHg",
+    recordedAt: new Date("2026-07-20T09:00:00.000Z"),
+    source: "whatsapp",
+    confidence: 0.99,
+    originalMessage: "BP 120/80 at 9 AM",
+    whatsappMessageId: "msg_bp_9am"
+  },
+  {
+    parameter: "blood_pressure",
+    value: "130/80",
+    unit: "mmHg",
+    timeContext: "morning",
+    recordedAt: new Date("2026-07-20T17:27:00.000Z"),
+    source: "whatsapp",
+    confidence: 0.99,
+    originalMessage: "BP morning 130/80, evening 140/90",
+    whatsappMessageId: "msg-e2e-bp-tc_blood_pressure"
+  },
+  {
+    parameter: "blood_pressure",
+    value: "140/90",
+    unit: "mmHg",
+    timeContext: "evening",
+    recordedAt: new Date("2026-07-20T17:27:00.000Z"),
+    source: "whatsapp",
+    confidence: 0.99,
+    originalMessage: "BP morning 130/80, evening 140/90",
+    whatsappMessageId: "msg-e2e-bp-tc_blood_pressure_idx1"
   }
 ];
 
@@ -1038,7 +1085,7 @@ export const getPatientTimeline = async (
         recordedAt: -1,
       })
       .select(
-        "-_id parameter value unit context recordedAt source confidence originalMessage encounterId hospitalId doctorId recordedBy"
+        "-_id parameter value unit context timeContext recordedAt source confidence originalMessage encounterId hospitalId doctorId recordedBy"
       );
 
     return res.status(200).json({
@@ -1087,6 +1134,7 @@ export const getPatientSummary = async (
           value: record.value,
           unit: record.unit,
           context: record.context,
+          timeContext: record.timeContext,
           recordedAt: record.recordedAt,
           source: record.source,
           confidence: record.confidence,
@@ -1115,6 +1163,7 @@ export const getPatientSummary = async (
           value: record.value,
           unit: record.unit,
           context: record.context,
+          timeContext: record.timeContext,
           recordedAt: record.recordedAt,
           source: record.source,
           confidence: record.confidence,
@@ -1164,6 +1213,7 @@ export const getParameterTrend = async (
         value: r.value,
         unit: r.unit,
         context: r.context,
+        timeContext: r.timeContext,
         recordedAt: r.recordedAt,
       }));
 
@@ -1190,7 +1240,7 @@ export const getParameterTrend = async (
       .sort({
         recordedAt: 1,
       })
-      .select("-_id value unit context recordedAt");
+      .select("-_id value unit context timeContext recordedAt");
 
     return res.json({
       success: true,

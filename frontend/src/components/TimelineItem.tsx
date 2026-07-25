@@ -5,6 +5,7 @@ export type TimelineRecord = {
   value: string | number;
   unit?: string;
   context?: string;
+  timeContext?: string;
   recordedAt?: string;
   source?: string;
   confidence?: number;
@@ -58,7 +59,18 @@ const TimelineItem = ({ record }: TimelineItemProps) => {
 
       <div className="timeline-item__detail">
         <span className="timeline-item__detail-label">Recorded Time</span>
-        <span className="timeline-item__detail-value">{formatRecordDateTime(record.recordedAt)}</span>
+        <span className="timeline-item__detail-value">
+          {record.timeContext ? (
+            <>
+              {record.timeContext.charAt(0).toUpperCase() + record.timeContext.slice(1)} · {new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(record.recordedAt!))}
+              <span style={{ fontSize: "0.85em", color: "var(--muted)", fontWeight: "normal", marginLeft: "6px" }}>
+                (Submitted {new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(record.recordedAt!))})
+              </span>
+            </>
+          ) : (
+            formatRecordDateTime(record.recordedAt)
+          )}
+        </span>
       </div>
 
       <div className="timeline-item__detail">

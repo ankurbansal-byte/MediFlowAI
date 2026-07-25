@@ -7,6 +7,10 @@ export interface HealthRecord {
 
   unit: string;
 
+  context?: string;
+
+  timeContext?: string;
+
   recordedAt: Date;
 
   source: "text" | "voice";
