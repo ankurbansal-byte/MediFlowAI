@@ -8,6 +8,7 @@ import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
 import PublicHome from "./pages/PublicHome";
+import { clearAuthSession } from "./api/axios";
 
 export interface User {
   username: string;
@@ -70,9 +71,7 @@ function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("mediflow_user");
-    localStorage.removeItem("mediflow_token");
-    localStorage.removeItem("mediflow_refresh_token");
+    clearAuthSession();
     setUser(null);
     setActiveView("home");
   };
