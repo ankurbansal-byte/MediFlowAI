@@ -195,6 +195,23 @@ export function deterministicExtract(message: string): any {
     return null;
   }
 
+  function extractTimeContext(text: string): "morning" | "afternoon" | "evening" | "night" | undefined {
+    const cleanSeg = text.toLowerCase();
+    if (cleanSeg.includes("morning") || cleanSeg.includes("subah") || cleanSeg.includes("सुबह")) {
+      return "morning";
+    }
+    if (cleanSeg.includes("evening") || cleanSeg.includes("shaam") || cleanSeg.includes("शाम")) {
+      return "evening";
+    }
+    if (cleanSeg.includes("afternoon") || cleanSeg.includes("dopahar") || cleanSeg.includes("दोपहर")) {
+      return "afternoon";
+    }
+    if (cleanSeg.includes("night") || cleanSeg.includes("raat") || cleanSeg.includes("रात")) {
+      return "night";
+    }
+    return undefined;
+  }
+
   // Split by clause separators, using non-word-boundary patterns for Devanagari words
   const rawSegments = message.split(/[,;।।]|\b(?:and|aur|or|&|\+|then|fir|phir)\b|(?:^|\s+)(?:था|और)(?:\s+|$)/i);
 
@@ -222,6 +239,7 @@ export function deterministicExtract(message: string): any {
     if (!segmentParam) continue;
 
     const tempInfo = extractTemporalInfo(trimmedSeg);
+    const tContext = extractTimeContext(trimmedSeg);
 
     if (segmentParam === "blood_pressure") {
       const bpPairRegexes = [
@@ -241,6 +259,7 @@ export function deterministicExtract(message: string): any {
               diastolic,
               unit: "mmHg",
               recordedAt: tempInfo,
+              timeContext: tContext || undefined,
               confidence: 0.99
             });
             bpMatched = true;
@@ -250,7 +269,7 @@ export function deterministicExtract(message: string): any {
       }
 
       if (!bpMatched) {
-        const incompleteBpRegex = /(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3})\b/i;
+        const incompleteBpRegex = /(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप)(?:[^0-9\n]*)\b(\d{2,3})\b/i;
         const match = cleanedSegment.match(incompleteBpRegex);
         if (match) {
           const systolic = parseInt(match[1], 10);
@@ -260,6 +279,7 @@ export function deterministicExtract(message: string): any {
               systolic,
               unit: "mmHg",
               recordedAt: tempInfo,
+              timeContext: tContext || undefined,
               confidence: 0.99
             });
             missingFields.push("diastolic");
@@ -281,6 +301,7 @@ export function deterministicExtract(message: string): any {
               unit: "mg/dL",
               context: context,
               recordedAt: tempInfo,
+              timeContext: tContext || undefined,
               confidence: 0.99
             });
           } else {
@@ -290,6 +311,7 @@ export function deterministicExtract(message: string): any {
               unit: "mg/dL",
               context: "unknown",
               recordedAt: tempInfo,
+              timeContext: tContext || undefined,
               confidence: 0.99
             });
             missingFields.push("glucose_context");
@@ -308,6 +330,7 @@ export function deterministicExtract(message: string): any {
             value: val,
             unit: "bpm",
             recordedAt: tempInfo,
+            timeContext: tContext || undefined,
             confidence: 0.99
           });
         }
@@ -324,6 +347,7 @@ export function deterministicExtract(message: string): any {
             value: val,
             unit: "%",
             recordedAt: tempInfo,
+            timeContext: tContext || undefined,
             confidence: 0.99
           });
         }
@@ -358,6 +382,7 @@ export function deterministicExtract(message: string): any {
               value: celsiusVal,
               unit: "°C",
               recordedAt: tempInfo,
+              timeContext: tContext || undefined,
               confidence: 0.99
             });
           } else if (tempUnit === "°C") {
@@ -366,6 +391,7 @@ export function deterministicExtract(message: string): any {
               value: val,
               unit: "°C",
               recordedAt: tempInfo,
+              timeContext: tContext || undefined,
               confidence: 0.99
             });
           } else {
@@ -374,6 +400,7 @@ export function deterministicExtract(message: string): any {
               value: val,
               unit: "unknown",
               recordedAt: tempInfo,
+              timeContext: tContext || undefined,
               confidence: 0.99
             });
             missingFields.push("temperature_unit");
@@ -395,6 +422,7 @@ export function deterministicExtract(message: string): any {
               value: kgVal,
               unit: "kg",
               recordedAt: tempInfo,
+              timeContext: tContext || undefined,
               confidence: 0.99
             });
           } else {
@@ -403,6 +431,7 @@ export function deterministicExtract(message: string): any {
               value: val,
               unit: "kg",
               recordedAt: tempInfo,
+              timeContext: tContext || undefined,
               confidence: 0.99
             });
           }
@@ -422,6 +451,7 @@ export function deterministicExtract(message: string): any {
               value: val,
               unit: "breaths/min",
               recordedAt: tempInfo,
+              timeContext: tContext || undefined,
               confidence: 0.99
             });
           }
@@ -467,6 +497,7 @@ export function deterministicExtract(message: string): any {
           value: heightValue,
           unit: "cm",
           recordedAt: tempInfo,
+          timeContext: tContext || undefined,
           confidence: 0.99
         });
       }
@@ -1013,6 +1044,8 @@ export function parseHealthRecord(
           parameter: item.parameter,
           value: resolvedVal,
           unit: item.unit ?? PARAMETER_REGISTRY[item.parameter]?.defaultUnit ?? "",
+          context: item.context || undefined,
+          timeContext: item.timeContext || undefined,
           recordedAt: resolveRecordedAt(originalMessage, item.recordedAt as string | null, messageDate),
           source,
           confidence: item.confidence ?? 0.99,
@@ -1037,6 +1070,8 @@ export function parseHealthRecord(
           systolic: item.parameter === "blood_pressure" ? item.systolic : undefined,
           diastolic: item.parameter === "blood_pressure" ? item.diastolic : undefined,
           unit: item.unit ?? "",
+          context: item.context,
+          timeContext: item.timeContext,
           confidence: item.confidence ?? 0.99,
           recordedAt: item.recordedAt,
         };
@@ -1054,6 +1089,8 @@ export function parseHealthRecord(
               ? `${item.systolic}/${item.diastolic}`
               : Number(item.value),
           unit: item.unit ?? "",
+          context: item.context || undefined,
+          timeContext: item.timeContext || undefined,
           recordedAt: resolveRecordedAt(originalMessage, item.recordedAt, messageDate),
           source,
           confidence: 0.99,

@@ -159,7 +159,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
   const getLatestRecord = (key: string) => {
     if (!summary) return null;
-    const record = (summary as Record<string, { value?: string | number; unit?: string; context?: string; recordedAt?: string } | undefined>)[key];
+    const record = (summary as Record<string, { value?: string | number; unit?: string; context?: string; timeContext?: string; recordedAt?: string } | undefined>)[key];
     if (!record || record.value === undefined || record.value === null) return null;
     return record;
   };
@@ -178,7 +178,13 @@ const DashboardView: React.FC<DashboardViewProps> = ({
       .sort((a, b) => {
         const tA = a.recordedAt ? new Date(a.recordedAt).getTime() : 0;
         const tB = b.recordedAt ? new Date(b.recordedAt).getTime() : 0;
-        return tB - tA;
+        if (tA !== tB) {
+          return tB - tA;
+        }
+        const order = { morning: 1, afternoon: 2, evening: 3, night: 4 };
+        const valA = order[(a.timeContext || "") as keyof typeof order] || 0;
+        const valB = order[(b.timeContext || "") as keyof typeof order] || 0;
+        return valB - valA;
       });
 
     const formatTodayDateHeader = (date: Date) => {
@@ -276,7 +282,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                         ) : null}
                       </strong>
                       <span style={{ fontSize: "0.72rem", color: "#627d98", fontWeight: 550 }}>
-                        As of {formatRecordDate(record.recordedAt)}
+                        As of {record.timeContext ? (
+                          `${record.timeContext.charAt(0).toUpperCase() + record.timeContext.slice(1)} · ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(record.recordedAt!))}`
+                        ) : (
+                          formatRecordDate(record.recordedAt)
+                        )}
                       </span>
                     </>
                   ) : (
@@ -359,7 +369,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                       <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 750, minWidth: "70px" }}>
-                        {timeStr}
+                        {record.timeContext ? record.timeContext.charAt(0).toUpperCase() + record.timeContext.slice(1) : timeStr}
                       </span>
                       <strong style={{ fontSize: "1rem", color: "var(--navy)", fontWeight: 750 }}>
                         {displayParam}

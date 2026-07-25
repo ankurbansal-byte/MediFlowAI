@@ -46,6 +46,19 @@ const TrendsView: React.FC<TrendsViewProps> = ({
       }
       groups[key].push(r);
     }
+    for (const key in groups) {
+      groups[key].sort((a, b) => {
+        const tA = a.recordedAt ? new Date(a.recordedAt).getTime() : 0;
+        const tB = b.recordedAt ? new Date(b.recordedAt).getTime() : 0;
+        if (tA !== tB) {
+          return tB - tA;
+        }
+        const order = { morning: 1, afternoon: 2, evening: 3, night: 4 };
+        const valA = order[(a.timeContext || "") as keyof typeof order] || 0;
+        const valB = order[(b.timeContext || "") as keyof typeof order] || 0;
+        return valB - valA;
+      });
+    }
     return groups;
   }, [timeline]);
 
@@ -363,7 +376,7 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                         {group.records.map((record, rIdx) => {
                           const displayParam = record.parameter.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-                          const timeStr = formatRecordTimeOnly(record.recordedAt);
+                          const timeStr = record.timeContext ? record.timeContext.charAt(0).toUpperCase() + record.timeContext.slice(1) : formatRecordTimeOnly(record.recordedAt);
 
                           return (
                             <div

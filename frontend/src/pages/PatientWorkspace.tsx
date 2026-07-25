@@ -34,6 +34,7 @@ interface PatientSummaryRecord {
   value: string | number;
   unit: string;
   context?: string;
+  timeContext?: string;
   recordedAt: string;
 }
 
@@ -53,6 +54,7 @@ interface TimelineItem {
   value: string | number;
   unit: string;
   context?: string;
+  timeContext?: string;
   recordedAt: string;
   source: string;
 }
@@ -906,7 +908,11 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                           ) : null}
                         </strong>
                         <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                          As of {formatRecordDateTime(patientSummary.blood_sugar.recordedAt)}
+                          As of {patientSummary.blood_sugar.timeContext ? (
+                            `${patientSummary.blood_sugar.timeContext.charAt(0).toUpperCase() + patientSummary.blood_sugar.timeContext.slice(1)} · ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(patientSummary.blood_sugar.recordedAt))}`
+                          ) : (
+                            formatRecordDateTime(patientSummary.blood_sugar.recordedAt)
+                          )}
                         </span>
                       </>
                     ) : (
@@ -935,7 +941,11 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                           {patientSummary.blood_pressure.value} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)", fontWeight: 500 }}>{patientSummary.blood_pressure.unit || "mmHg"}</span>
                         </strong>
                         <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                          As of {formatRecordDateTime(patientSummary.blood_pressure.recordedAt)}
+                          As of {patientSummary.blood_pressure.timeContext ? (
+                            `${patientSummary.blood_pressure.timeContext.charAt(0).toUpperCase() + patientSummary.blood_pressure.timeContext.slice(1)} · ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(patientSummary.blood_pressure.recordedAt))}`
+                          ) : (
+                            formatRecordDateTime(patientSummary.blood_pressure.recordedAt)
+                          )}
                         </span>
                       </>
                     ) : (
@@ -964,7 +974,11 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                           {patientSummary.heart_rate.value} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)", fontWeight: 500 }}>{patientSummary.heart_rate.unit || "bpm"}</span>
                         </strong>
                         <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                          As of {formatRecordDateTime(patientSummary.heart_rate.recordedAt)}
+                          As of {patientSummary.heart_rate.timeContext ? (
+                            `${patientSummary.heart_rate.timeContext.charAt(0).toUpperCase() + patientSummary.heart_rate.timeContext.slice(1)} · ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(patientSummary.heart_rate.recordedAt))}`
+                          ) : (
+                            formatRecordDateTime(patientSummary.heart_rate.recordedAt)
+                          )}
                         </span>
                       </>
                     ) : (
@@ -993,7 +1007,11 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                           {patientSummary.body_temperature.value} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)", fontWeight: 500 }}>{patientSummary.body_temperature.unit || "°C"}</span>
                         </strong>
                         <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                          As of {formatRecordDateTime(patientSummary.body_temperature.recordedAt)}
+                          As of {patientSummary.body_temperature.timeContext ? (
+                            `${patientSummary.body_temperature.timeContext.charAt(0).toUpperCase() + patientSummary.body_temperature.timeContext.slice(1)} · ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(patientSummary.body_temperature.recordedAt))}`
+                          ) : (
+                            formatRecordDateTime(patientSummary.body_temperature.recordedAt)
+                          )}
                         </span>
                       </>
                     ) : (
@@ -1022,7 +1040,11 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                           {patientSummary.weight.value} <span style={{ fontSize: "0.75rem", color: "var(--muted, #486581)", fontWeight: 500 }}>{patientSummary.weight.unit || "kg"}</span>
                         </strong>
                         <span style={{ fontSize: "0.72rem", color: "#627d98" }}>
-                          As of {formatRecordDateTime(patientSummary.weight.recordedAt)}
+                          As of {patientSummary.weight.timeContext ? (
+                            `${patientSummary.weight.timeContext.charAt(0).toUpperCase() + patientSummary.weight.timeContext.slice(1)} · ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(patientSummary.weight.recordedAt))}`
+                          ) : (
+                            formatRecordDateTime(patientSummary.weight.recordedAt)
+                          )}
                         </span>
                       </>
                     ) : (
@@ -1047,10 +1069,28 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                   </p>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                    {patientTimeline.map((record, index) => {
-                      const displayParam = record.parameter.replace("_", " ").toUpperCase().replace(/\b\w/g, c => c.toUpperCase());
-                      const isNewest = index === 0;
-                      const dateStr = record.recordedAt ? formatRecordDateTime(record.recordedAt) : "—";
+                    {[...patientTimeline]
+                      .sort((a, b) => {
+                        const tA = a.recordedAt ? new Date(a.recordedAt).getTime() : 0;
+                        const tB = b.recordedAt ? new Date(b.recordedAt).getTime() : 0;
+                        if (tA !== tB) {
+                          return tB - tA;
+                        }
+                        const order = { morning: 1, afternoon: 2, evening: 3, night: 4 };
+                        const valA = order[(a.timeContext || "") as keyof typeof order] || 0;
+                        const valB = order[(b.timeContext || "") as keyof typeof order] || 0;
+                        return valB - valA;
+                      })
+                      .map((record, index) => {
+                        const displayParam = record.parameter.replace("_", " ").toUpperCase().replace(/\b\w/g, c => c.toUpperCase());
+                        const isNewest = index === 0;
+                        const dateStr = record.recordedAt ? (
+                          record.timeContext ? (
+                            `${record.timeContext.charAt(0).toUpperCase() + record.timeContext.slice(1)} · ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(record.recordedAt))}`
+                          ) : (
+                            formatRecordDateTime(record.recordedAt)
+                          )
+                        ) : "—";
 
                       return (
                         <div
