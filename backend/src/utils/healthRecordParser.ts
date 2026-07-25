@@ -1,6 +1,368 @@
 import { PARAMETER_REGISTRY } from "./parameterRegistry";
-import { IntelligenceResult, CandidateRecord } from "./intelligenceContract";
+import { IntelligenceResult, CandidateRecord, GlucoseContext } from "./intelligenceContract";
 import { HealthRecord } from "../services/healthRecordExtractor";
+
+/**
+ * Helper to detect user language style
+ */
+export function detectLanguageStyle(text: string): "english" | "hindi" | "hinglish" {
+  const clean = text.toLowerCase();
+  if (/[\u0900-\u097F]/.test(text)) {
+    return "hindi";
+  }
+  const hinglishWords = [
+    "hai", "thi", "tha", "mer", "mera", "meri", "ko", "ki", "ka", "pehle", "baad", "aur", "hota", "bata", "bataiye", "liya", "diye", "gaya", "gayi", "ho", "aaj", "kal", "subah", "dopahar", "shaam", "raat", "chal", "kya", "sath", "se", "rehne", "do", "kabhi"
+  ];
+  const words = clean.split(/\s+/);
+  const hasHinglish = words.some(w => hinglishWords.includes(w));
+  if (hasHinglish) {
+    return "hinglish";
+  }
+  return "english";
+}
+
+/**
+ * Parses glucose context deterministically from text
+ */
+export function parseGlucoseContext(msg: string): GlucoseContext | null {
+  const clean = msg.toLowerCase().trim();
+
+  // Fasting
+  if (
+    clean.includes("fasting") ||
+    clean.includes("khali pet") ||
+    clean.includes("खाली पेट") ||
+    clean === "fast" ||
+    clean === "fating" ||
+    clean === "fastg"
+  ) {
+    return "fasting";
+  }
+
+  // Pre-meal
+  if (
+    clean.includes("before food") ||
+    clean.includes("before breakfast") ||
+    clean.includes("before lunch") ||
+    clean.includes("before dinner") ||
+    clean.includes("before meal") ||
+    clean.includes("pre-meal") ||
+    clean.includes("pre_meal") ||
+    clean.includes("premeal") ||
+    clean.includes("khane se pehle") ||
+    clean.includes("खाने से पहले")
+  ) {
+    return "pre_meal";
+  }
+
+  // Post-meal
+  if (
+    clean.includes("after food") ||
+    clean.includes("after breakfast") ||
+    clean.includes("after lunch") ||
+    clean.includes("after dinner") ||
+    clean.includes("after meal") ||
+    clean.includes("post-meal") ||
+    clean.includes("post_meal") ||
+    clean.includes("postmeal") ||
+    clean.includes("khane ke baad") ||
+    clean.includes("खाने के बाद") ||
+    clean.includes("2 hours after meal")
+  ) {
+    return "post_meal";
+  }
+
+  // Random
+  if (
+    clean.includes("random") ||
+    clean.includes("random tha") ||
+    clean.includes("रैंडम")
+  ) {
+    return "random";
+  }
+
+  return null;
+}
+
+/**
+ * Local deterministic extraction function to recognize explicit vitals in English, Hindi and Hinglish.
+ * Serves as fallback when the AI provider fails.
+ */
+export function deterministicExtract(message: string): any {
+  const clean = message.toLowerCase().trim();
+  const lang = detectLanguageStyle(message);
+
+  const result: any = {
+    language: lang,
+    action: "IGNORE",
+    intent: "conversational",
+    candidateRecords: [],
+    missingFields: [],
+    unresolvedMeasurements: [],
+    reason: "Deterministic local fallback extraction"
+  };
+
+  const candidateRecords: any[] = [];
+  const missingFields: string[] = [];
+
+  // Strip dates and times first to avoid extracting time/date numbers as vitals
+  const cleanedText = stripNumbersBelongingToDatesAndTimes(message);
+
+  // 1. Blood Sugar Check
+  const sugarRegexes = [
+    /(?:sugar|blood\s*sugar|sugar\s*level|shugar|glucose|schugar|cheeni|शुगर|सीनी|चीनी)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d+(?:\.\d+)?)/i,
+    /(\d+(?:\.\d+)?)\s*(?:mg\/dl)?\s*(?:sugar|blood\s*sugar|sugar\s*level|shugar|glucose|schugar|cheeni|शुगर|सीनी|चीनी)/i
+  ];
+
+  let sugarValue: number | null = null;
+  for (const rx of sugarRegexes) {
+    const match = cleanedText.match(rx);
+    if (match) {
+      const val = parseFloat(match[1]);
+      if (val >= 30 && val <= 500) {
+        sugarValue = val;
+        break;
+      }
+    }
+  }
+
+  if (sugarValue !== null) {
+    const context = parseGlucoseContext(message);
+    if (context) {
+      candidateRecords.push({
+        parameter: "blood_sugar",
+        value: sugarValue,
+        unit: "mg/dL",
+        context: context,
+        recordedAt: null,
+        confidence: 0.99
+      });
+    } else {
+      candidateRecords.push({
+        parameter: "blood_sugar",
+        value: sugarValue,
+        unit: "mg/dL",
+        context: "unknown",
+        recordedAt: null,
+        confidence: 0.99
+      });
+      missingFields.push("glucose_context");
+    }
+  }
+
+  // 2. Blood Pressure Check
+  const bpRegexes = [
+    /(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3})\s*(?:\/|\\|h|by|and|aur|\s+)\s*(\d{2,3})/i,
+    /(\d{2,3})\s*(?:\/|\\|h|by|and|aur|\s+)\s*(\d{2,3})\s*(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप)/i,
+    /\b(\d{2,3})\s*[\/\\]\s*(\d{2,3})\b/
+  ];
+
+  let bpMatched = false;
+  for (const rx of bpRegexes) {
+    const match = cleanedText.match(rx);
+    if (match) {
+      const systolic = parseInt(match[1], 10);
+      const diastolic = parseInt(match[2], 10);
+      if (systolic >= 70 && systolic <= 250 && diastolic >= 40 && diastolic <= 150) {
+        candidateRecords.push({
+          parameter: "blood_pressure",
+          systolic,
+          diastolic,
+          unit: "mmHg",
+          recordedAt: null,
+          confidence: 0.99
+        });
+        bpMatched = true;
+        break;
+      }
+    }
+  }
+
+  if (!bpMatched) {
+    const incompleteBpRegex = /(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3})\b/i;
+    const match = cleanedText.match(incompleteBpRegex);
+    if (match) {
+      const systolic = parseInt(match[1], 10);
+      if (systolic >= 70 && systolic <= 250) {
+        candidateRecords.push({
+          parameter: "blood_pressure",
+          systolic,
+          unit: "mmHg",
+          recordedAt: null,
+          confidence: 0.99
+        });
+        missingFields.push("diastolic");
+      }
+    }
+  }
+
+  // 3. Heart Rate / Pulse Check
+  const hrRegexes = [
+    /(?:pulse|heart\s*rate|hr|bpm|dhadkan|पल्स|धड़कन)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3})\b/i,
+    /(\d{2,3})\s*(?:bpm)?\s*(?:pulse|heart\s*rate|hr|dhadkan|पल्स|धड़कन)\b/i
+  ];
+
+  let hrValue: number | null = null;
+  for (const rx of hrRegexes) {
+    const match = cleanedText.match(rx);
+    if (match) {
+      const val = parseInt(match[1], 10);
+      if (val >= 30 && val <= 250) {
+        hrValue = val;
+        break;
+      }
+    }
+  }
+
+  if (hrValue !== null) {
+    candidateRecords.push({
+      parameter: "heart_rate",
+      value: hrValue,
+      unit: "bpm",
+      recordedAt: null,
+      confidence: 0.99
+    });
+  }
+
+  // 4. Body Temperature Check
+  const tempRegexes = [
+    /(?:temp|temperature|fever|body\s*temp|bukhar|bukhaar|tapman|तापमान|बुखार)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3}(?:\.\d+)?)\b/i,
+    /(\d{2,3}(?:\.\d+)?)\s*(?:°?[fF]|°?[cC])?\s*(?:temp|temperature|fever|body\s*temp|bukhar|bukhaar|tapman|तापमान|बुखार)\b/i
+  ];
+
+  let tempValue: number | null = null;
+  let tempUnit: string | null = null;
+
+  for (const rx of tempRegexes) {
+    const match = cleanedText.match(rx);
+    if (match) {
+      tempValue = parseFloat(match[1]);
+      break;
+    }
+  }
+
+  if (tempValue !== null) {
+    if (clean.includes("°c") || clean.includes(" c ") || clean.endsWith("c") || clean.includes("celsius") || clean.includes("celcius")) {
+      tempUnit = "°C";
+    } else if (clean.includes("°f") || clean.includes(" f ") || clean.endsWith("f") || clean.includes("fahrenheit") || clean.includes("farenheit")) {
+      tempUnit = "°F";
+    } else {
+      if (tempValue > 50 && tempValue <= 110) {
+        tempUnit = "°F";
+      } else if (tempValue >= 30 && tempValue <= 45) {
+        tempUnit = "°C";
+      } else {
+        tempUnit = "unknown";
+      }
+    }
+
+    if (tempUnit === "°F") {
+      const celsiusVal = parseFloat(((tempValue - 32) * 5 / 9).toFixed(1));
+      candidateRecords.push({
+        parameter: "body_temperature",
+        value: celsiusVal,
+        unit: "°C",
+        recordedAt: null,
+        confidence: 0.99
+      });
+    } else if (tempUnit === "°C") {
+      candidateRecords.push({
+        parameter: "body_temperature",
+        value: tempValue,
+        unit: "°C",
+        recordedAt: null,
+        confidence: 0.99
+      });
+    } else {
+      candidateRecords.push({
+        parameter: "body_temperature",
+        value: tempValue,
+        unit: "unknown",
+        recordedAt: null,
+        confidence: 0.99
+      });
+      missingFields.push("temperature_unit");
+    }
+  }
+
+  // 5. Oxygen Saturation Check
+  const o2Regexes = [
+    /(?:oxygen|spo2|o2|saturation|oxigen|ऑक्सीजन)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3})%?\b/i,
+    /(\d{2,3})\s*%?\s*(?:oxygen|spo2|o2|saturation|oxigen|ऑक्सीजन)\b/i
+  ];
+
+  let o2Value: number | null = null;
+  for (const rx of o2Regexes) {
+    const match = cleanedText.match(rx);
+    if (match) {
+      const val = parseInt(match[1], 10);
+      if (val >= 50 && val <= 100) {
+        o2Value = val;
+        break;
+      }
+    }
+  }
+
+  if (o2Value !== null) {
+    candidateRecords.push({
+      parameter: "oxygen_saturation",
+      value: o2Value,
+      unit: "%",
+      recordedAt: null,
+      confidence: 0.99
+    });
+  }
+
+  // 6. Weight Check
+  const weightRegexes = [
+    /(?:weight|vajan|wajan|vazan|वजन)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3}(?:\.\d+)?)\s*(?:kg|lbs|kilo)?\b/i,
+    /(\d{2,3}(?:\.\d+)?)\s*(?:kg|lbs|kilo)?\s*(?:weight|vajan|wajan|vazan|वजन)\b/i
+  ];
+
+  let weightValue: number | null = null;
+  let weightUnit: string = "kg";
+
+  for (const rx of weightRegexes) {
+    const match = cleanedText.match(rx);
+    if (match) {
+      weightValue = parseFloat(match[1]);
+      if (clean.includes("lbs")) {
+        weightUnit = "lbs";
+      }
+      break;
+    }
+  }
+
+  if (weightValue !== null) {
+    if (weightUnit === "lbs") {
+      const kgVal = parseFloat((weightValue * 0.45359237).toFixed(1));
+      candidateRecords.push({
+        parameter: "weight",
+        value: kgVal,
+        unit: "kg",
+        recordedAt: null,
+        confidence: 0.99
+      });
+    } else {
+      candidateRecords.push({
+        parameter: "weight",
+        value: weightValue,
+        unit: "kg",
+        recordedAt: null,
+        confidence: 0.99
+      });
+    }
+  }
+
+  if (candidateRecords.length > 0) {
+    result.action = missingFields.length > 0 ? "CLARIFY" : "RECORD";
+    result.intent = "health_measurement";
+    result.candidateRecords = candidateRecords;
+    result.missingFields = missingFields;
+  }
+
+  return result;
+}
 
 /**
  * Helper to strip numbers that are part of dates and times from the original message.
