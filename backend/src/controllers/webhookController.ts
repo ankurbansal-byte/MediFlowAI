@@ -434,6 +434,49 @@ function isGreetingMessage(msg: string): boolean {
   return greetings.some(g => clean === g || clean.startsWith(g + " ") || clean.endsWith(" " + g));
 }
 
+export function detectParameterFromMessage(msg: string): string | null {
+  const clean = msg.toLowerCase().trim();
+  const keywordsMap: Record<string, string[]> = {
+    blood_sugar: ["sugar", "glucose", "sugar level", "shugar", "cheeni", "schugar", "शुगर", "सीनी", "चीनी"],
+    blood_pressure: ["bp", "blood pressure", "pressure", "बीपी", "रक्तचाप"],
+    heart_rate: ["pulse", "heart rate", "hr", "bpm", "dhadkan", "dil", "beat", "पल्स", "धड़कन"],
+    oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन"],
+    body_temperature: ["temp", "temperature", "fever", "body temp", "bukhar", "bukhaar", "tapman", "तापमान", "बुखार"],
+    weight: ["weight", "vajan", "wajan", "kg", "vazan", "वजन"],
+    respiratory_rate: ["breath", "resp", "respiratory", "saans"],
+    height: ["height", "lambai"]
+  };
+
+  for (const [param, keywords] of Object.entries(keywordsMap)) {
+    for (const kw of keywords) {
+      if (/[\u0900-\u097F]/.test(kw)) {
+        if (clean.includes(kw)) {
+          return param;
+        }
+      } else {
+        const regex = new RegExp(`\\b${kw}\\b`, "i");
+        if (regex.test(clean)) {
+          return param;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+export function hasOtherNumbers(msg: string, allowedNumbers: number[]): boolean {
+  const numbers = msg.match(/\b\d+(?:\.\d+)?\b/g);
+  if (!numbers) return false;
+  for (const numStr of numbers) {
+    const val = parseFloat(numStr);
+    if (!allowedNumbers.includes(val)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Receive WhatsApp Messages
 export const receiveMessage = async (req: Request, res: Response) => {
   console.log(`🔍 [Webhook Diagnostic] [Phase A: Request Received] Path: ${req.originalUrl}, Method: ${req.method}`);
@@ -566,6 +609,125 @@ export const receiveMessage = async (req: Request, res: Response) => {
               markMessageAsProcessed(whatsappMessageId);
             }
             return res.sendStatus(200);
+          }
+
+          // Deterministic parameter resolution for pending unresolved measurements
+          if (pending.unresolvedMeasurements && pending.unresolvedMeasurements.length > 0) {
+            const detectedParam = detectParameterFromMessage(message);
+            if (detectedParam) {
+              if (!hasOtherNumbers(message, pending.unresolvedMeasurements)) {
+                const val = pending.unresolvedMeasurements[0];
+                const updatedUnresolved = pending.unresolvedMeasurements.slice(1);
+
+                const paramDef = PARAMETER_REGISTRY[detectedParam];
+                const defaultUnit = paramDef ? paramDef.defaultUnit : "";
+
+                const newCandidate: CandidateRecord = {
+                  parameter: detectedParam,
+                  confidence: 0.99,
+                  recordedAt: null,
+                  unit: defaultUnit || "",
+                };
+
+                if (detectedParam === "blood_sugar") {
+                  newCandidate.value = val;
+                  newCandidate.unit = defaultUnit || "mg/dL";
+                  newCandidate.context = "unknown";
+
+                  const updatedMissingFields = Array.from(new Set([...(pending.missingFields || []), "glucose_context"]));
+                  const updatedCandidates = [...(pending.candidateRecords || []), newCandidate];
+
+                  setPendingClarification(patient.patientId, {
+                    patientId: pending.patientId,
+                    hospitalId: pending.hospitalId,
+                    originalWhatsappMessageId: pending.originalWhatsappMessageId,
+                    originalSourceText: pending.originalSourceText,
+                    language: pending.language,
+                    candidateRecords: updatedCandidates,
+                    missingFields: updatedMissingFields,
+                    unresolvedMeasurements: updatedUnresolved,
+                    clarificationReason: pending.clarificationReason,
+                    originalMessageDate: pending.originalMessageDate,
+                  });
+
+                  const clarifMsg = getClarificationMessage("blood_sugar", pending.language, val);
+                  await sendWhatsAppMessage(from, clarifMsg);
+                  console.log(`[Deterministic Parameter Resolution] Resolved unresolved ${val} as blood_sugar. Asking for glucose context.`);
+
+                  if (whatsappMessageId) {
+                    markMessageAsProcessed(whatsappMessageId);
+                  }
+                  return res.sendStatus(200);
+                } else if (detectedParam === "body_temperature") {
+                  newCandidate.value = val;
+                  newCandidate.unit = "unknown";
+
+                  const updatedMissingFields = Array.from(new Set([...(pending.missingFields || []), "temperature_unit"]));
+                  const updatedCandidates = [...(pending.candidateRecords || []), newCandidate];
+
+                  setPendingClarification(patient.patientId, {
+                    patientId: pending.patientId,
+                    hospitalId: pending.hospitalId,
+                    originalWhatsappMessageId: pending.originalWhatsappMessageId,
+                    originalSourceText: pending.originalSourceText,
+                    language: pending.language,
+                    candidateRecords: updatedCandidates,
+                    missingFields: updatedMissingFields,
+                    unresolvedMeasurements: updatedUnresolved,
+                    clarificationReason: pending.clarificationReason,
+                    originalMessageDate: pending.originalMessageDate,
+                  });
+
+                  const clarifMsg = getClarificationMessage("body_temperature", pending.language, val);
+                  await sendWhatsAppMessage(from, clarifMsg);
+                  console.log(`[Deterministic Parameter Resolution] Resolved unresolved ${val} as body_temperature. Asking for temperature unit.`);
+
+                  if (whatsappMessageId) {
+                    markMessageAsProcessed(whatsappMessageId);
+                  }
+                  return res.sendStatus(200);
+                } else if (detectedParam === "blood_pressure") {
+                  newCandidate.systolic = val;
+                  newCandidate.unit = defaultUnit || "mmHg";
+
+                  const updatedMissingFields = Array.from(new Set([...(pending.missingFields || []), "diastolic"]));
+                  const updatedCandidates = [...(pending.candidateRecords || []), newCandidate];
+
+                  setPendingClarification(patient.patientId, {
+                    patientId: pending.patientId,
+                    hospitalId: pending.hospitalId,
+                    originalWhatsappMessageId: pending.originalWhatsappMessageId,
+                    originalSourceText: pending.originalSourceText,
+                    language: pending.language,
+                    candidateRecords: updatedCandidates,
+                    missingFields: updatedMissingFields,
+                    unresolvedMeasurements: updatedUnresolved,
+                    clarificationReason: pending.clarificationReason,
+                    originalMessageDate: pending.originalMessageDate,
+                  });
+
+                  const clarifMsg = getClarificationMessage("blood_pressure", pending.language, val);
+                  await sendWhatsAppMessage(from, clarifMsg);
+                  console.log(`[Deterministic Parameter Resolution] Resolved unresolved ${val} as blood_pressure (systolic). Asking for diastolic.`);
+
+                  if (whatsappMessageId) {
+                    markMessageAsProcessed(whatsappMessageId);
+                  }
+                  return res.sendStatus(200);
+                } else {
+                  newCandidate.value = val;
+                  newCandidate.unit = defaultUnit;
+
+                  const records = parseMergedHealthRecords(pending, newCandidate, detectedParam, message, whatsappMessageId, messageDate);
+                  await saveAndAcknowledgeRecords(records, patient, from, pending);
+
+                  if (whatsappMessageId) {
+                    markMessageAsProcessed(whatsappMessageId);
+                  }
+                  return res.sendStatus(200);
+                }
+              }
+            }
           }
 
           // 1. Run AI extraction on the follow-up message first to check for context hijack or conversational bypass
