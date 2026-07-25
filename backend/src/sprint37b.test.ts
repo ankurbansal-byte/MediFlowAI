@@ -330,7 +330,7 @@ async function runSprint37BTests() {
     assert(pendingAfterTurn2?.unresolvedMeasurements?.length === 0, "145 is resolved (no longer in unresolved list)");
     assert(pendingAfterTurn2?.candidateRecords?.[0]?.parameter === "blood_sugar", "Incomplete candidate record is blood_sugar");
     assert(pendingAfterTurn2?.candidateRecords?.[0]?.value === 145, "Pending sugar value is 145");
-    assert(pendingAfterTurn2?.missingFields?.includes("glucose_context"), "glucose_context is requested");
+    assert(!!pendingAfterTurn2?.missingFields?.includes("glucose_context"), "glucose_context is requested");
 
     // Verify response
     assert(axiosPostCalls.length === 1, "Clarification response was sent");

@@ -59,8 +59,28 @@ export const authMiddleware = async (
 
     req.user = decoded;
     next();
-  } catch (error) {
-    console.error("Token verification failed:", error);
+  } catch (error: any) {
+    const hasAuthHeader = !!authHeader;
+    let decoded: any = null;
+    try {
+      decoded = jwt.decode(token);
+    } catch (e) {
+      // ignore decode error
+    }
+
+    const method = req.method;
+    const path = req.originalUrl || req.url;
+    const nowISO = new Date().toISOString();
+
+    if (error instanceof jwt.TokenExpiredError || (error && error.name === "TokenExpiredError")) {
+      const expTime = decoded?.exp ? new Date(decoded.exp * 1000).toISOString() : "unknown";
+      const iatTime = decoded?.iat ? new Date(decoded.iat * 1000).toISOString() : "unknown";
+      console.warn(`AUTH_REJECTED expired_token ${method} ${path} exp=${expTime} now=${nowISO} iat=${iatTime} hasAuthHeader=${hasAuthHeader}`);
+    } else {
+      const expTime = decoded?.exp ? new Date(decoded.exp * 1000).toISOString() : "unknown";
+      console.warn(`AUTH_REJECTED invalid_token ${method} ${path} exp=${expTime} now=${nowISO} hasAuthHeader=${hasAuthHeader} error=${error?.message || error}`);
+    }
+
     return res.status(401).json({
       success: false,
       message: "Invalid or expired token. Please log in again.",

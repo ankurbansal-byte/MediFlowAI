@@ -17,6 +17,27 @@ const onRefreshed = (token: string | null) => {
   refreshSubscribers = [];
 };
 
+export const isTokenExpired = (token: string): boolean => {
+  if (!token) return true;
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return true;
+
+    // Use built-in atob (which is standard in browsers and modern Node.js)
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const payloadDecoded = atob(base64);
+
+    const payload = JSON.parse(payloadDecoded);
+    if (!payload.exp) return false;
+    const now = Math.floor(Date.now() / 1000);
+    return payload.exp < now;
+  } catch {
+    return true;
+  }
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const setAuthSession = (token: string, refreshToken: string, user: any) => {
   localStorage.setItem("mediflow_token", token);
   localStorage.setItem("mediflow_refresh_token", refreshToken);

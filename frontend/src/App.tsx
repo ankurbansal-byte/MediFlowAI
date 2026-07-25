@@ -8,7 +8,7 @@ import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
 import PublicHome from "./pages/PublicHome";
-import { clearAuthSession } from "./api/axios";
+import { clearAuthSession, isTokenExpired } from "./api/axios";
 
 export interface User {
   username: string;
@@ -29,12 +29,16 @@ function App() {
     const savedToken = localStorage.getItem("mediflow_token");
 
     if (savedUser && savedToken) {
+      if (isTokenExpired(savedToken)) {
+        console.warn("Saved token is expired on startup. Clearing auth session.");
+        clearAuthSession();
+        return null;
+      }
       try {
         return JSON.parse(savedUser) as User;
       } catch (e) {
         console.error("Failed to parse saved user", e);
-        localStorage.removeItem("mediflow_user");
-        localStorage.removeItem("mediflow_token");
+        clearAuthSession();
       }
     }
     return null;
