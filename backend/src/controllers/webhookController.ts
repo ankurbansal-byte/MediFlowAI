@@ -65,92 +65,38 @@ export const verifyWebhook = (req: Request, res: Response) => {
   return res.sendStatus(403);
 };
 
-// Resolve language style with fallback to detection
-export function resolveLanguageStyle(msg: string, aiLanguage?: string): string {
+import {
+  LanguageStyle,
+  formatConfirmation,
+  getGlucoseContextClarification,
+  getBloodPressureClarification,
+  getBodyTemperatureClarification,
+  getUnresolvedMeasurementsClarification,
+  getMissingDetailsClarification,
+  getCancellationAcknowledgement,
+  getGenericFailureMessage,
+  getConversationalIgnoreMessage,
+  getFriendlyName
+} from "../utils/whatsappResponses";
+
+// Resolve language style with fallback to detection, prioritizing pending state's language if available
+export function resolveLanguageStyle(msg: string, aiLanguage?: string, pendingLanguage?: string): LanguageStyle {
+  // If the user clearly uses a specific language structure in their current turn, respect that first (allows language switching)
+  const currentTurnDetect = detectLanguageStyle(msg);
+  if (currentTurnDetect === "hindi") {
+    return "hindi";
+  }
+
+  // If we have a pending conversation style, preserve it
+  if (pendingLanguage) {
+    return pendingLanguage as LanguageStyle;
+  }
+
+  // Otherwise follow standard priority: AI detected, then deterministic detection
   if (aiLanguage && aiLanguage !== "unknown") {
-    return aiLanguage;
+    return aiLanguage as LanguageStyle;
   }
-  return detectLanguageStyle(msg);
-}
-
-const FRIENDLY_NAMES: Record<string, { english: string; hindi: string; hinglish: string }> = {
-  blood_sugar: { english: "Sugar", hindi: "शुगर", hinglish: "Sugar" },
-  blood_pressure: { english: "BP", hindi: "बीपी", hinglish: "BP" },
-  heart_rate: { english: "Pulse", hindi: "पल्स", hinglish: "Pulse" },
-  oxygen_saturation: { english: "SpO2", hindi: "ऑक्सीजन", hinglish: "Oxygen" },
-  body_temperature: { english: "Temperature", hindi: "तापमान", hinglish: "Temperature" },
-  weight: { english: "Weight", hindi: "वजन", hinglish: "Weight" },
-  respiratory_rate: { english: "Respiratory rate", hindi: "सांस की गति", hinglish: "Respiratory rate" },
-  height: { english: "Height", hindi: "कद", hinglish: "Height" },
-};
-
-export function formatNaturalConfirmation(records: any[], lang: string): string {
-  if (records.length === 0) return "Done 👍";
-
-  const formattedItems = records.map(r => {
-    const nameObj = FRIENDLY_NAMES[r.parameter] || { english: r.parameter, hindi: r.parameter, hinglish: r.parameter };
-    const name = lang === "hindi" ? nameObj.hindi : (lang === "hinglish" ? nameObj.hinglish : nameObj.english);
-    const unit = r.unit || PARAMETER_REGISTRY[r.parameter]?.defaultUnit || "";
-
-    let contextStr = "";
-    if (r.parameter === "blood_sugar" && r.context) {
-      if (lang === "hindi") {
-        const ctxMap: any = { fasting: "खाली पेट", pre_meal: "खाने से पहले", post_meal: "खाने के बाद", random: "कभी भी" };
-        contextStr = ` (${ctxMap[r.context] || r.context})`;
-      } else if (lang === "hinglish") {
-        const ctxMap: any = { fasting: "Fasting", pre_meal: "Khane se pehle", post_meal: "Khane ke baad", random: "Random" };
-        contextStr = ` (${ctxMap[r.context] || r.context})`;
-      } else {
-        const ctxMap: any = { fasting: "Fasting", pre_meal: "Before meal", post_meal: "After meal", random: "Random" };
-        contextStr = ` (${ctxMap[r.context] || r.context})`;
-      }
-    }
-
-    return `${name} ${r.value} ${unit}${contextStr}`;
-  });
-
-  if (lang === "hindi") {
-    if (formattedItems.length === 1) {
-      const suffix = records[0].parameter === "blood_sugar" ? "सेव हो गई।" : "सेव हो गया।";
-      return `Done 👍 ${formattedItems[0]} ${suffix} (saved successfully.)`;
-    } else {
-      const last = formattedItems.pop();
-      return `Done 👍 ${formattedItems.join(", ")} और ${last} सेव हो गए। (saved successfully.)`;
-    }
-  } else if (lang === "hinglish") {
-    if (formattedItems.length === 1) {
-      const suffix = records[0].parameter === "blood_sugar" ? "save ho gayi." : "save ho gaya.";
-      return `Done 👍 ${formattedItems[0]} ${suffix} (saved successfully.)`;
-    } else {
-      const last = formattedItems.pop();
-      return `Done 👍 ${formattedItems.join(", ")} aur ${last} save ho gaye. (saved successfully.)`;
-    }
-  } else {
-    if (formattedItems.length === 1) {
-      return `Done 👍 ${formattedItems[0]} saved successfully.`;
-    } else {
-      const last = formattedItems.pop();
-      return `Done 👍 ${formattedItems.join(", ")} and ${last} saved successfully.`;
-    }
-  }
-}
-
-export function getUnresolvedClarificationMessage(
-  unresolved: number[],
-  savedSummary: string,
-  lang: string
-): string {
-  const numStr = unresolved.join(", ");
-  if (lang === "hindi") {
-    const prefix = savedSummary ? `${savedSummary} नोट कर लिया 👍 ` : "";
-    return `${prefix}${numStr} किसकी रीडिंग है — शुगर, पल्स या कुछ और?`;
-  } else if (lang === "hinglish") {
-    const prefix = savedSummary ? `${savedSummary} note kar liya 👍 ` : "";
-    return `${prefix}${numStr} kiski reading hai — sugar, pulse ya kuch aur?`;
-  } else {
-    const prefix = savedSummary ? `${savedSummary} saved 👍 ` : "";
-    return `${prefix}What does ${numStr} represent — sugar, pulse, or something else?`;
-  }
+  return currentTurnDetect;
 }
 
 async function processMessageFlow(
@@ -252,7 +198,7 @@ async function processMessageFlow(
   }
 
   // Resolve active language
-  const resolvedLang = resolveLanguageStyle(message, language);
+  const resolvedLang = resolveLanguageStyle(message, language, pendingToResolve?.language);
 
   // Determine the correct WhatsApp Message ID and Message Date for saving
   const origMsgId = pendingToResolve ? pendingToResolve.originalWhatsappMessageId : whatsappMessageId;
@@ -349,18 +295,18 @@ async function processMessageFlow(
       // If there are unresolved numbers, ask about them
       const savedSummary = newlySavedRecords.length > 0
         ? newlySavedRecords.map(r => {
-            const nameObj = FRIENDLY_NAMES[r.parameter] || { english: r.parameter, hindi: r.parameter, hinglish: r.parameter };
-            const name = resolvedLang === "hindi" ? nameObj.hindi : (resolvedLang === "hinglish" ? nameObj.hinglish : nameObj.english);
+            const name = getFriendlyName(r.parameter, resolvedLang);
+            const connector = resolvedLang === "hindi" ? " और " : (resolvedLang === "hinglish" ? " aur " : " and ");
             return `${r.value} ${name}`;
-          }).join(" aur ")
+          }).join(resolvedLang === "hindi" ? " और " : (resolvedLang === "hinglish" ? " aur " : " and "))
         : "";
-      const clarifMsg = getUnresolvedClarificationMessage(unresolvedMeasurements, savedSummary, resolvedLang);
+      const clarifMsg = getUnresolvedMeasurementsClarification(unresolvedMeasurements, savedSummary, resolvedLang);
       await sendWhatsAppMessage(from, clarifMsg);
       console.log(`❓ Clarification requested for unresolved measurements: ${unresolvedMeasurements.join(", ")}`);
     } else {
       // Ask clarification for the first incomplete candidate
       const firstIncomplete = incompleteCandidates[0];
-      const clarifMsg = getClarificationMessage(
+      const clarifMsg = getMissingDetailsClarification(
         firstIncomplete.parameter,
         resolvedLang,
         firstIncomplete.value
@@ -376,22 +322,18 @@ async function processMessageFlow(
     }
 
     if (newlySavedRecords.length > 0) {
-      const successMsg = formatNaturalConfirmation(newlySavedRecords, resolvedLang);
+      const successMsg = formatConfirmation(newlySavedRecords, resolvedLang);
       await sendWhatsAppMessage(from, successMsg);
       console.log("✅ Confirmation sent:", successMsg);
     } else {
       // If nothing saved and no pending clarification, could be IGNORE
       if (action === "IGNORE" || intent === "conversational") {
-        await sendWhatsAppMessage(
-          from,
-          "ℹ️ Message received. Conversational updates are not recorded as health entries."
-        );
+        const ignoreMsg = getConversationalIgnoreMessage(resolvedLang);
+        await sendWhatsAppMessage(from, ignoreMsg);
         console.log("ℹ️ Conversational message ignored for record persistence.");
       } else {
-        await sendWhatsAppMessage(
-          from,
-          "❌ Unable to understand your health record."
-        );
+        const failMsg = getGenericFailureMessage(resolvedLang);
+        await sendWhatsAppMessage(from, failMsg);
         console.log("❌ Invalid Health Record");
       }
     }
@@ -600,11 +542,12 @@ export const receiveMessage = async (req: Request, res: Response) => {
         const pending = getPendingClarification(patient.patientId);
 
         if (pending) {
+          const resolvedPendingLang = (pending.language || "english") as LanguageStyle;
           // Check for cancel command
           if (isCancelCommand(message)) {
             cancelPendingClarification(patient.patientId);
             clearPendingClarification(patient.patientId);
-            await sendWhatsAppMessage(from, "❌ Clarification cancelled.");
+            await sendWhatsAppMessage(from, getCancellationAcknowledgement(resolvedPendingLang));
             if (whatsappMessageId) {
               markMessageAsProcessed(whatsappMessageId);
             }
@@ -650,7 +593,7 @@ export const receiveMessage = async (req: Request, res: Response) => {
                     originalMessageDate: pending.originalMessageDate,
                   });
 
-                  const clarifMsg = getClarificationMessage("blood_sugar", pending.language, val);
+                  const clarifMsg = getMissingDetailsClarification("blood_sugar", resolvedPendingLang, val);
                   await sendWhatsAppMessage(from, clarifMsg);
                   console.log(`[Deterministic Parameter Resolution] Resolved unresolved ${val} as blood_sugar. Asking for glucose context.`);
 
@@ -678,7 +621,7 @@ export const receiveMessage = async (req: Request, res: Response) => {
                     originalMessageDate: pending.originalMessageDate,
                   });
 
-                  const clarifMsg = getClarificationMessage("body_temperature", pending.language, val);
+                  const clarifMsg = getMissingDetailsClarification("body_temperature", resolvedPendingLang, val);
                   await sendWhatsAppMessage(from, clarifMsg);
                   console.log(`[Deterministic Parameter Resolution] Resolved unresolved ${val} as body_temperature. Asking for temperature unit.`);
 
@@ -706,7 +649,7 @@ export const receiveMessage = async (req: Request, res: Response) => {
                     originalMessageDate: pending.originalMessageDate,
                   });
 
-                  const clarifMsg = getClarificationMessage("blood_pressure", pending.language, val);
+                  const clarifMsg = getMissingDetailsClarification("blood_pressure", resolvedPendingLang, val);
                   await sendWhatsAppMessage(from, clarifMsg);
                   console.log(`[Deterministic Parameter Resolution] Resolved unresolved ${val} as blood_pressure (systolic). Asking for diastolic.`);
 
@@ -933,48 +876,6 @@ export function extractTemperatureNumber(msg: string): number | null {
   return null;
 }
 
-export function getClarificationMessage(
-  parameter: string,
-  language: string,
-  candidateValue?: any
-): string {
-  const lang = (language || "english").toLowerCase();
-  const val = candidateValue !== undefined ? candidateValue : "";
-
-  if (parameter === "blood_sugar") {
-    const displayVal = val ? `${val} ` : "";
-    if (lang === "hindi") {
-      return `${displayVal}sugar note kar loon 👍 बस बताइए — यह शुगर रीडिंग खाली पेट, खाने से पहले, खाने के बाद या रैंडम थी?`;
-    } else if (lang === "hinglish") {
-      return `${displayVal}sugar note kar loon 👍 Bas bata dijiye — Ye sugar reading fasting, khane se pehle, khane ke baad, ya random thi?`;
-    } else {
-      return `Got it — sugar is ${val || "noted"}. Was this glucose reading fasting, before a meal, after a meal, or random?`;
-    }
-  }
-
-  if (parameter === "blood_pressure") {
-    if (lang === "hindi") {
-      return `बीपी ${val ? val + " " : ""}नोट कर लिया 👍 दूसरा (डायस्टोलिक) नंबर क्या है? कृपया रक्तचाप का दूसरा (डायस्टोलिक) नंबर भी बताएं, जैसे 140/90।`;
-    } else if (lang === "hinglish") {
-      return `BP ${val ? val + " " : ""}note kar liya 👍 Doosra (diastolic) number kya hai? BP ka doosra (diastolic) number bhi batayein, jaise 140/90.`;
-    } else {
-      return `Got it — BP systolic is ${val || "noted"}. Please provide the second (diastolic) BP number, like 140/90.`;
-    }
-  }
-
-  if (parameter === "body_temperature") {
-    const tVal = val || "38";
-    if (lang === "hindi") {
-      return `तापमान ${tVal} नोट कर लूँ 👍 बस बताइए — °C है या °F? क्या तापमान ${tVal} °C था या °F?`;
-    } else if (lang === "hinglish") {
-      return `Temperature ${tVal} note kar loon 👍 Bas bata dijiye — °C hai ya °F? Temperature ${tVal} °C tha ya °F?`;
-    } else {
-      return `Got it — temperature is ${tVal}. Was the temperature ${tVal} °C or °F?`;
-    }
-  }
-
-  return "Please clarify: missing details.";
-}
 
 function parseMergedHealthRecords(
   pending: PendingClarification,
@@ -1074,8 +975,8 @@ async function saveAndAcknowledgeRecords(
     clearPendingClarification(patient.patientId);
 
     if (savedRecords.length > 0) {
-      const resolvedLang = pending.language || "english";
-      const successMsg = formatNaturalConfirmation(savedRecords, resolvedLang);
+      const resolvedLang = (pending.language || "english") as LanguageStyle;
+      const successMsg = formatConfirmation(savedRecords, resolvedLang);
       await sendWhatsAppMessage(from, successMsg);
       console.log("✅ Confirmation sent:", successMsg);
     }
