@@ -261,7 +261,7 @@ async function runSprint38Tests() {
     assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Hinglish: Saved 1 health record on follow-up");
     assert(MOCK_RECORDS["PAT-101"]?.[0]?.context === "post_meal", "Hinglish: Context mapped is post_meal");
     assert(
-      axiosPostCalls[0]?.data?.text?.body.includes("Sugar 125 mg/dL (Khane ke baad) save ho gayi. (saved successfully.)"),
+      axiosPostCalls[0]?.data?.text?.body.includes("Sugar 125 mg/dL (Khane ke baad) save ho gayi."),
       "Hinglish: Confirmation is natural Hinglish style with parentheses fallback"
     );
 
@@ -277,7 +277,7 @@ async function runSprint38Tests() {
       })
     );
     await receiveMessage(makePayload("917618432290", "BP 140/90 hai", "msg-hing-bp", referenceTimestamp), mockResponse() as any);
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("BP 140/90 mmHg save ho gaya. (saved successfully.)"), "Hinglish: BP confirmation style is correct");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("BP 140/90 mmHg save ho gaya."), "Hinglish: BP confirmation style is correct");
 
     resetState();
     setMockExtractHealthData(async () =>
@@ -290,7 +290,7 @@ async function runSprint38Tests() {
       })
     );
     await receiveMessage(makePayload("917618432290", "oxygen 97 hai", "msg-hing-o2", referenceTimestamp), mockResponse() as any);
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Oxygen 97 % save ho gaya. (saved successfully.)"), "Hinglish: Oxygen confirmation style is correct");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("Oxygen 97 % save ho gaya."), "Hinglish: Oxygen confirmation style is correct");
 
     resetState();
     setMockExtractHealthData(async () =>
@@ -303,7 +303,7 @@ async function runSprint38Tests() {
       })
     );
     await receiveMessage(makePayload("917618432290", "weight 82 kg hai", "msg-hing-weight", referenceTimestamp), mockResponse() as any);
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Weight 82 kg save ho gaya. (saved successfully.)"), "Hinglish: Weight confirmation style is correct");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("Weight 82 kg save ho gaya."), "Hinglish: Weight confirmation style is correct");
 
 
     // =========================================================================
@@ -344,7 +344,7 @@ async function runSprint38Tests() {
     assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Hindi: Saved 1 health record on follow-up");
     assert(MOCK_RECORDS["PAT-101"]?.[0]?.context === "post_meal", "Hindi: Context mapped is post_meal");
     assert(
-      axiosPostCalls[0]?.data?.text?.body.includes("शुगर 125 mg/dL (खाने के बाद) सेव हो गई। (saved successfully.)"),
+      axiosPostCalls[0]?.data?.text?.body.includes("शुगर 125 mg/dL (खाने के बाद) सेव हो गई।"),
       "Hindi: Confirmation is natural Hindi style with parentheses fallback"
     );
 
@@ -378,7 +378,7 @@ async function runSprint38Tests() {
     );
     await receiveMessage(makePayload("917618432290", "after meal", "msg-per-2", referenceTimestamp), mockResponse() as any);
     assert(
-      axiosPostCalls[0]?.data?.text?.body.includes("Sugar 125 mg/dL (Khane ke baad) save ho gayi. (saved successfully.)"),
+      axiosPostCalls[0]?.data?.text?.body.includes("Sugar 125 mg/dL (Khane ke baad) save ho gayi."),
       "Persistence: Saved in established Hinglish style even if follow-up message is a generic English phrase"
     );
 
@@ -430,7 +430,7 @@ async function runSprint38Tests() {
     assert(MOCK_RECORDS["PAT-101"]?.[1]?.parameter === "blood_sugar", "Multi: Second record is blood_sugar");
     assert(MOCK_RECORDS["PAT-101"]?.[1]?.value === 146, "Multi: Glucose value is 146");
     assert(MOCK_RECORDS["PAT-101"]?.[1]?.context === "post_meal", "Multi: Glucose context is post_meal");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Sugar 146 mg/dL (Khane ke baad) save ho gayi. (saved successfully.)"), "Multi: Saved successfully and acknowledged in Hinglish");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("Sugar 146 mg/dL (Khane ke baad) save ho gayi."), "Multi: Saved successfully and acknowledged in Hinglish");
 
 
     // =========================================================================

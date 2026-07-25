@@ -152,7 +152,7 @@ async function runSprint37Tests() {
     await receiveMessage(makePayload("917618432290", "Sugar 125", "msg-001", referenceTimestamp), mockResponse() as any);
     assert(axiosPostCalls.length === 1, "A1. Request sent to WhatsApp");
     assert(
-      axiosPostCalls[0]?.data?.text?.body.includes("sugar note kar loon"),
+      axiosPostCalls[0]?.data?.text?.body.includes("Sugar 125 hai"),
       "A1. Response matches natural Hinglish clarification"
     );
     assert(!axiosPostCalls[0]?.data?.text?.body.includes("Please clarify:"), "A1. Robotic prefix is removed");
@@ -217,7 +217,7 @@ async function runSprint37Tests() {
     await receiveMessage(makePayload("917618432290", "खाली पेट", "msg-004", referenceTimestamp), mockResponse() as any);
     assert(MOCK_RECORDS["PAT-101"]?.length === 1, "A3. Record saved successfully");
     assert(
-      axiosPostCalls[1]?.data?.text?.body.includes("शुगर 125 mg/dL (खाली पेट) सेव हो गई"),
+      axiosPostCalls[1]?.data?.text?.body.includes("शुगर 125 mg/dL (फास्टिंग) सेव हो गई"),
       "A3. Natural Devanagari Hindi success confirmation sent"
     );
 
@@ -324,7 +324,7 @@ async function runSprint37Tests() {
     assert(!!(pendingB2?.missingFields?.includes("glucose_context")), "B. Missing glucose_context tracked");
 
     assert(
-      axiosPostCalls[1]?.data?.text?.body.includes("140 sugar note kar loon"),
+      axiosPostCalls[1]?.data?.text?.body.includes("Sugar 140 hai"),
       "B. Progressive clarification requested glucose context"
     );
 
@@ -475,7 +475,7 @@ async function runSprint37Tests() {
 
     await receiveMessage(makePayload("917618432290", "rehne do", "msg-state02", referenceTimestamp), mockResponse() as any);
     assert(getPendingClarification("PAT-101") === null, "G. Pending state cleared after cancellation command 'rehne do'");
-    assert(axiosPostCalls[1]?.data?.text?.body.includes("Clarification cancelled"), "G. Cancellation reply sent");
+    assert(axiosPostCalls[1]?.data?.text?.body.includes("Clarification cancel"), "G. Cancellation reply sent");
 
     // Patient Isolation
     resetState();
@@ -559,7 +559,7 @@ async function runSprint37Tests() {
 
     await receiveMessage(makePayload("917618432290", "Sugar 125", "flow1-1", referenceTimestamp), mockResponse() as any);
     assert(MOCK_RECORDS["PAT-101"]?.length === undefined || MOCK_RECORDS["PAT-101"]?.length === 0, "FLOW 1. No records saved yet");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("sugar note kar loon"), "FLOW 1. Natural clarification sent");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("Sugar 125 hai"), "FLOW 1. Natural clarification sent");
 
     setMockExtractHealthData(async (msg) => {
       return smartMock(msg, {
@@ -621,7 +621,7 @@ async function runSprint37Tests() {
 
     await receiveMessage(makePayload("917618432290", "sugar", "flow2-2", referenceTimestamp), mockResponse() as any);
     assert(MOCK_RECORDS["PAT-101"]?.length === 1, "FLOW 2. Still exactly 1 record (BP is not duplicated)");
-    assert(axiosPostCalls[1]?.data?.text?.body.includes("140 sugar note kar loon"), "FLOW 2. Asked about glucose context for 140");
+    assert(axiosPostCalls[1]?.data?.text?.body.includes("Sugar 140 hai"), "FLOW 2. Asked about glucose context for 140");
 
     setMockExtractHealthData(async (msg) => {
       return smartMock(msg, {

@@ -66,18 +66,18 @@ export function formatConfirmation(records: any[], lang: LanguageStyle): string 
   if (lang === "hindi") {
     if (formattedItems.length === 1) {
       const suffix = records[0].parameter === "blood_sugar" ? "सेव हो गई।" : "सेव हो गया।";
-      return `Done 👍 ${formattedItems[0]} ${suffix} (saved successfully.)`;
+      return `Done 👍 ${formattedItems[0]} ${suffix}`;
     } else {
       const last = formattedItems.pop();
-      return `Done 👍 ${formattedItems.join(", ")} और ${last} सेव हो गए। (saved successfully.)`;
+      return `Done 👍 ${formattedItems.join(", ")} और ${last} सेव हो गए।`;
     }
   } else if (lang === "hinglish") {
     if (formattedItems.length === 1) {
       const suffix = records[0].parameter === "blood_sugar" ? "save ho gayi." : "save ho gaya.";
-      return `Done 👍 ${formattedItems[0]} ${suffix} (saved successfully.)`;
+      return `Done 👍 ${formattedItems[0]} ${suffix}`;
     } else {
       const last = formattedItems.pop();
-      return `Done 👍 ${formattedItems.join(", ")} aur ${last} save ho gaye. (saved successfully.)`;
+      return `Done 👍 ${formattedItems.join(", ")} aur ${last} save ho gaye.`;
     }
   } else {
     if (formattedItems.length === 1) {
