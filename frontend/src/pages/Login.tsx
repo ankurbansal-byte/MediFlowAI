@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import api from "../api/axios";
+import api, { setAuthSession } from "../api/axios";
 import "./Login.css";
 
 interface LoginProps {
@@ -99,9 +99,7 @@ const Login: React.FC<LoginProps> = ({
           return;
         }
 
-        localStorage.setItem("mediflow_token", token);
-        localStorage.setItem("mediflow_refresh_token", refreshToken || "");
-        localStorage.setItem("mediflow_user", JSON.stringify(user));
+        setAuthSession(token, refreshToken || "", user);
 
         if (docRememberMe) {
           localStorage.setItem("mediflow_remembered_username_doctor", docUsername.trim());
@@ -149,9 +147,7 @@ const Login: React.FC<LoginProps> = ({
           return;
         }
 
-        localStorage.setItem("mediflow_token", token);
-        localStorage.setItem("mediflow_refresh_token", refreshToken || "");
-        localStorage.setItem("mediflow_user", JSON.stringify(user));
+        setAuthSession(token, refreshToken || "", user);
 
         if (patRememberMe) {
           localStorage.setItem("mediflow_remembered_username_patient", patUsername.trim());

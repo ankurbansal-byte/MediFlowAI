@@ -6,15 +6,29 @@ const api = axios.create({
 
 // Flag to track whether we are currently refreshing the access token
 let isRefreshing = false;
-let refreshSubscribers: ((token: string) => void)[] = [];
+let refreshSubscribers: ((token: string | null) => void)[] = [];
 
-const subscribeTokenRefresh = (callback: (token: string) => void) => {
+const subscribeTokenRefresh = (callback: (token: string | null) => void) => {
   refreshSubscribers.push(callback);
 };
 
-const onRefreshed = (token: string) => {
-  refreshSubscribers.map((callback) => callback(token));
+const onRefreshed = (token: string | null) => {
+  refreshSubscribers.forEach((callback) => callback(token));
   refreshSubscribers = [];
+};
+
+export const setAuthSession = (token: string, refreshToken: string, user: any) => {
+  localStorage.setItem("mediflow_token", token);
+  localStorage.setItem("mediflow_refresh_token", refreshToken);
+  localStorage.setItem("mediflow_user", JSON.stringify(user));
+  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+};
+
+export const clearAuthSession = () => {
+  localStorage.removeItem("mediflow_token");
+  localStorage.removeItem("mediflow_refresh_token");
+  localStorage.removeItem("mediflow_user");
+  delete api.defaults.headers.common["Authorization"];
 };
 
 api.interceptors.request.use(
@@ -22,6 +36,8 @@ api.interceptors.request.use(
     const token = localStorage.getItem("mediflow_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      delete config.headers.Authorization;
     }
     return config;
   },
@@ -42,10 +58,14 @@ api.interceptors.response.use(
     if (response && response.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         // If refreshing is already in progress, wait for it to complete
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           subscribeTokenRefresh((newToken) => {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            resolve(api(originalRequest));
+            if (newToken) {
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              resolve(api(originalRequest));
+            } else {
+              reject(error);
+            }
           });
         });
       }
@@ -83,10 +103,8 @@ api.interceptors.response.use(
         }
       } catch (refreshError) {
         console.error("Token refresh failed:", refreshError);
-        // Clear tokens and force logout
-        localStorage.removeItem("mediflow_token");
-        localStorage.removeItem("mediflow_refresh_token");
-        localStorage.removeItem("mediflow_user");
+        onRefreshed(null); // reject all pending requests in queue
+        clearAuthSession();
 
         // Trigger page refresh to reset app state if needed or redirect
         window.location.reload();
