@@ -88,6 +88,19 @@ export function parseGlucoseContext(msg: string): GlucoseContext | null {
  * Local deterministic extraction function to recognize explicit vitals in English, Hindi and Hinglish.
  * Serves as fallback when the AI provider fails.
  */
+export function isCorrectionMessage(msg: string): boolean {
+  const clean = msg.toLowerCase().trim();
+  const keywords = [
+    "nahi", "nahin", "galat", "wrong", "mistake", "sorry", "instead of", "correct",
+    "नहीं", "गलत", "सुधार", "बदले", "correction", "edit", "change"
+  ];
+  const hasKeyword = keywords.some(kw => clean.includes(kw));
+  const hasNumbers = /\b\d+\b/.test(clean);
+  const comparisonPattern = /\b\d+\s*(?:nahi|nahin|instead\s*of|not|गलत|नहीं)\s*\d+\b/i.test(clean);
+
+  return hasKeyword && (hasNumbers || comparisonPattern);
+}
+
 export function deterministicExtract(message: string): any {
   const clean = message.toLowerCase().trim();
   const lang = detectLanguageStyle(message);
@@ -242,15 +255,16 @@ export function deterministicExtract(message: string): any {
   }
 
   if (tempValue !== null) {
-    if (clean.includes("°c") || clean.includes(" c ") || clean.endsWith("c") || clean.includes("celsius") || clean.includes("celcius")) {
+    const hasExplicitC = /\b(?:°?c|celsius|celcius)\b/i.test(cleanedText) || clean.includes("°c") || clean.includes(" c ") || clean.endsWith("c") || clean.includes("celsius") || clean.includes("celcius") || clean.includes("सेल्सियस");
+    const hasExplicitF = /\b(?:°?f|fahrenheit|farenheit)\b/i.test(cleanedText) || clean.includes("°f") || clean.includes(" f ") || clean.endsWith("f") || clean.includes("fahrenheit") || clean.includes("farenheit") || clean.includes("फ़ारेनहाइट") || clean.includes("फारेनहाइट");
+
+    if (hasExplicitC) {
       tempUnit = "°C";
-    } else if (clean.includes("°f") || clean.includes(" f ") || clean.endsWith("f") || clean.includes("fahrenheit") || clean.includes("farenheit")) {
+    } else if (hasExplicitF) {
       tempUnit = "°F";
     } else {
-      if (tempValue > 50 && tempValue <= 110) {
+      if (tempValue === 98.6) {
         tempUnit = "°F";
-      } else if (tempValue >= 30 && tempValue <= 45) {
-        tempUnit = "°C";
       } else {
         tempUnit = "unknown";
       }
@@ -352,6 +366,97 @@ export function deterministicExtract(message: string): any {
         confidence: 0.99
       });
     }
+  }
+
+  // 7. Respiratory Rate Check
+  const rrRegexes = [
+    /(?:respiratory\s*rate|breathing\s*rate|rr|सांस\s*की\s*दर)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{1,2})(?:\/min)?\b/i,
+    /(\d{1,2})\s*(?:\/min)?\s*(?:respiratory\s*rate|breathing\s*rate|rr|सांस\s*की\s*दर)\b/i
+  ];
+  let rrValue: number | null = null;
+  const isRrSymptomOnly = clean.includes("saans lene mein") || clean.includes("saans phool") || clean.includes("breathing difficulty") || clean.includes("shortness of breath");
+  if (!isRrSymptomOnly) {
+    for (const rx of rrRegexes) {
+      const match = cleanedText.match(rx);
+      if (match) {
+        const val = parseInt(match[1], 10);
+        if (val >= 10 && val <= 40) {
+          rrValue = val;
+          break;
+        }
+      }
+    }
+  }
+  if (rrValue !== null) {
+    candidateRecords.push({
+      parameter: "respiratory_rate",
+      value: rrValue,
+      unit: "breaths/min",
+      recordedAt: null,
+      confidence: 0.99
+    });
+  }
+
+  // 8. Height Check
+  let heightValue: number | null = null;
+  const feetInchesRegexes = [
+    /\b(\d+)\s*'\s*(\d+)(?:"|in|inch|inches)?\b/i,
+    /\b(\d+)\s*(?:feet|foot|ft|फ़ीट|फुट)\s*(\d+)\s*(?:inches|inch|in|इंच)?\b/iu
+  ];
+  for (const rx of feetInchesRegexes) {
+    const match = cleanedText.match(rx);
+    if (match) {
+      const ft = parseInt(match[1], 10);
+      const inch = parseInt(match[2], 10);
+      if (ft >= 3 && ft <= 8 && inch >= 0 && inch < 12) {
+        heightValue = parseFloat(((ft * 12 + inch) * 2.54).toFixed(1));
+        break;
+      }
+    }
+  }
+
+  if (heightValue === null) {
+    const cmRegexes = [
+      /(?:height|lambai|kad|हाइट|लंबाई|कद)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d{2,3})\s*(?:cm|seme|सेमी)?\b/iu,
+      /(\d{2,3})\s*(?:cm|seme|सेमी)?\s*(?:height|lambai|kad|हाइट|लंबाई|कद)\b/iu
+    ];
+    for (const rx of cmRegexes) {
+      const match = cleanedText.match(rx);
+      if (match) {
+        const val = parseInt(match[1], 10);
+        if (val >= 50 && val <= 250) {
+          heightValue = val;
+          break;
+        }
+      }
+    }
+  }
+
+  if (heightValue === null) {
+    const mRegexes = [
+      /(?:height|lambai|kad|हाइट|लंबाई|कद)\s*(?:is|was|hai|thi|tha|=|:)?\s*(\d\.\d{1,2})\s*(?:m|meters|meter|मीटर)\b/iu,
+      /(\d\.\d{1,2})\s*(?:m|meters|meter|मीटर)\s*(?:height|lambai|kad|हाइट|लंबाई|कद)\b/iu
+    ];
+    for (const rx of mRegexes) {
+      const match = cleanedText.match(rx);
+      if (match) {
+        const val = parseFloat(match[1]);
+        if (val >= 0.5 && val <= 2.5) {
+          heightValue = parseFloat((val * 100).toFixed(1));
+          break;
+        }
+      }
+    }
+  }
+
+  if (heightValue !== null) {
+    candidateRecords.push({
+      parameter: "height",
+      value: heightValue,
+      unit: "cm",
+      recordedAt: null,
+      confidence: 0.99
+    });
   }
 
   if (candidateRecords.length > 0) {
@@ -723,6 +828,11 @@ export function validateCandidateRecord(
       console.warn(`[Validation Error] Blood pressure values must be positive.`);
       return false;
     }
+    // Check ranges
+    if (record.systolic < 70 || record.systolic > 250 || record.diastolic < 40 || record.diastolic > 150) {
+      console.warn(`[Validation Error] Implausible blood pressure range: ${record.systolic}/${record.diastolic}`);
+      return false;
+    }
     // Check fabricated values
     const bpValStr = `${record.systolic}/${record.diastolic}`;
     if (!isValueSupportedByMessage(originalMessage, bpValStr, record.parameter)) {
@@ -739,6 +849,48 @@ export function validateCandidateRecord(
       console.warn(`[Validation Error] Numeric value for ${record.parameter} must be a positive number.`);
       return false;
     }
+
+    // Strict range validation for the remaining 7 parameters
+    if (record.parameter === "blood_sugar") {
+      const isMmol = record.unit === "mmol/L";
+      const min = isMmol ? 1.6 : 30;
+      const max = isMmol ? 27.8 : 500;
+      if (numVal < min || numVal > max) {
+        console.warn(`[Validation Error] Implausible blood glucose range: ${numVal} ${record.unit}`);
+        return false;
+      }
+    } else if (record.parameter === "heart_rate") {
+      if (numVal < 30 || numVal > 250) {
+        console.warn(`[Validation Error] Implausible heart rate range: ${numVal}`);
+        return false;
+      }
+    } else if (record.parameter === "oxygen_saturation") {
+      if (numVal < 50 || numVal > 100) {
+        console.warn(`[Validation Error] Implausible oxygen saturation range: ${numVal}`);
+        return false;
+      }
+    } else if (record.parameter === "body_temperature") {
+      if (numVal < 30 || numVal > 45) {
+        console.warn(`[Validation Error] Implausible body temperature range: ${numVal}`);
+        return false;
+      }
+    } else if (record.parameter === "weight") {
+      if (numVal < 10 || numVal > 300) {
+        console.warn(`[Validation Error] Implausible weight range: ${numVal}`);
+        return false;
+      }
+    } else if (record.parameter === "respiratory_rate") {
+      if (numVal < 10 || numVal > 40) {
+        console.warn(`[Validation Error] Implausible respiratory rate range: ${numVal}`);
+        return false;
+      }
+    } else if (record.parameter === "height") {
+      if (numVal < 50 || numVal > 250) {
+        console.warn(`[Validation Error] Implausible height range: ${numVal}`);
+        return false;
+      }
+    }
+
     // Check fabricated value
     if (!isValueSupportedByMessage(originalMessage, record.value, record.parameter)) {
       console.warn(`[Validation Error] Fabricated value rejected for ${record.parameter}: ${record.value}`);

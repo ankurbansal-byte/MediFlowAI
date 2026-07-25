@@ -8,6 +8,7 @@ import {
   deterministicExtract,
   parseGlucoseContext,
   detectLanguageStyle,
+  isCorrectionMessage,
 } from "../utils/healthRecordParser";
 import axios from "axios";
 import fs from "fs";
@@ -538,6 +539,25 @@ export const receiveMessage = async (req: Request, res: Response) => {
         }
 
         console.log(`🔍 [Webhook Diagnostic] [Phase E: Patient Found] PatientId: ${patient.patientId}, Name: ${patient.fullName}`);
+
+        // Temporary Correction Safeguard
+        if (isCorrectionMessage(message)) {
+          console.log("⚠️ Correction/Edit message detected, triggering safeguard.");
+          const style = detectLanguageStyle(message);
+          let replyMsg = "";
+          if (style === "hindi") {
+            replyMsg = "हेल्थ रिकॉर्ड को बदलना या सुधारना इस संस्करण में समर्थित नहीं है। कृपया एक नया सही संदेश भेजें।";
+          } else if (style === "hinglish") {
+            replyMsg = "Health records correct ya edit karna is version mein supported nahi hai. Kripya ek naya correct message bhejein.";
+          } else {
+            replyMsg = "Correction or editing of health records is not supported in this version. Please send a new, correct reading.";
+          }
+          await sendWhatsAppMessage(from, replyMsg);
+          if (whatsappMessageId) {
+            markMessageAsProcessed(whatsappMessageId);
+          }
+          return res.sendStatus(200);
+        }
 
         const pending = getPendingClarification(patient.patientId);
 
