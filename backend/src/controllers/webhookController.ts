@@ -205,7 +205,30 @@ async function processMessageFlow(
 
   // Find unresolved measurements using deterministic rules combined with AI
   const detUnresolved = findUnresolvedPlausibleNumbers(message, candidateRecords);
-  const unresolvedMeasurements = Array.from(new Set([...aiUnresolved, ...detUnresolved]));
+  let unresolvedMeasurements = Array.from(new Set([...aiUnresolved, ...detUnresolved]));
+
+  // Route promotion: If we have unresolved measurements and a detected parameter in the message
+  // but no candidate record for that parameter, promote the unresolved measurement.
+  const detectedParam = detectParameterFromMessage(message);
+  if (detectedParam && unresolvedMeasurements.length > 0) {
+    const hasParamRecord = candidateRecords.some(r => r.parameter === detectedParam);
+    if (!hasParamRecord) {
+      const valToPromote = unresolvedMeasurements[0];
+      console.log(`[Parser] Promoting unresolved measurement ${valToPromote} to candidate record of detected parameter: ${detectedParam}`);
+
+      const promotedCandidate: CandidateRecord = {
+        parameter: detectedParam,
+        value: valToPromote,
+        unit: PARAMETER_REGISTRY[detectedParam]?.defaultUnit || "",
+        confidence: 0.99,
+        recordedAt: null,
+      };
+
+      candidateRecords.push(promotedCandidate);
+      // Remove from unresolved measurements
+      unresolvedMeasurements = unresolvedMeasurements.filter(v => v !== valToPromote);
+    }
+  }
 
   const completeCandidates: CandidateRecord[] = [];
   const incompleteCandidates: CandidateRecord[] = [];
@@ -1359,29 +1382,72 @@ async function saveAndAcknowledgeRecords(
 }
 
 async function sendWhatsAppMessage(to: string, message: string) {
-  console.log(`🔍 [Webhook Diagnostic] [Phase H: Outbound WhatsApp Attempt] To: ${to}`);
-  try {
-    await axios.post(
-      `https://graph.facebook.com/v23.0/${process.env.PHONE_NUMBER_ID}/messages`,
-      {
-        messaging_product: "whatsapp",
-        to,
-        text: {
-          body: message,
+  const maxAttempts = 3;
+  let attempt = 0;
+  let success = false;
+  let lastError: any = null;
+
+  while (attempt < maxAttempts) {
+    attempt++;
+    if (attempt === 1) {
+      console.log(`🔍 [Webhook Diagnostic] [Phase H: Outbound WhatsApp Attempt] To: ${to}`);
+    } else {
+      console.log(`🔍 [Webhook Diagnostic] [Phase H: Outbound WhatsApp Retry Attempt ${attempt - 1}] To: ${to}`);
+    }
+
+    try {
+      await axios.post(
+        `https://graph.facebook.com/v23.0/${process.env.PHONE_NUMBER_ID}/messages`,
+        {
+          messaging_product: "whatsapp",
+          to,
+          text: {
+            body: message,
+          },
         },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        timeout: 10000, // 10 seconds timeout
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          timeout: 10000, // 10 seconds timeout
+        }
+      );
+      console.log(`🔍 [Webhook Diagnostic] [Phase H: Outbound WhatsApp Succeeded] To: ${to} (Attempt ${attempt})`);
+      success = true;
+      break;
+    } catch (err: any) {
+      lastError = err;
+      const status = err.response?.status;
+      const isTimeout = err.code === "ECONNABORTED" || err.message?.includes("timeout");
+      const isNetworkError = !err.response;
+      const isRetryable5xx = status >= 500 && status <= 599;
+      const isRateLimit = status === 429;
+
+      const isTransient = isTimeout || isNetworkError || isRetryable5xx || isRateLimit;
+
+      const safeErrorMessage = err.message || err;
+      console.error(`Failed to send WhatsApp message (Attempt ${attempt}/${maxAttempts}):`, safeErrorMessage);
+
+      if (!isTransient) {
+        console.log(`🔍 [Webhook Diagnostic] [Phase H: Outbound WhatsApp Failed Permanent] Status: ${status || "unknown"}. No retry.`);
+        break;
       }
-    );
-    console.log(`🔍 [Webhook Diagnostic] [Phase H: Outbound WhatsApp Succeeded] To: ${to}`);
-  } catch (err: any) {
-    console.error("Failed to send WhatsApp message:", err?.message || err);
-    console.log(`🔍 [Webhook Diagnostic] [Phase H: Outbound WhatsApp Failed] Error: ${err?.message || err}`);
+
+      if (attempt < maxAttempts) {
+        const backoffMs = attempt * 500; // 500ms, then 1000ms
+        console.log(`🔍 [Webhook Diagnostic] [Phase H: Outbound WhatsApp Transient Failure] Status: ${status || "timeout/network"}. Retrying in ${backoffMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+      }
+    }
+  }
+
+  if (success) {
+    console.log(`🔍 [Webhook Diagnostic] [Phase H: Outbound WhatsApp Final Success] To: ${to}`);
+  } else {
+    const status = lastError?.response?.status;
+    const safeErrorMessage = lastError?.message || lastError;
+    console.log(`🔍 [Webhook Diagnostic] [Phase H: Outbound WhatsApp Final Failure] To: ${to}, Error: ${safeErrorMessage}, Status: ${status || "unknown"}`);
   }
 }
 
