@@ -211,6 +211,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
       case "trends":
         return (
           <TrendsView
+            patientId={effectivePatientId}
             trends={trends}
             selectedParameter={selectedParameter}
             setSelectedParameter={setSelectedParameter}

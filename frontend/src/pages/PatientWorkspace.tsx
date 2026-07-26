@@ -107,11 +107,12 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
   const [patientTimeline, setPatientTimeline] = useState<TimelineItem[]>([]);
   const [patientVisits, setPatientVisits] = useState<EncounterData[]>([]);
   const [trendRecords, setTrendRecords] = useState<WorkspaceTrendRecord[]>([]);
+  const [labObservations, setLabObservations] = useState<any[]>([]);
   const [selectedParameter, setSelectedParameter] = useState<"blood_sugar" | "blood_pressure" | "weight" | "heart_rate" | "body_temperature">("blood_sugar");
   const [glucoseContextFilter, setGlucoseContextFilter] = useState<string>("all");
   const [trendPeriod, setTrendPeriod] = useState<7 | 30 | 90 | 365 | 36500>(30);
   const [isTrendLoading, setIsTrendLoading] = useState(false);
-  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"overview" | "timeline" | "trends" | "insights" | "visits">("overview");
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"overview" | "timeline" | "trends" | "insights" | "visits" | "labs">("overview");
 
   // Form input states (for optional consultation)
   const [chiefComplaint, setChiefComplaint] = useState("");
@@ -189,6 +190,16 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
         const visitsRes = await api.get(`/encounter/patient/${patientId}`);
         if (visitsRes.data.success) {
           setPatientVisits(visitsRes.data.encounters || []);
+        }
+
+        // Fetch lab observations
+        try {
+          const labsRes = await api.get(`/patient/lab-observations/${patientId}`);
+          if (labsRes.data.success) {
+            setLabObservations(labsRes.data.observations || []);
+          }
+        } catch (labsErr) {
+          console.error("Error fetching lab observations:", labsErr);
         }
 
         // 5. Fetch encounter details if encounterId is provided
@@ -819,7 +830,8 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
               { id: "timeline", label: "Historical Timeline" },
               { id: "trends", label: "Trends" },
               { id: "insights", label: "AI Insights" },
-              { id: "visits", label: "Visit History" }
+              { id: "visits", label: "Visit History" },
+              { id: "labs", label: "Lab Results" }
             ] as const).map((tab) => {
               const isActive = activeWorkspaceTab === tab.id;
               return (
@@ -1380,6 +1392,56 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                               textTransform: "uppercase"
                             }}>{v.status}</span>
                           </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+
+            {activeWorkspaceTab === "labs" && (
+              <div style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "14px", padding: "24px", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+                <h3 style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.1rem", fontWeight: 800, borderBottom: "1px solid #f1f5f9", paddingBottom: "12px" }}>
+                  🧪 Laboratory Observations (V1)
+                </h3>
+                {labObservations.length === 0 ? (
+                  <p style={{ margin: 0, color: "var(--muted)", fontSize: "0.88rem" }}>No lab observations recorded.</p>
+                ) : (
+                  <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Test Name</th>
+                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Result</th>
+                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Unit</th>
+                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Reference Range</th>
+                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Flag</th>
+                        <th style={{ padding: "10px 6px", fontWeight: 750, color: "var(--muted)", textTransform: "uppercase", fontSize: "0.72rem" }}>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {labObservations.map((obs, idx) => (
+                        <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          <td style={{ padding: "12px 6px", fontWeight: 800, color: "var(--navy)" }}>{obs.testName}</td>
+                          <td style={{ padding: "12px 6px", fontWeight: 700 }}>{obs.value}</td>
+                          <td style={{ padding: "12px 6px", color: "var(--muted)" }}>{obs.unit}</td>
+                          <td style={{ padding: "12px 6px", color: "var(--muted)" }}>{obs.referenceRangeText || "—"}</td>
+                          <td style={{ padding: "12px 6px" }}>
+                            {obs.flag ? (
+                              <span style={{
+                                display: "inline-block",
+                                background: obs.flag.toLowerCase() === "high" || obs.flag.toLowerCase() === "low" ? "#fef2f2" : "#f0fdf4",
+                                color: obs.flag.toLowerCase() === "high" || obs.flag.toLowerCase() === "low" ? "#ef4444" : "#166534",
+                                border: obs.flag.toLowerCase() === "high" || obs.flag.toLowerCase() === "low" ? "1px solid #fca5a5" : "1px solid #bbf7d0",
+                                borderRadius: "8px",
+                                padding: "2px 8px",
+                                fontSize: "0.75rem",
+                                fontWeight: 750,
+                                textTransform: "uppercase"
+                              }}>{obs.flag}</span>
+                            ) : "—"}
+                          </td>
+                          <td style={{ padding: "12px 6px" }}>{new Date(obs.specimenDate || obs.createdAt).toLocaleDateString()}</td>
                         </tr>
                       ))}
                     </tbody>
