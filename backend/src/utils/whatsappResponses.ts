@@ -91,6 +91,71 @@ export function formatConfirmation(records: any[], lang: LanguageStyle): string 
 }
 
 /**
+ * Localized voice note could not be understood/transcribed response.
+ */
+export function getVoiceNotUnderstoodMessage(lang: LanguageStyle): string {
+  if (lang === "hindi") {
+    return "वॉइस नोट समझ में नहीं आया। कृपया दोबारा स्पष्ट वॉइस नोट भेजें या रीडिंग टाइप कर दें।";
+  } else if (lang === "hinglish") {
+    return "Voice note samajh nahi aaya. Kripya dobara clear voice note bhejein ya reading type kar dein.";
+  } else {
+    return "Sorry, I couldn't understand the voice note. Please send a clearer voice note or type your reading.";
+  }
+}
+
+/**
+ * Localized unsupported audio format response.
+ */
+export function getUnsupportedAudioMessage(lang: LanguageStyle): string {
+  if (lang === "hindi") {
+    return "यह ऑडियो फ़ॉर्मेट समर्थित नहीं है। कृपया मानक व्हाट्सएप वॉइस नोट भेजें।";
+  } else if (lang === "hinglish") {
+    return "Yeh audio format supported nahi hai. Kripya standard WhatsApp voice note bhejein.";
+  } else {
+    return "Unsupported audio format. Please send a standard WhatsApp voice note.";
+  }
+}
+
+/**
+ * Localized audio too large/long response.
+ */
+export function getAudioTooLargeMessage(lang: LanguageStyle): string {
+  if (lang === "hindi") {
+    return "वॉइस नोट बहुत बड़ा या लंबा है। कृपया 5MB से छोटा वॉइस नोट भेजें।";
+  } else if (lang === "hinglish") {
+    return "Voice note bahut bada ya lamba hai. Kripya 5MB se chhota voice note bhejein.";
+  } else {
+    return "The voice note is too large or too long. Please send a shorter voice note under 5MB.";
+  }
+}
+
+/**
+ * Localized temporary transcription failure response.
+ */
+export function getTranscriptionFailureMessage(lang: LanguageStyle): string {
+  if (lang === "hindi") {
+    return "ट्रांसक्रिप्शन सेवा अस्थायी रूप से अनुपलब्ध है। कृपया बाद में प्रयास करें या रीडिंग टाइप कर दें।";
+  } else if (lang === "hinglish") {
+    return "Transcription service abhi available nahi hai. Kripya thodi der baad try karein ya reading type kar dein.";
+  } else {
+    return "Transcription service is temporarily unavailable. Please try again later or type your reading.";
+  }
+}
+
+/**
+ * Localized empty voice note/transcript response.
+ */
+export function getEmptyVoiceTranscriptMessage(lang: LanguageStyle): string {
+  if (lang === "hindi") {
+    return "वॉइस नोट खाली या मौन लग रहा है। कृपया स्पष्ट आवाज़ में दोबारा भेजें।";
+  } else if (lang === "hinglish") {
+    return "Voice note khali ya silent lag raha hai. Kripya clear aawaz mein dobara bhejein.";
+  } else {
+    return "The voice note seems to be empty or silent. Please speak clearly.";
+  }
+}
+
+/**
  * Returns a localized message asking for glucose context clarification.
  */
 export function getGlucoseContextClarification(lang: LanguageStyle, value?: any): string {

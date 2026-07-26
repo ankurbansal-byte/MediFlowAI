@@ -1,4 +1,4 @@
-import { speechToText } from "../services/groqSpeechService";
+import { handleVoiceNoteIngestion, VoiceError } from "../services/groqSpeechService";
 import HealthRecord from "../models/HealthRecord";
 import {
   validateCandidateRecord,
@@ -93,6 +93,11 @@ import {
   formatLatestReading,
   formatNoRecords,
   formatTodaysReadings,
+  getVoiceNotUnderstoodMessage,
+  getUnsupportedAudioMessage,
+  getAudioTooLargeMessage,
+  getTranscriptionFailureMessage,
+  getEmptyVoiceTranscriptMessage,
 } from "../utils/whatsappResponses";
 
 // Resolve language style with fallback to detection, prioritizing pending state's language if available
@@ -813,6 +818,38 @@ async function handlePendingCorrectionFollowUp(
   }
 }
 
+async function handleVoiceFailureResponse(err: any, from: string, patient: any) {
+  const pending = getPendingClarification(patient.patientId);
+  const lang = (pending?.language || "english") as LanguageStyle;
+
+  let responseText = "";
+  if (err instanceof VoiceError) {
+    switch (err.code) {
+      case "UNSUPPORTED_AUDIO":
+        responseText = getUnsupportedAudioMessage(lang);
+        break;
+      case "AUDIO_TOO_LARGE":
+        responseText = getAudioTooLargeMessage(lang);
+        break;
+      case "EMPTY_TRANSCRIPT":
+        responseText = getEmptyVoiceTranscriptMessage(lang);
+        break;
+      case "CONFIG_MISSING":
+      case "TRANSCRIPTION_FAILED":
+        responseText = getTranscriptionFailureMessage(lang);
+        break;
+      case "DOWNLOAD_FAILED":
+      default:
+        responseText = getVoiceNotUnderstoodMessage(lang);
+        break;
+    }
+  } else {
+    responseText = getVoiceNotUnderstoodMessage(lang);
+  }
+
+  await sendWhatsAppMessage(from, responseText);
+}
+
 // Receive WhatsApp Messages
 export const receiveMessage = async (req: Request, res: Response) => {
   console.log(`🔍 [Webhook Diagnostic] [Phase A: Request Received] Path: ${req.originalUrl}, Method: ${req.method}`);
@@ -904,20 +941,31 @@ export const receiveMessage = async (req: Request, res: Response) => {
     }
 
     try {
+      // Look up enrolled patient early to provide localized failure responses
+      console.log(`🔍 [Webhook Diagnostic] [Phase E: Patient Lookup] Phone: ${from}`);
+      const patient = await findEnrolledPatientByWhatsApp(from);
+      if (!patient) {
+        console.log(`🔍 [Webhook Diagnostic] [Phase E: Patient Lookup Failed] No patient linked to WhatsApp: ${from}`);
+        return res.sendStatus(200);
+      }
+      console.log(`🔍 [Webhook Diagnostic] [Phase E: Patient Found] PatientId: ${patient.patientId}, Name: ${patient.fullName}`);
+
       // ==========================
-      // Voice Message
+      // Voice Message Ingestion
       // ==========================
       if (messageType === "audio" && audioId && from) {
         console.log("🎤 Voice Message Received");
-
-        const filePath = await downloadWhatsAppAudio(audioId);
-
-        console.log("📁 Audio Saved:", filePath);
-
-        message = await speechToText(filePath);
-
-        console.log("📝 Transcript:");
-        console.log(message);
+        try {
+          message = await handleVoiceNoteIngestion(audioId, incomingMessage?.audio?.mime_type);
+          console.log(`📝 Transcript: "${message}"`);
+        } catch (err: any) {
+          console.error("❌ Voice Note Ingestion Failed:", err.message || err);
+          await handleVoiceFailureResponse(err, from, patient);
+          if (whatsappMessageId) {
+            markMessageAsProcessed(whatsappMessageId);
+          }
+          return res.sendStatus(200);
+        }
       }
 
       // ==========================
@@ -925,17 +973,6 @@ export const receiveMessage = async (req: Request, res: Response) => {
       // ==========================
       if (message && from) {
         console.log("👤 User:", message);
-
-        console.log(`🔍 [Webhook Diagnostic] [Phase E: Patient Lookup] Phone: ${from}`);
-        // Resolve WhatsApp sender to an enrolled patient user (fail safely if not found or ambiguous)
-        const patient = await findEnrolledPatientByWhatsApp(from);
-        if (!patient) {
-          console.log(`🔍 [Webhook Diagnostic] [Phase E: Patient Lookup Failed] No patient linked to WhatsApp: ${from}`);
-          // Safe fail. Preserve normal webhook acknowledgement behavior (200 OK)
-          return res.sendStatus(200);
-        }
-
-        console.log(`🔍 [Webhook Diagnostic] [Phase E: Patient Found] PatientId: ${patient.patientId}, Name: ${patient.fullName}`);
 
         // Clinical Safety Early Emergency Warning Detection
         const isEmergency = detectEmergencyUrgency(message);
@@ -968,7 +1005,7 @@ export const receiveMessage = async (req: Request, res: Response) => {
           if (pending) {
             clearPendingClarification(patient.patientId);
           }
-          await handleQueryFlow(message, patient, from, whatsappMessageId, messageDate, queryPattern);
+          await handleQueryFlow(message, patient, from, whatsappMessageId, messageDate, queryPattern as { type: "latest" | "today"; parameter?: string });
           if (savedPending) {
             setPendingClarification(patient.patientId, savedPending);
           }
@@ -1653,46 +1690,3 @@ async function sendWhatsAppMessage(to: string, message: string) {
   }
 }
 
-// =========================
-// Download WhatsApp Audio
-// =========================
-async function downloadWhatsAppAudio(mediaId: string) {
-  console.log("📥 Downloading Media ID:", mediaId);
-  // Step 1 - Get Media URL
-  const mediaResponse = await axios.get(
-    `https://graph.facebook.com/v23.0/${mediaId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-      },
-      timeout: 15000, // 15 seconds timeout
-    }
-  );
-
-  const mediaUrl = mediaResponse.data.url;
-
-  // Step 2 - Download Audio
-  const audioResponse = await axios.get(mediaUrl, {
-    responseType: "arraybuffer",
-    headers: {
-      Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-    },
-    timeout: 15000, // 15 seconds timeout
-  });
-
-  // Step 3 - Create uploads folder if not exists
-  const folder = path.join(process.cwd(), "uploads");
-
-  if (!fs.existsSync(folder)) {
-    fs.mkdirSync(folder);
-  }
-
-  // Step 4 - Save Audio
-  const filePath = path.join(folder, `${mediaId}.ogg`);
-
-  fs.writeFileSync(filePath, audioResponse.data);
-
-  console.log("🎤 Voice Downloaded:", filePath);
-
-  return filePath;
-}

@@ -86,7 +86,7 @@ export function detectQueryPattern(msg: string): { type: "latest" | "today" | nu
   // we require actual query keywords or question markers to classify it as a read-back query.
   const queryKeywords = [
     "kitni", "kitna", "kya", "bheji", "bheja", "what", "did", "how", "?", "show", "tell", "read-back", "read back",
-    "batao", "bataiye", "bata", "dikhao", "dikha"
+    "batao", "bataiye", "bata", "dikhao", "dikha", "readings", "reading"
   ];
   const hasQueryKeyword = queryKeywords.some(kw => {
     if (kw === "?") return clean.includes("?");
