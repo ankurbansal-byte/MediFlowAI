@@ -504,7 +504,7 @@ async function runSprint39Tests() {
     resetState();
     await receiveMessage(makePayload("917618432290", "sorry sugar 146 nahi 164 thi", "msg-correct-safeguard", referenceTimestamp), mockResponse() as any);
     assert(!MOCK_RECORDS["PAT-101"] || MOCK_RECORDS["PAT-101"]?.length === 0, "Safety: Blocked correction/edit messages from saving multiple incorrect records");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Health records correct ya edit karna is version mein supported nahi hai."), "Safety: Informed user of correction support limitations");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("Sorry, mujhe pehle ki") || axiosPostCalls[0]?.data?.text?.body.includes("mili") || axiosPostCalls[0]?.data?.text?.body.includes("find"), "Safety: Informed user of correction support limitations");
 
     // Implausible/Fabricated range checks in validateCandidateRecord
     const fakeRecord = { parameter: "heart_rate", value: 999, unit: "bpm", confidence: 0.99 };

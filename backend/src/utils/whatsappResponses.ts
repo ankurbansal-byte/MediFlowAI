@@ -221,3 +221,81 @@ export function getConversationalIgnoreMessage(lang: LanguageStyle): string {
     return "ℹ️ Message received. Conversational updates are not recorded as health entries.";
   }
 }
+
+/**
+ * Format a natural, language-matched correction confirmation message.
+ */
+export function formatCorrectionConfirmation(
+  parameter: string,
+  oldValue: string | number,
+  newValue: string | number,
+  unit: string,
+  lang: LanguageStyle,
+  timeContext?: string,
+  context?: string
+): string {
+  const name = getFriendlyName(parameter, lang);
+  const capName = (lang !== "hindi" && name.length > 0) ? name.charAt(0).toUpperCase() + name.slice(1) : name;
+  const tcStr = timeContext ? (lang === "hindi" ? `${timeContext === "morning" ? "सुबह" : timeContext === "evening" ? "शाम" : timeContext} ` : `${timeContext} `) : "";
+  const ctxStr = context && context !== "unknown" ? ` (${getContextLabel(context, lang)})` : "";
+
+  if (lang === "hindi") {
+    const isSugar = parameter === "blood_sugar";
+    const actionWord = isSugar ? "सही कर दी गई।" : "सही कर दिया गया।";
+    return `हो गया 👍 ${tcStr}${capName} ${oldValue} से ${newValue} ${unit}${ctxStr} ${actionWord}`.replace(/\s+/g, " ").trim();
+  } else if (lang === "hinglish") {
+    const isSugar = parameter === "blood_sugar";
+    const actionWord = isSugar ? "correct ho gayi." : "correct ho gaya.";
+    return `Done 👍 ${tcStr}${capName} ${oldValue} se ${newValue} ${unit}${ctxStr} ${actionWord}`.replace(/\s+/g, " ").trim();
+  } else {
+    return `Done 👍 ${tcStr}${capName} corrected from ${oldValue} to ${newValue} ${unit}${ctxStr}.`.replace(/\s+/g, " ").trim();
+  }
+}
+
+/**
+ * Returns a localized message asking which ambiguous record they want corrected.
+ */
+export function getAmbiguousCorrectionClarification(
+  parameter: string,
+  oldValue: string | number,
+  targets: any[],
+  lang: LanguageStyle
+): string {
+  const name = getFriendlyName(parameter, lang);
+  const options = targets.map((t, idx) => {
+    const tc = t.timeContext || "";
+    const ctx = t.context && t.context !== "unknown" ? t.context : "";
+    const info = [tc, ctx].filter(Boolean).join(" ");
+    return info || `Option ${idx + 1}`;
+  });
+
+  const optionList = options.join(lang === "hindi" ? " या " : (lang === "hinglish" ? " ya " : " or "));
+
+  if (lang === "hindi") {
+    return `आप कौन सी ${name} ${oldValue} रीडिंग सही करना चाहते हैं — ${optionList}?`;
+  } else if (lang === "hinglish") {
+    return `Aap kaun si ${name} ${oldValue} reading correct karna chahte hain — ${optionList}?`;
+  } else {
+    return `Which ${name} reading of ${oldValue} do you want to correct — ${optionList}?`;
+  }
+}
+
+/**
+ * Returns a localized message indicating that no matching target record could be found.
+ */
+export function getCorrectionTargetNotFoundMessage(
+  parameter: string,
+  oldValue: string | number | null,
+  lang: LanguageStyle
+): string {
+  const name = parameter ? getFriendlyName(parameter, lang) : (lang === "hindi" ? "रीडिंग" : (lang === "hinglish" ? "reading" : "reading"));
+  const oldValStr = oldValue ? ` ${oldValue}` : "";
+
+  if (lang === "hindi") {
+    return `क्षमा करें, मुझे पहले की कोई ${name}${oldValStr} नहीं मिली। कृपया सही जानकारी के साथ फिर से प्रयास करें।`;
+  } else if (lang === "hinglish") {
+    return `Sorry, mujhe pehle ki koi ${name}${oldValStr} nahi mili. Kripya sahi information ke sath fir se try karein.`;
+  } else {
+    return `Sorry, I couldn't find any prior ${name} reading with value${oldValStr}. Please try again with the correct info.`;
+  }
+}

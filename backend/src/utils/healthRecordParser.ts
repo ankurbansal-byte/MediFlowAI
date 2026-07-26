@@ -21,6 +21,37 @@ export function detectLanguageStyle(text: string): "english" | "hindi" | "hingli
   return "english";
 }
 
+export function detectParameterFromMessage(msg: string): string | null {
+  const clean = msg.toLowerCase().trim();
+  const keywordsMap: Record<string, string[]> = {
+    blood_sugar: ["sugar", "glucose", "sugar level", "shugar", "cheeni", "schugar", "शुगर", "सीनी", "चीनी"],
+    blood_pressure: ["bp", "blood pressure", "pressure", "बीपी", "रक्तचाप"],
+    heart_rate: ["pulse", "heart rate", "hr", "bpm", "dhadkan", "dil", "beat", "पल्स", "धड़कन"],
+    oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन"],
+    body_temperature: ["temp", "temperature", "fever", "body temp", "bukhar", "bukhaar", "tapman", "तापमान", "बुखार"],
+    weight: ["weight", "vajan", "wajan", "kg", "vazan", "वजन"],
+    respiratory_rate: ["breath", "resp", "respiratory", "saans"],
+    height: ["height", "lambai"]
+  };
+
+  for (const [param, keywords] of Object.entries(keywordsMap)) {
+    for (const kw of keywords) {
+      if (/[\u0900-\u097F]/.test(kw)) {
+        if (clean.includes(kw)) {
+          return param;
+        }
+      } else {
+        const regex = new RegExp(`\\b${kw}\\b`, "i");
+        if (regex.test(clean)) {
+          return param;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 /**
  * Parses glucose context deterministically from text
  */
@@ -92,13 +123,154 @@ export function isCorrectionMessage(msg: string): boolean {
   const clean = msg.toLowerCase().trim();
   const keywords = [
     "nahi", "nahin", "galat", "wrong", "mistake", "sorry", "instead of", "correct",
-    "नहीं", "गलत", "सुधार", "बदले", "correction", "edit", "change"
+    "नहीं", "गलत", "सुधार", "बदले", "correction", "edit", "change", "kar do", "ki jagah", "की जगह", "actual", "actually"
   ];
   const hasKeyword = keywords.some(kw => clean.includes(kw));
   const hasNumbers = /\b\d+\b/.test(clean);
-  const comparisonPattern = /\b\d+\s*(?:nahi|nahin|instead\s*of|not|गलत|नहीं)\s*\d+\b/i.test(clean);
+  const comparisonPattern = /\b\d+\s*(?:nahi|nahin|instead\s*of|not|गलत|नहीं|ki\s*jagah|की\s*जगह)\s*\d+\b/i.test(clean);
+  const hasParam = detectParameterFromMessage !== undefined && detectParameterFromMessage(msg) !== null;
+  const hasGlucoseCtx = parseGlucoseContext !== undefined && parseGlucoseContext(msg) !== null;
 
-  return hasKeyword && (hasNumbers || comparisonPattern);
+  return hasKeyword && (hasNumbers || comparisonPattern || hasParam || hasGlucoseCtx);
+}
+
+export interface ParsedCorrection {
+  parameter: string | null;
+  oldValue: string | number | null | undefined;
+  newValue: string | number | null | undefined;
+  oldContext: GlucoseContext | null;
+  newContext: GlucoseContext | null;
+  oldTimeContext?: "morning" | "afternoon" | "evening" | "night" | null;
+  newTimeContext?: "morning" | "afternoon" | "evening" | "night" | null;
+  originalRecordedAt?: Date | null;
+}
+
+export function parseCorrectionMessage(msg: string): ParsedCorrection {
+  const clean = msg.toLowerCase().trim();
+  const param = detectParameterFromMessage(msg);
+
+  const cleanedMsg = stripNumbersBelongingToDatesAndTimes(msg);
+  const valueRegex = /(\b\d{2,3}\s*[\/\\]\s*\d{2,3}\b|\b\d+(?:\.\d+)?\b)/g;
+  const allValues = cleanedMsg.match(valueRegex) || [];
+
+  let oldValue: string | number | null | undefined = null;
+  let newValue: string | number | null | undefined = null;
+  let oldContext: GlucoseContext | null = null;
+  let newContext: GlucoseContext | null = null;
+  let oldTimeContext: "morning" | "afternoon" | "evening" | "night" | null = null;
+  let newTimeContext: "morning" | "afternoon" | "evening" | "night" | null = null;
+
+  const splitKeywords = [
+    "instead of",
+    "ki jagah",
+    "की जगह",
+    "nahi",
+    "nahin",
+    "नहीं",
+    "galat",
+    "wrong",
+    "गलत"
+  ];
+
+  let foundKeyword: string | null = null;
+  for (const kw of splitKeywords) {
+    if (clean.includes(kw)) {
+      foundKeyword = kw;
+      break;
+    }
+  }
+
+  // Extract timeContext helper
+  const extractTimeContextLocal = (text: string): "morning" | "afternoon" | "evening" | "night" | null => {
+    const cleanSeg = text.toLowerCase();
+    if (cleanSeg.includes("morning") || cleanSeg.includes("subah") || cleanSeg.includes("सुबह")) {
+      return "morning";
+    }
+    if (cleanSeg.includes("evening") || cleanSeg.includes("shaam") || cleanSeg.includes("शाम")) {
+      return "evening";
+    }
+    if (cleanSeg.includes("afternoon") || cleanSeg.includes("dopahar") || cleanSeg.includes("दोपहर")) {
+      return "afternoon";
+    }
+    if (cleanSeg.includes("night") || cleanSeg.includes("raat") || cleanSeg.includes("रात")) {
+      return "night";
+    }
+    return null;
+  };
+
+  if (foundKeyword) {
+    const idx = clean.indexOf(foundKeyword);
+    const part1 = clean.substring(0, idx).trim();
+    const part2 = clean.substring(idx + foundKeyword.length).trim();
+
+    const part1Values = part1.match(valueRegex) || [];
+    const part2Values = part2.match(valueRegex) || [];
+
+    if (foundKeyword === "instead of") {
+      newContext = parseGlucoseContext(part1);
+      oldContext = parseGlucoseContext(part2);
+      newTimeContext = extractTimeContextLocal(part1);
+      oldTimeContext = extractTimeContextLocal(part2);
+      if (part1Values.length > 0 && part2Values.length > 0) {
+        newValue = part1Values[0];
+        oldValue = part2Values[0];
+      } else if (allValues.length === 2) {
+        newValue = allValues[0];
+        oldValue = allValues[1];
+      } else if (allValues.length === 1) {
+        newValue = allValues[0];
+      }
+    } else {
+      oldContext = parseGlucoseContext(part1);
+      newContext = parseGlucoseContext(part2);
+      oldTimeContext = extractTimeContextLocal(part1);
+      newTimeContext = extractTimeContextLocal(part2);
+      if (part1Values.length > 0 && part2Values.length > 0) {
+        oldValue = part1Values[0];
+        newValue = part2Values[0];
+      } else if (allValues.length === 2) {
+        oldValue = allValues[0];
+        newValue = allValues[1];
+      } else if (allValues.length === 1) {
+        newValue = allValues[0];
+      }
+    }
+  } else {
+    if (allValues.length === 2) {
+      oldValue = allValues[0];
+      newValue = allValues[1];
+    } else if (allValues.length === 1) {
+      newValue = allValues[0];
+    }
+  }
+
+  // If time contexts weren't parsed from parts, fallback to whole message
+  const msgTimeContext = extractTimeContextLocal(clean);
+  if (!oldTimeContext && msgTimeContext) oldTimeContext = msgTimeContext;
+  if (!newTimeContext && msgTimeContext) newTimeContext = msgTimeContext;
+
+  // If glucose contexts weren't parsed from parts, fallback to whole message
+  const msgGlucoseContext = parseGlucoseContext(clean);
+  if (!oldContext && msgGlucoseContext) oldContext = msgGlucoseContext;
+  if (!newContext && msgGlucoseContext) newContext = msgGlucoseContext;
+
+  // Convert bp pairs nicely (strip whitespace around / or \)
+  const formatBp = (val: string | number | null | undefined): string | number | null | undefined => {
+    if (typeof val === "string" && (val.includes("/") || val.includes("\\"))) {
+      return val.replace(/\s*[\/\\]\s*/g, "/");
+    }
+    return val;
+  };
+
+  return {
+    parameter: param,
+    oldValue: formatBp(oldValue),
+    newValue: formatBp(newValue),
+    oldContext,
+    newContext,
+    oldTimeContext,
+    newTimeContext
+  };
 }
 
 export function deterministicExtract(message: string): any {
