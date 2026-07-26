@@ -107,7 +107,7 @@ export function detectParameterFromMessage(msg: string): string | null {
     blood_sugar: ["sugar", "glucose", "sugar level", "shugar", "cheeni", "schugar", "शुगर", "सीनी", "चीनी", "meri sugar", "mera sugar"],
     blood_pressure: ["bp", "blood pressure", "pressure", "बीपी", "रक्तचाप", "mera bp", "meri bp"],
     heart_rate: ["pulse", "heart rate", "hr", "bpm", "dhadkan", "dil", "beat", "पल्स", "धड़कन"],
-    oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन", "oxygen level"],
+    oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन", "ओक्सीजन", "ऑक्सिजन", "oxygen level"],
     body_temperature: ["temp", "temperature", "fever", "body temp", "bukhar", "bukhaar", "tapman", "तापमान", "बुखार"],
     weight: ["weight", "vajan", "wajan", "kg", "vazan", "वजन"],
     respiratory_rate: ["breath", "breathing", "breathing rate", "resp", "respiratory", "saans"],
@@ -378,7 +378,7 @@ export function deterministicExtract(message: string): any {
     blood_sugar: ["sugar", "glucose", "sugar level", "shugar", "cheeni", "schugar", "शुगर", "सीनी", "चीनी", "meri sugar", "mera sugar"],
     blood_pressure: ["bp", "blood pressure", "pressure", "बीपी", "रक्तचाप", "mera bp", "meri bp"],
     heart_rate: ["pulse", "heart rate", "hr", "bpm", "dhadkan", "dil", "beat", "पल्स", "धड़कन"],
-    oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन", "oxygen level"],
+    oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन", "ओक्सीजन", "ऑक्सिजन", "oxygen level"],
     body_temperature: ["temp", "temperature", "fever", "body temp", "bukhar", "bukhaar", "tapman", "तापमान", "बुखार"],
     weight: ["weight", "vajan", "wajan", "kg", "vazan", "वजन"],
     respiratory_rate: ["breath", "breathing", "breathing rate", "resp", "respiratory", "rr", "saans", "सांस की दर"],
@@ -512,28 +512,54 @@ export function deterministicExtract(message: string): any {
     }
 
     if (segmentParam === "blood_pressure") {
-      const bpPairRegexes = [
-        /(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप)?\s*(\d{2,3})\s*(?:\/|\\|h|by|and|aur|\s+)\s*(\d{2,3})\b/i,
-        /\b(\d{2,3})\s*[\/\\]\s*(\d{2,3})\b/
-      ];
+      // Prioritize explicit decimal BP like 131.82 when strong BP context exists
       let bpMatched = false;
-      for (const rx of bpPairRegexes) {
-        const match = cleanedSegment.match(rx);
-        if (match) {
-          const systolic = parseInt(match[1], 10);
-          const diastolic = parseInt(match[2], 10);
-          if (systolic >= 10 && systolic <= 1000 && diastolic >= 10 && diastolic <= 1000) {
-            candidateRecords.push({
-              parameter: "blood_pressure",
-              systolic,
-              diastolic,
-              unit: "mmHg",
-              recordedAt: tempInfo,
-              timeContext: tContext || undefined,
-              confidence: 0.99
-            });
-            bpMatched = true;
-            break;
+      const decimalBpMatch = cleanedSegment.match(/\b(\d{2,3})\.(\d{2,3})\b/);
+      if (decimalBpMatch) {
+        const systolic = parseInt(decimalBpMatch[1], 10);
+        let diastolicStr = decimalBpMatch[2];
+        // If diastolic representation is single digit (e.g. 120.8), treat as 80
+        if (diastolicStr.length === 1) {
+          diastolicStr += "0";
+        }
+        const diastolic = parseInt(diastolicStr, 10);
+        if (systolic >= 70 && systolic <= 250 && diastolic >= 40 && diastolic <= 150) {
+          candidateRecords.push({
+            parameter: "blood_pressure",
+            systolic,
+            diastolic,
+            unit: "mmHg",
+            recordedAt: tempInfo,
+            timeContext: tContext || undefined,
+            confidence: 0.99
+          });
+          bpMatched = true;
+        }
+      }
+
+      if (!bpMatched) {
+        const bpPairRegexes = [
+          /(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप)?\s*(\d{2,3})\s*(?:\/|\\|h|by|and|aur|over|\s+)\s*(\d{2,3})\b/i,
+          /\b(\d{2,3})\s*[\/\\]\s*(\d{2,3})\b/
+        ];
+        for (const rx of bpPairRegexes) {
+          const match = cleanedSegment.match(rx);
+          if (match) {
+            const systolic = parseInt(match[1], 10);
+            const diastolic = parseInt(match[2], 10);
+            if (systolic >= 10 && systolic <= 1000 && diastolic >= 10 && diastolic <= 1000) {
+              candidateRecords.push({
+                parameter: "blood_pressure",
+                systolic,
+                diastolic,
+                unit: "mmHg",
+                recordedAt: tempInfo,
+                timeContext: tContext || undefined,
+                confidence: 0.99
+              });
+              bpMatched = true;
+              break;
+            }
           }
         }
       }
@@ -1110,7 +1136,25 @@ export function isValueSupportedByMessage(
 
       const sysMatch = floatNumbers.some(n => Math.abs(n - systolic) < 0.1);
       const diaMatch = floatNumbers.some(n => Math.abs(n - diastolic) < 0.1);
-      return sysMatch && diaMatch;
+      if (sysMatch && diaMatch) return true;
+
+      // Check if there is a decimal in floatNumbers that represents systolic.diastolic (e.g. 131.82)
+      const decimalMatch = floatNumbers.some(n => {
+        const str = String(n);
+        const decimalParts = str.split(".");
+        if (decimalParts.length === 2) {
+          const decSys = parseFloat(decimalParts[0]);
+          const decDiaStr = decimalParts[1];
+          const decDia = parseFloat(decDiaStr);
+          if (decSys === systolic) {
+            if (decDia === diastolic) return true;
+            // Also support trailing zero representation, e.g. "130.8" for "130/80" -> decDiaStr is "8", diastolic is 80
+            if (decDiaStr.length === 1 && diastolic === decDia * 10) return true;
+          }
+        }
+        return false;
+      });
+      if (decimalMatch) return true;
     }
     return false;
   }

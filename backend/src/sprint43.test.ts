@@ -294,7 +294,7 @@ async function runTests() {
   resetState();
   mockTranscript = "My sugar is 145 after meal";
   await receiveMessage(makeVoicePayload("917618432290", "media-107", "msg-v-8"), mockResponse() as any);
-  assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Test 9: Record created");
+  assert((MOCK_RECORDS["PAT-101"] as any)?.length === 1, "Test 9: Record created");
   assert(MOCK_RECORDS["PAT-101"]?.[0]?.parameter === "blood_sugar", "Test 9: Extracted blood sugar");
   assert(MOCK_RECORDS["PAT-101"]?.[0]?.value === 145, "Test 9: Value is 145");
   assert(MOCK_RECORDS["PAT-101"]?.[0]?.context === "post_meal", "Test 9: Context post_meal mapped");
@@ -334,7 +334,7 @@ async function runTests() {
   resetState();
   mockTranscript = "Mera BP 130/80 hai aur heart rate 72";
   await receiveMessage(makeVoicePayload("917618432290", "media-111", "msg-v-12"), mockResponse() as any);
-  assert(MOCK_RECORDS["PAT-101"]?.length === 2, "Test 13: Saved 2 records in a single voice message");
+  assert((MOCK_RECORDS["PAT-101"] as any)?.length === 2, "Test 13: Saved 2 records in a single voice message");
   console.log("✅ Assertion 13 Passed");
 
   // =========================================================================
@@ -387,12 +387,12 @@ async function runTests() {
   resetState();
   mockTranscript = "sugar fasting 145";
   await receiveMessage(makeVoicePayload("917618432290", "media-117", "msg-v-19"), mockResponse() as any);
-  assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Test 18: Record saved");
+  assert((MOCK_RECORDS["PAT-101"] as any)?.length === 1, "Test 18: Record saved");
 
   mockTranscript = "sorry sugar 145 nahi 165 thi";
   await receiveMessage(makeVoicePayload("917618432290", "media-118", "msg-v-20"), mockResponse() as any);
   assert(MOCK_RECORDS["PAT-101"]?.[0]?.value === 165, "Test 18: Voice correction resolved and applied");
-  assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Test 19: Correction did not create duplicate record");
+  assert((MOCK_RECORDS["PAT-101"] as any)?.length === 1, "Test 19: Correction did not create duplicate record");
   console.log("✅ Assertion 18 & 19 Passed");
 
   // =========================================================================
@@ -415,7 +415,7 @@ async function runTests() {
   await receiveMessage(makeVoicePayload("917618432290", "media-120", "msg-v-22"), mockResponse() as any);
   const out22 = axiosPostCalls[axiosPostCalls.length - 1]?.data?.text?.body || "";
   assert(out22.includes("unusual") || out22.includes("असामान्य"), "Test 22: Implausible reading rejected and re-checked");
-  assert(MOCK_RECORDS["PAT-101"]?.length === 0, "Test 22: Implausible value not persisted");
+  assert((MOCK_RECORDS["PAT-101"] as any)?.length === 0, "Test 22: Implausible value not persisted");
   console.log("✅ Assertion 22 Passed");
 
   // =========================================================================
@@ -430,7 +430,7 @@ async function runTests() {
   await receiveMessage(makeVoicePayload("917618432290", "media-122", "msg-v-24"), mockResponse() as any);
   const out23 = axiosPostCalls[axiosPostCalls.length - 1]?.data?.text?.body || "";
   assert(out23.includes("145") && out23.includes("sugar"), "Test 23: Voice latest readback succeeded");
-  assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Test 25: Read back query did not create any new record");
+  assert((MOCK_RECORDS["PAT-101"] as any)?.length === 1, "Test 25: Read back query did not create any new record");
   console.log("✅ Assertion 23 & 25 Passed");
 
   // =========================================================================
@@ -476,7 +476,7 @@ async function runTests() {
   mockTranscript = "BP 120/80";
   await receiveMessage(makeVoicePayload("917618432290", "media-128", "msg-v-30"), mockResponse() as any);
   await receiveMessage(makeVoicePayload("917618432290", "media-128", "msg-v-30"), mockResponse() as any); // deliver duplicate messageId
-  assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Test 28: Duplicate voice payload deduplicated perfectly");
+  assert((MOCK_RECORDS["PAT-101"] as any)?.length === 1, "Test 28: Duplicate voice payload deduplicated perfectly");
   console.log("✅ Assertion 28 Passed");
 
   // =========================================================================
