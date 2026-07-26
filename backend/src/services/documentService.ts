@@ -112,10 +112,6 @@ export function deterministicFallbackParse(text: string): any[] {
     return [];
   }
 
-  const lines = text.split(/[\n;]+/);
-  const observations: any[] = [];
-  const seenKeys = new Set<string>();
-
   const TEST_PATTERNS = [
     {
       key: "hba1c",
@@ -179,52 +175,96 @@ export function deterministicFallbackParse(text: string): any[] {
     }
   ];
 
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-    if (!trimmedLine) continue;
+  const matches: Array<{
+    key: string;
+    name: string;
+    defaultUnit: string;
+    startIndex: number;
+    endIndex: number;
+    matchedText: string;
+  }> = [];
 
-    for (const pattern of TEST_PATTERNS) {
-      if (seenKeys.has(pattern.key)) {
-        continue;
-      }
+  for (const pattern of TEST_PATTERNS) {
+    const regex = new RegExp(pattern.regex.source, pattern.regex.flags + "g");
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const matchedText = match[0];
+      const startIndex = match.index;
+      const endIndex = startIndex + matchedText.length;
 
       if (pattern.key === "cholesterol") {
-        const containsHdlOrLdl = /\b(hdl|ldl)\b/i.test(trimmedLine);
-        const containsTotalExplicit = /\btotal\s+cholesterol\b/i.test(trimmedLine);
+        const preText = text.slice(Math.max(0, startIndex - 15), startIndex);
+        const containsHdlOrLdl = /\b(hdl|ldl)\b/i.test(preText);
+        const containsTotalExplicit = /\btotal\b/i.test(preText) || /\btotal\s+cholesterol\b/i.test(matchedText);
         if (containsHdlOrLdl && !containsTotalExplicit) {
           continue;
         }
       }
 
-      const match = trimmedLine.match(pattern.regex);
-      if (match) {
-        const keywordIndex = match.index || 0;
-        const matchedText = match[0];
-        const substringAfter = trimmedLine.slice(keywordIndex + matchedText.length);
+      matches.push({
+        key: pattern.key,
+        name: pattern.name,
+        defaultUnit: pattern.defaultUnit,
+        startIndex,
+        endIndex,
+        matchedText
+      });
+    }
+  }
 
-        const numMatch = substringAfter.match(/\b\d+(?:\.\d+)?\b/);
-        if (numMatch) {
-          const valueStr = numMatch[0];
-          const valueNum = parseFloat(valueStr);
+  // Sort matches by start index ascending
+  matches.sort((a, b) => a.startIndex - b.startIndex);
 
-          let matchedUnit = pattern.defaultUnit;
-          const unitMatch = substringAfter.match(/\b(%|mg\/dl|g\/dl|µiu\/ml|uiu\/ml|uIU\/mL)\b/i);
-          if (unitMatch) {
-            matchedUnit = unitMatch[1];
-          }
+  const observations: any[] = [];
 
-          observations.push({
-            testName: pattern.name,
-            canonicalTestKey: pattern.key,
-            value: valueNum,
-            unit: matchedUnit,
-            referenceRangeText: null,
-            flag: null
-          });
+  for (let i = 0; i < matches.length; i++) {
+    const currentMatch = matches[i];
+    const nextStartIndex = (i + 1 < matches.length) ? matches[i + 1].startIndex : text.length;
+    let windowText = text.slice(currentMatch.endIndex, nextStartIndex);
 
-          seenKeys.add(pattern.key);
-          break;
-        }
+    // Clean up search window text to safely ignore dates, times, phone numbers, reference ranges, etc.
+    // 1. Remove dates
+    windowText = windowText.replace(/\b\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}\b/g, " ");
+    // 2. Remove times
+    windowText = windowText.replace(/\b\d{1,2}:\d{2}(?:\s*(?:AM|PM|am|pm))?\b/g, " ");
+    // 3. Remove long digit strings like phone numbers / IDs (5+ digits)
+    windowText = windowText.replace(/\b\d{5,}\b/g, " ");
+    // 4. Remove bracketed reference ranges or standalone hyphenated/to ranges (e.g. 70-110, 60 to 110, 0.7 - 1.2)
+    windowText = windowText.replace(/\(\s*\d+(?:\.\d+)?\s*(?:-|to)\s*\d+(?:\.\d+)?\s*\)/gi, " ");
+    windowText = windowText.replace(/\b\d+(?:\.\d+)?\s*(?:-|to)\s*\d+(?:\.\d+)?\b/gi, " ");
+    // 5. Remove reference-preceded operators/ranges like "Normal: < 100" or similar (restricted to same line)
+    windowText = windowText.replace(/(?:ref|reference|normal|biological|interval|limit|limits|range|biological\s+reference\s+interval)\s*(?:range\s*)?[:\-]?\s*([<>=\s]{1,2}\s*\d+(?:\.\d+)?\b)/gi, " ");
+    windowText = windowText.replace(/\b(?:ref|reference|normal|biological|interval|range)\b[^\n]*?([<>=\s]{1,2}\s*\d+(?:\.\d+)?\b)/gi, " ");
+
+    // Extract first valid clinical value
+    const numMatch = windowText.match(/\b\d+(?:\.\d+)?\b/);
+    if (numMatch) {
+      const valueStr = numMatch[0];
+      const valueNum = parseFloat(valueStr);
+
+      // Extract and normalize the unit, preserving matched case of the unit substring
+      let matchedUnit = currentMatch.defaultUnit;
+      const unitMatch = windowText.match(/\b(%|mg\s*\/\s*dl|g\s*\/\s*dl|µiu\s*\/\s*ml|uiu\s*\/\s*ml|uIU\s*\/\s*mL)\b/i);
+      if (unitMatch) {
+        matchedUnit = unitMatch[1].replace(/\s+/g, "");
+      }
+
+      // Check if we've already added an identical key-value-unit observation to avoid duplicates
+      const isDup = observations.some(obs =>
+        obs.canonicalTestKey === currentMatch.key &&
+        obs.value === valueNum &&
+        obs.unit === matchedUnit
+      );
+
+      if (!isDup) {
+        observations.push({
+          testName: currentMatch.name,
+          canonicalTestKey: currentMatch.key,
+          value: valueNum,
+          unit: matchedUnit,
+          referenceRangeText: null,
+          flag: null
+        });
       }
     }
   }
@@ -245,12 +285,22 @@ export async function extractStructuredLabData(text: string): Promise<any[]> {
     return [];
   }
 
-  let modelName = process.env.OPENROUTER_MODEL || "tencent/hy3";
+  // Read lab model first, falling back to standard OPENROUTER_MODEL
+  let modelName = process.env.OPENROUTER_LAB_MODEL || process.env.OPENROUTER_MODEL || "tencent/hy3";
   let llmSuccess = false;
   let llmParsedSucceeded = false;
   let fallbackUsed = false;
   let observations: any[] = [];
 
+  // Run deterministic fallback FIRST to establish authoritative common observations
+  const deterministicObs = deterministicFallbackParse(text);
+  const deterministicKeys = new Set(
+    deterministicObs
+      .map(o => o.canonicalTestKey)
+      .filter((k): k is string => !!k)
+  );
+
+  let content = "";
   try {
     let completion;
     try {
@@ -347,7 +397,7 @@ Strict Rules:
     }
 
     llmSuccess = true;
-    const content = completion.choices[0]?.message?.content || "";
+    content = completion.choices[0]?.message?.content || "";
 
     if (content.trim()) {
       try {
@@ -365,16 +415,38 @@ Strict Rules:
     console.error("❌ Lab structured extraction LLM call failed:", error?.message || error);
   }
 
-  // Fallback to deterministic parser if LLM structured parsing did not succeed or returned empty results
-  if (!llmParsedSucceeded || observations.length === 0) {
+  // Build merged final observations list
+  const finalObservations = [...deterministicObs];
+
+  // If LLM structured parse succeeded, merge in LLM observations that do not overwrite or duplicate deterministic ones
+  if (llmParsedSucceeded && observations.length > 0) {
+    for (const ob of observations) {
+      const key = ob.canonicalTestKey;
+      if (key && deterministicKeys.has(key)) {
+        // Enrich existing deterministic observation with reference range and flag from LLM if available
+        const existingObs = finalObservations.find(o => o.canonicalTestKey === key);
+        if (existingObs) {
+          if (!existingObs.referenceRangeText && ob.referenceRangeText) {
+            existingObs.referenceRangeText = ob.referenceRangeText;
+          }
+          if (!existingObs.flag && ob.flag) {
+            existingObs.flag = ob.flag;
+          }
+        }
+        continue;
+      }
+      finalObservations.push(ob);
+    }
+  } else {
     fallbackUsed = true;
-    observations = deterministicFallbackParse(text);
   }
 
-  const finalCount = observations.length;
-  const testNames = observations.map(o => o.canonicalTestKey || o.testName).join(", ");
+  const finalCount = finalObservations.length;
+  const testNames = finalObservations.map(o => o.canonicalTestKey || o.testName).join(", ");
 
+  // Safe diagnostics tracking required metrics
   console.log(`🔍 [Stage Diagnostic] [LAB_STRUCTURED_EXTRACTION_RESULT] Success: ${llmSuccess}, Model: ${modelName}, LLM Parse Succeeded: ${llmParsedSucceeded}, Deterministic Fallback Used: ${fallbackUsed}, Count: ${finalCount}, Tests: ${testNames}`);
+  console.log(`🔍 [Stage Diagnostic] [LAB_EXTRACTION_METRICS] DETERMINISTIC_MATCH_COUNT: ${deterministicObs.length}, LLM_RESPONSE_PRESENT: ${!!content.trim()}, LLM_JSON_PARSE_SUCCESS: ${llmParsedSucceeded}, FINAL_OBSERVATION_COUNT: ${finalCount}`);
 
-  return observations;
+  return finalObservations;
 }
