@@ -21,16 +21,96 @@ export function detectLanguageStyle(text: string): "english" | "hindi" | "hingli
   return "english";
 }
 
+export function detectEmergencyUrgency(message: string): "emergency" | null {
+  const clean = message.toLowerCase().trim();
+
+  // Robust negation/historical false-positive protections:
+  const negationPhrases = [
+    "no chest pain",
+    "no breathing",
+    "not having",
+    "past",
+    "historical",
+    "kal tha",
+    "kal thi",
+    "kal thaa",
+    "doctor ko dikha",
+    "doctor ko dikhaya",
+    "doctor ko bol",
+    "now fine",
+    "now better",
+    "now ok",
+    "theek hai",
+    "thik hai",
+    "theek hoon",
+    "thik hoon",
+    "breathing rate",
+    "respiratory rate"
+  ];
+
+  if (negationPhrases.some(phrase => clean.includes(phrase))) {
+    return null;
+  }
+
+  // 1. Chest pain detection (English/Hindi/Hinglish)
+  const isChestPain =
+    clean.includes("chest pain") ||
+    ((clean.includes("seene") || clean.includes("chhati") || clean.includes("dil") || clean.includes("chati") || clean.includes("सीने") || clean.includes("छाती") || clean.includes("दिल")) &&
+     (clean.includes("pain") || clean.includes("dard") || clean.includes("दर्द")));
+
+  // 2. Breathing difficulty detection
+  const isBreathingDifficulty =
+    clean.includes("difficulty breathing") ||
+    clean.includes("can't breathe") ||
+    clean.includes("cannot breathe") ||
+    (clean.includes("saans") && (clean.includes("takleef") || clean.includes("dikkat") || clean.includes("pareshani") || clean.includes("phool") || clean.includes("nahi") || clean.includes("nahin") || clean.includes("nhi"))) ||
+    (clean.includes("सांस") && (clean.includes("तकलीफ") || clean.includes("दिक्कत") || clean.includes("परेशानी") || clean.includes("कठिनाई") || clean.includes("फूल") || clean.includes("नहीं") || clean.includes("नही")));
+
+  // 3. Unconsciousness detection
+  const isUnconscious =
+    clean.includes("unconscious") ||
+    clean.includes("behoshi") ||
+    clean.includes("behosh") ||
+    clean.includes("बेहोश") ||
+    clean.includes("बेहोशी");
+
+  // 4. Severe bleeding detection
+  const isBleeding =
+    clean.includes("severe bleeding") ||
+    clean.includes("heavy bleeding") ||
+    clean.includes("khoon beh raha") ||
+    clean.includes("खून बह रहा") ||
+    clean.includes("भारी ब्लीडिंग") ||
+    clean.includes("बहुत खून") ||
+    (clean.includes("khoon") && clean.includes("bahut"));
+
+  // 5. Stroke-like symptoms / sudden weakness with speech difficulty
+  const isStrokeOrSpeech =
+    clean.includes("stroke") ||
+    clean.includes("speech difficulty") ||
+    clean.includes("difficulty speaking") ||
+    (clean.includes("sudden") && clean.includes("weakness")) ||
+    (clean.includes("achanak") && clean.includes("kamzori")) ||
+    (clean.includes("bolne") && (clean.includes("takleef") || clean.includes("dikkat") || clean.includes("difficulty"))) ||
+    (clean.includes("बोलने") && (clean.includes("तकलीफ") || clean.includes("दिक्कत") || clean.includes("कठिनाई") || clean.includes("परेशानी")));
+
+  if (isChestPain || isBreathingDifficulty || isUnconscious || isBleeding || isStrokeOrSpeech) {
+    return "emergency";
+  }
+
+  return null;
+}
+
 export function detectParameterFromMessage(msg: string): string | null {
   const clean = msg.toLowerCase().trim();
   const keywordsMap: Record<string, string[]> = {
-    blood_sugar: ["sugar", "glucose", "sugar level", "shugar", "cheeni", "schugar", "शुगर", "सीनी", "चीनी"],
-    blood_pressure: ["bp", "blood pressure", "pressure", "बीपी", "रक्तचाप"],
+    blood_sugar: ["sugar", "glucose", "sugar level", "shugar", "cheeni", "schugar", "शुगर", "सीनी", "चीनी", "meri sugar", "mera sugar"],
+    blood_pressure: ["bp", "blood pressure", "pressure", "बीपी", "रक्तचाप", "mera bp", "meri bp"],
     heart_rate: ["pulse", "heart rate", "hr", "bpm", "dhadkan", "dil", "beat", "पल्स", "धड़कन"],
-    oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन"],
+    oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन", "oxygen level"],
     body_temperature: ["temp", "temperature", "fever", "body temp", "bukhar", "bukhaar", "tapman", "तापमान", "बुखार"],
     weight: ["weight", "vajan", "wajan", "kg", "vazan", "वजन"],
-    respiratory_rate: ["breath", "resp", "respiratory", "saans"],
+    respiratory_rate: ["breath", "breathing", "breathing rate", "resp", "respiratory", "saans"],
     height: ["height", "lambai"]
   };
 
@@ -62,6 +142,7 @@ export function parseGlucoseContext(msg: string): GlucoseContext | null {
   if (
     clean.includes("fasting") ||
     clean.includes("khali pet") ||
+    clean.includes("khaali pet") ||
     clean.includes("खाली पेट") ||
     clean === "fast" ||
     clean === "fating" ||
@@ -97,8 +178,11 @@ export function parseGlucoseContext(msg: string): GlucoseContext | null {
     clean.includes("post_meal") ||
     clean.includes("postmeal") ||
     clean.includes("khane ke baad") ||
-    clean.includes("खाने के बाद") ||
-    clean.includes("2 hours after meal")
+    clean.includes("khana khane ke baad") ||
+    clean.includes("khane ke 2 ghante baad") ||
+    clean.includes("2 hours after meal") ||
+    clean.includes("2 hrs after food") ||
+    clean.includes("खाने के बाद")
   ) {
     return "post_meal";
   }
@@ -127,7 +211,7 @@ export function isCorrectionMessage(msg: string): boolean {
   ];
   const hasKeyword = keywords.some(kw => clean.includes(kw));
   const hasNumbers = /\b\d+\b/.test(clean);
-  const comparisonPattern = /\b\d+\s*(?:nahi|nahin|instead\s*of|not|गलत|नहीं|ki\s*jagah|की\s*जगह)\s*\d+\b/i.test(clean);
+  const comparisonPattern = /\b\d+\s*(?:nahi|nahin|instead\s*of|not|galat|नहीं|ki\s*jagah|की\s*जगह)\s*\d+\b/i.test(clean);
   const hasParam = detectParameterFromMessage !== undefined && detectParameterFromMessage(msg) !== null;
   const hasGlucoseCtx = parseGlucoseContext !== undefined && parseGlucoseContext(msg) !== null;
 
@@ -291,13 +375,13 @@ export function deterministicExtract(message: string): any {
   const missingFields: string[] = [];
 
   const keywordMap: Record<string, string[]> = {
-    blood_sugar: ["sugar", "glucose", "sugar level", "shugar", "cheeni", "schugar", "शुगर", "सीनी", "चीनी"],
-    blood_pressure: ["bp", "blood pressure", "pressure", "बीपी", "रक्तचाप"],
-    heart_rate: ["pulse", "heart rate", "hr", "bpm", "dhadkan", "पल्स", "धड़कन"],
-    oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन"],
+    blood_sugar: ["sugar", "glucose", "sugar level", "shugar", "cheeni", "schugar", "शुगर", "सीनी", "चीनी", "meri sugar", "mera sugar"],
+    blood_pressure: ["bp", "blood pressure", "pressure", "बीपी", "रक्तचाप", "mera bp", "meri bp"],
+    heart_rate: ["pulse", "heart rate", "hr", "bpm", "dhadkan", "dil", "beat", "पल्स", "धड़कन"],
+    oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन", "oxygen level"],
     body_temperature: ["temp", "temperature", "fever", "body temp", "bukhar", "bukhaar", "tapman", "तापमान", "बुखार"],
     weight: ["weight", "vajan", "wajan", "kg", "vazan", "वजन"],
-    respiratory_rate: ["breath", "resp", "respiratory", "rr", "saans", "सांस की दर"],
+    respiratory_rate: ["breath", "breathing", "breathing rate", "resp", "respiratory", "rr", "saans", "सांस की दर"],
     height: ["height", "lambai", "kad", "हाइट", "लंबाई", "कद"]
   };
 
@@ -388,6 +472,8 @@ export function deterministicExtract(message: string): any {
   const rawSegments = message.split(/[,;।।]|\b(?:and|aur|or|&|\+|then|fir|phir)\b|(?:^|\s+)(?:था|और)(?:\s+|$)/i);
 
   let runningParameter: string | null = null;
+  let runningRecordedAt: string | null = null;
+  let runningTimeContext: "morning" | "afternoon" | "evening" | "night" | undefined = undefined;
 
   for (const rawSeg of rawSegments) {
     const trimmedSeg = rawSeg.trim();
@@ -410,8 +496,20 @@ export function deterministicExtract(message: string): any {
 
     if (!segmentParam) continue;
 
-    const tempInfo = extractTemporalInfo(trimmedSeg);
-    const tContext = extractTimeContext(trimmedSeg);
+    let tempInfo = extractTemporalInfo(trimmedSeg);
+    let tContext = extractTimeContext(trimmedSeg);
+
+    if (tempInfo) {
+      runningRecordedAt = tempInfo;
+    } else if (runningRecordedAt) {
+      tempInfo = runningRecordedAt;
+    }
+
+    if (tContext) {
+      runningTimeContext = tContext;
+    } else if (runningTimeContext) {
+      tContext = runningTimeContext;
+    }
 
     if (segmentParam === "blood_pressure") {
       const bpPairRegexes = [
@@ -424,7 +522,7 @@ export function deterministicExtract(message: string): any {
         if (match) {
           const systolic = parseInt(match[1], 10);
           const diastolic = parseInt(match[2], 10);
-          if (systolic >= 70 && systolic <= 250 && diastolic >= 40 && diastolic <= 150) {
+          if (systolic >= 10 && systolic <= 1000 && diastolic >= 10 && diastolic <= 1000) {
             candidateRecords.push({
               parameter: "blood_pressure",
               systolic,
@@ -445,7 +543,7 @@ export function deterministicExtract(message: string): any {
         const match = cleanedSegment.match(incompleteBpRegex);
         if (match) {
           const systolic = parseInt(match[1], 10);
-          if (systolic >= 70 && systolic <= 250) {
+          if (systolic >= 10 && systolic <= 1000) {
             candidateRecords.push({
               parameter: "blood_pressure",
               systolic,
@@ -461,10 +559,10 @@ export function deterministicExtract(message: string): any {
     }
 
     else if (segmentParam === "blood_sugar") {
-      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
+      const numbersInSeg = cleanedSegment.match(/-?\d+(?:\.\d+)?/g) || [];
       for (const numStr of numbersInSeg) {
         const val = parseFloat(numStr);
-        if (val >= 30 && val <= 500) {
+        if (val >= 1 && val <= 2000) {
           const context = parseGlucoseContext(trimmedSeg) || parseGlucoseContext(message);
           if (context) {
             candidateRecords.push({
@@ -493,10 +591,10 @@ export function deterministicExtract(message: string): any {
     }
 
     else if (segmentParam === "heart_rate") {
-      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
+      const numbersInSeg = cleanedSegment.match(/-?\d+(?:\.\d+)?/g) || [];
       for (const numStr of numbersInSeg) {
         const val = parseInt(numStr, 10);
-        if (val >= 30 && val <= 250) {
+        if (val >= 1 && val <= 1000) {
           candidateRecords.push({
             parameter: "heart_rate",
             value: val,
@@ -510,10 +608,10 @@ export function deterministicExtract(message: string): any {
     }
 
     else if (segmentParam === "oxygen_saturation") {
-      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
+      const numbersInSeg = cleanedSegment.match(/-?\d+(?:\.\d+)?/g) || [];
       for (const numStr of numbersInSeg) {
         const val = parseInt(numStr, 10);
-        if (val >= 50 && val <= 100) {
+        if (val >= 1 && val <= 300) {
           candidateRecords.push({
             parameter: "oxygen_saturation",
             value: val,
@@ -527,10 +625,10 @@ export function deterministicExtract(message: string): any {
     }
 
     else if (segmentParam === "body_temperature") {
-      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
+      const numbersInSeg = cleanedSegment.match(/-?\d+(?:\.\d+)?/g) || [];
       for (const numStr of numbersInSeg) {
         const val = parseFloat(numStr);
-        if (val >= 30 && val <= 110) {
+        if (val >= 1 && val <= 500) {
           let tempUnit: string | null = null;
           const hasExplicitC = /\b(?:°?c|celsius|celcius)\b/i.test(trimmedSeg) || trimmedSeg.includes("°c") || trimmedSeg.includes("celsius") || trimmedSeg.includes("सेल्सियस");
           const hasExplicitF = /\b(?:°?f|fahrenheit|farenheit)\b/i.test(trimmedSeg) || trimmedSeg.includes("°f") || trimmedSeg.includes("fahrenheit") || trimmedSeg.includes("फ़ारेनहाइट") || trimmedSeg.includes("फारेनहाइट");
@@ -582,10 +680,10 @@ export function deterministicExtract(message: string): any {
     }
 
     else if (segmentParam === "weight") {
-      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
+      const numbersInSeg = cleanedSegment.match(/-?\d+(?:\.\d+)?/g) || [];
       for (const numStr of numbersInSeg) {
         const val = parseFloat(numStr);
-        if (val >= 10 && val <= 300) {
+        if (val >= -500 && val <= 1000) {
           const isLbs = trimmedSeg.includes("lbs");
           if (isLbs) {
             const kgVal = parseFloat((val * 0.45359237).toFixed(1));
@@ -614,10 +712,10 @@ export function deterministicExtract(message: string): any {
     else if (segmentParam === "respiratory_rate") {
       const isRrSymptomOnly = clean.includes("saans lene mein") || clean.includes("saans phool") || clean.includes("breathing difficulty") || clean.includes("shortness of breath");
       if (!isRrSymptomOnly) {
-        const numbersInSeg = cleanedSegment.match(/\b\d+\b/g) || [];
+        const numbersInSeg = cleanedSegment.match(/-?\d+/g) || [];
         for (const numStr of numbersInSeg) {
           const val = parseInt(numStr, 10);
-          if (val >= 10 && val <= 40) {
+          if (val >= 1 && val <= 200) {
             candidateRecords.push({
               parameter: "respiratory_rate",
               value: val,
@@ -650,10 +748,10 @@ export function deterministicExtract(message: string): any {
       }
 
       if (heightValue === null) {
-        const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
+        const numbersInSeg = cleanedSegment.match(/-?\d+(?:\.\d+)?/g) || [];
         for (const numStr of numbersInSeg) {
           const val = parseFloat(numStr);
-          if (val >= 50 && val <= 250) {
+          if (val >= 10 && val <= 500) {
             heightValue = val;
             break;
           } else if (val >= 0.5 && val <= 2.5) {
@@ -755,23 +853,16 @@ export function applyTimeStringToDate(date: Date, timeStr: string): Date {
 
 /**
  * Deterministically resolves relative and historical dates from the original message.
- * - Relative terms such as "Aaj", "Today", "aaj", "today", "now", "abhi", "subah", "dopahar", "shaam", "raat", "morning", "evening", "afternoon", "night", "this morning" resolve to messageDate.
- * - Relative terms such as "Yesterday", "Kal", "kal", "yesterday", "last night", "kal raat", "yesterday morning" resolve to messageDate minus 1 day.
- * - Explicit historical dates (e.g. 15 July, 20/07/2026) are parsed and respected.
- * - LLM hallucinations of the prompt examples (2026-07-11 or 2026-07-12) are discarded unless explicitly mentioned.
+ * Adjusted to handle Indian Timezone correctly and prevent fabrication of exact clock times.
  */
 export function resolveRecordedAt(
   originalMessage: string,
   extractedRecordedAt: string | null | undefined,
   messageDate: Date = new Date()
 ): Date {
-  if (!originalMessage) {
-    return extractedRecordedAt ? new Date(extractedRecordedAt) : messageDate;
-  }
+  const msgLower = originalMessage ? originalMessage.toLowerCase() : "";
 
-  const msgLower = originalMessage.toLowerCase();
-
-  // 1. If there is an extracted recordedAt absolute date, check it first to preserve precision!
+  // 1. Check for absolute ISO date first to preserve precision if valid
   if (extractedRecordedAt) {
     const parsed = new Date(extractedRecordedAt);
     if (!isNaN(parsed.getTime())) {
@@ -800,36 +891,47 @@ export function resolveRecordedAt(
     }
   }
 
-  let baseDate = new Date(messageDate);
+  // Get India/Hospital Timezone Offset in minutes
+  const tzOffsetMinutes = process.env.WHATSAPP_TIMEZONE_OFFSET_MINUTES
+    ? parseInt(process.env.WHATSAPP_TIMEZONE_OFFSET_MINUTES, 10)
+    : 330; // IST: UTC+5:30 (330 minutes)
+
+  // 2. Determine target day in patient's timezone
+  const localTimeMs = messageDate.getTime() + (tzOffsetMinutes * 60 * 1000);
+  const localDate = new Date(localTimeMs);
+  const localYear = localDate.getUTCFullYear();
+  const localMonth = localDate.getUTCMonth();
+  const localDay = localDate.getUTCDate();
+  const localHours = localDate.getUTCHours();
+  const localMinutes = localDate.getUTCMinutes();
+  const localSeconds = localDate.getUTCSeconds();
+  const localMilliseconds = localDate.getUTCMilliseconds();
+
+  let targetYear = localYear;
+  let targetMonth = localMonth;
+  let targetDay = localDay;
   let baseDateResolved = false;
 
-  // 2. If no extracted recordedAt or it was a hallucinated date, check for explicit absolute dates in the original message
   // Pattern: DD/MM/YYYY
-  const slashDateMatch = originalMessage.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
+  const slashDateMatch = originalMessage ? originalMessage.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/) : null;
   if (slashDateMatch) {
-    const day = parseInt(slashDateMatch[1], 10);
-    const month = parseInt(slashDateMatch[2], 10) - 1; // 0-based
-    const year = parseInt(slashDateMatch[3], 10);
-    const d = new Date(year, month, day, 12, 0, 0); // use mid-day to avoid TZ issues
-    if (!isNaN(d.getTime())) {
-      baseDate = d;
-      baseDateResolved = true;
-    }
+    targetDay = parseInt(slashDateMatch[1], 10);
+    targetMonth = parseInt(slashDateMatch[2], 10) - 1; // 0-based
+    targetYear = parseInt(slashDateMatch[3], 10);
+    baseDateResolved = true;
   }
 
   if (!baseDateResolved) {
     // Pattern: DD/MM (like 20/07)
-    const shortSlashDateMatch = originalMessage.match(/\b(\d{1,2})\/(\d{1,2})\b/);
+    const shortSlashDateMatch = originalMessage ? originalMessage.match(/\b(\d{1,2})\/(\d{1,2})\b/) : null;
     if (shortSlashDateMatch) {
       const first = parseInt(shortSlashDateMatch[1], 10);
       const second = parseInt(shortSlashDateMatch[2], 10);
       if (first <= 31 && second <= 12) {
-        const year = messageDate.getFullYear();
-        const d = new Date(year, second - 1, first, 12, 0, 0);
-        if (!isNaN(d.getTime())) {
-          baseDate = d;
-          baseDateResolved = true;
-        }
+        targetDay = first;
+        targetMonth = second - 1;
+        targetYear = localYear;
+        baseDateResolved = true;
       }
     }
   }
@@ -839,23 +941,20 @@ export function resolveRecordedAt(
     const monthsList = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december",
                         "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
     const monthRegex = new RegExp(`\\b(\\d{1,2})\\s+(${monthsList.join("|")})\\s*(\\d{4})?\\b`, "i");
-    const monthMatch = originalMessage.match(monthRegex);
+    const monthMatch = originalMessage ? originalMessage.match(monthRegex) : null;
     if (monthMatch) {
-      const day = parseInt(monthMatch[1], 10);
+      targetDay = parseInt(monthMatch[1], 10);
       const monthStr = monthMatch[2].toLowerCase();
       let monthIdx = monthsList.indexOf(monthStr);
       if (monthIdx >= 12) monthIdx -= 12; // Handle shorthand months
-      const year = monthMatch[3] ? parseInt(monthMatch[3], 10) : messageDate.getFullYear();
-      const d = new Date(year, monthIdx, day, 12, 0, 0);
-      if (!isNaN(d.getTime())) {
-        baseDate = d;
-        baseDateResolved = true;
-      }
+      targetMonth = monthIdx;
+      targetYear = monthMatch[3] ? parseInt(monthMatch[3], 10) : localYear;
+      baseDateResolved = true;
     }
   }
 
   if (!baseDateResolved) {
-    // 3. Relative historical checks (yesterday, kal, last night, kal raat, yesterday morning)
+    // Relative yesterday checks
     const isYesterday = msgLower.includes("yesterday") ||
                         msgLower.includes("kal") ||
                         msgLower.includes("कल") ||
@@ -865,40 +964,57 @@ export function resolveRecordedAt(
                         msgLower.includes("yesterday morning");
 
     if (isYesterday) {
-      baseDate = new Date(messageDate);
-      baseDate.setDate(baseDate.getDate() - 1);
+      const tempDate = new Date(Date.UTC(localYear, localMonth, localDay));
+      tempDate.setUTCDate(tempDate.getUTCDate() - 1);
+      targetYear = tempDate.getUTCFullYear();
+      targetMonth = tempDate.getUTCMonth();
+      targetDay = tempDate.getUTCDate();
       baseDateResolved = true;
     }
   }
 
-  // Relative current day checks
-  if (!baseDateResolved) {
-    const isToday = msgLower.includes("today") ||
-                    msgLower.includes("aaj") ||
-                    msgLower.includes("आज") ||
-                    msgLower.includes("now") ||
-                    msgLower.includes("abhi") ||
-                    msgLower.includes("morning") ||
-                    msgLower.includes("subah") ||
-                    msgLower.includes("सुबह") ||
-                    msgLower.includes("dopahar") ||
-                    msgLower.includes("दोपहर") ||
-                    msgLower.includes("shaam") ||
-                    msgLower.includes("शाम") ||
-                    msgLower.includes("raat") ||
-                    msgLower.includes("रात") ||
-                    msgLower.includes("this morning") ||
-                    msgLower.includes("afternoon") ||
-                    msgLower.includes("evening") ||
-                    msgLower.includes("night");
+  // 3. Clock time parsing
+  const timeInput = (extractedRecordedAt || originalMessage || "").toLowerCase().trim();
+  const colonMatch = timeInput.match(/\b(\d{1,2})[:.](\d{2})\s*(am|pm)?\b/i);
+  const simpleMatch = timeInput.match(/\b(\d{1,2})\s*(am|pm)\b/i);
 
-    if (isToday) {
-      baseDate = new Date(messageDate);
-    }
+  let hasExplicitTime = false;
+  let targetHours = localHours;
+  let targetMinutes = localMinutes;
+
+  if (colonMatch) {
+    hasExplicitTime = true;
+    let hr = parseInt(colonMatch[1], 10);
+    const min = parseInt(colonMatch[2], 10);
+    const ampm = colonMatch[3];
+    if (ampm === "pm" && hr < 12) hr += 12;
+    if (ampm === "am" && hr === 12) hr = 0;
+    targetHours = hr;
+    targetMinutes = min;
+  } else if (simpleMatch) {
+    hasExplicitTime = true;
+    let hr = parseInt(simpleMatch[1], 10);
+    const ampm = simpleMatch[2];
+    if (ampm === "pm" && hr < 12) hr += 12;
+    if (ampm === "am" && hr === 12) hr = 0;
+    targetHours = hr;
+    targetMinutes = 0;
   }
 
-  // Apply explicit clock time if present
-  return applyTimeStringToDate(baseDate, extractedRecordedAt || originalMessage);
+  // 4. Construct final date in patient's local timezone (represented as UTC hours)
+  const finalLocalTimeMs = Date.UTC(
+    targetYear,
+    targetMonth,
+    targetDay,
+    targetHours,
+    targetMinutes,
+    hasExplicitTime ? 0 : localSeconds,
+    hasExplicitTime ? 0 : localMilliseconds
+  );
+
+  // 5. Shift back to absolute UTC by subtracting the timezone offset
+  const finalUtcTimeMs = finalLocalTimeMs - (tzOffsetMinutes * 60 * 1000);
+  return new Date(finalUtcTimeMs);
 }
 
 /**
@@ -915,7 +1031,7 @@ export function isValueSupportedByMessage(
   const cleanedMessage = stripNumbersBelongingToDatesAndTimes(originalMessage);
 
   // Extract all numbers from cleaned message (integers and decimals)
-  const numbersInMessage = cleanedMessage.match(/\d+(\.\d+)?/g) || [];
+  const numbersInMessage = cleanedMessage.match(/-?\d+(\.\d+)?/g) || [];
   const floatNumbers = numbersInMessage.map(n => parseFloat(n));
 
   // If parameter is body_temperature and value is in C, we might have had Fahrenheit in the message
@@ -1024,7 +1140,7 @@ export function findUnresolvedPlausibleNumbers(
   cleaned = cleaned.replace(/\b\d{4,}\b/g, "");
 
   // Now find all numbers (including decimals)
-  const numbersInMessage = cleaned.match(/\b\d+(?:\.\d+)?\b/g) || [];
+  const numbersInMessage = cleaned.match(/-?\b\d+(?:\.\d+)?\b/g) || [];
   const floatNumbers = numbersInMessage.map(n => parseFloat(n));
 
   // Identify the numbers that are represented in candidateRecords

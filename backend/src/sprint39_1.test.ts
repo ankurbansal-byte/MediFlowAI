@@ -13,6 +13,7 @@ import axios from "axios";
 
 // Force mock data mode
 process.env.USE_MOCK_DATA = "true";
+process.env.WHATSAPP_TIMEZONE_OFFSET_MINUTES = "0";
 
 let axiosPostCalls: Array<{ url: string; data: any }> = [];
 (axios as any).post = async (url: string, data?: any, config?: any) => {
