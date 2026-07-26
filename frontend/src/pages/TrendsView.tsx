@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import HealthSummary from "../components/HealthSummary";
 import TrendChart from "../components/TrendChart";
 import { type TrendRecord, type TrendPeriod } from "../components/TrendChart";
 import { type HealthParameter } from "../hooks/useTrendData";
 import { type TimelineRecord } from "../components/TimelineItem";
 import { formatGlucoseContext, getLocalDateString } from "../utils/date";
+import api from "../api/axios";
 
 interface TrendsViewProps {
+  patientId?: string;
   trends: Record<HealthParameter, TrendRecord[]>;
   selectedParameter: HealthParameter;
   setSelectedParameter: (param: HealthParameter) => void;
@@ -21,6 +23,7 @@ interface TrendsViewProps {
 }
 
 const TrendsView: React.FC<TrendsViewProps> = ({
+  patientId,
   trends,
   selectedParameter,
   setSelectedParameter,
@@ -34,6 +37,21 @@ const TrendsView: React.FC<TrendsViewProps> = ({
   setSelectedHistoryDate,
 }) => {
   const [glucoseContextFilter, setGlucoseContextFilter] = useState<string>("all");
+  const [labObservations, setLabObservations] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (patientId) {
+      api.get(`/patient/lab-observations/${patientId}`)
+        .then(res => {
+          if (res.data.success) {
+            setLabObservations(res.data.observations || []);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching lab observations in TrendsView:", err);
+        });
+    }
+  }, [patientId]);
 
   // Group chronological Health Records by recorded calendar date
   const groupedRecords = React.useMemo(() => {
@@ -416,6 +434,64 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                 })
               )}
             </div>
+          </div>
+        )}
+      </section>
+
+      {/* Your Lab Results Section */}
+      <section aria-labelledby="lab-results-title" style={{ borderTop: "1px solid var(--line)", paddingTop: "40px", marginTop: "40px" }}>
+        <h2 id="lab-results-title" style={{ margin: "0 0 8px 0", color: "var(--navy)", fontSize: "1.5rem", fontWeight: 800 }}>
+          🧪 Your Lab Results
+        </h2>
+        <p style={{ margin: "0 0 20px 0", color: "var(--muted)", fontSize: "0.95rem" }}>
+          Laboratory findings and observations extracted from your shared reports.
+        </p>
+
+        {labObservations.length === 0 ? (
+          <div style={{ padding: "20px", border: "1px dashed var(--line)", borderRadius: "8px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.9rem" }}>
+            No laboratory records found. Send a report via WhatsApp to see observations here.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {labObservations.map((obs, idx) => (
+              <div key={idx} style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "16px",
+                background: "#ffffff",
+                border: "1px solid var(--line, #e4e7eb)",
+                borderRadius: "10px",
+                fontWeight: 700,
+                fontSize: "0.95rem"
+              }}>
+                <div>
+                  <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 700, display: "block" }}>
+                    {new Date(obs.specimenDate || obs.createdAt).toLocaleDateString()}
+                  </span>
+                  <span style={{ color: "var(--navy)", fontWeight: 800, fontSize: "1.05rem" }}>
+                    {obs.testName}
+                  </span>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <strong style={{ fontSize: "1.2rem", color: "var(--navy)" }}>
+                    {obs.value} <span style={{ fontSize: "0.8rem", color: "var(--muted)" }}>{obs.unit}</span>
+                  </strong>
+                  {obs.flag && (
+                    <span style={{
+                      display: "block",
+                      marginTop: "4px",
+                      fontSize: "0.72rem",
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      color: obs.flag.toLowerCase() === "high" || obs.flag.toLowerCase() === "low" ? "#ef4444" : "#10b981"
+                    }}>
+                      [{obs.flag}]
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>

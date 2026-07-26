@@ -9,12 +9,19 @@ import { dynamicMockUsers, dynamicMockAssignments } from "../utils/mockUsers";
 import { dynamicMockHospitals } from "../utils/mockHospitals";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import { LabReport, LabObservation } from "../models/LabReport";
 
 type PatientDiscoveryResult = {
   patientId: string;
   latestRecordedAt: Date;
   totalRecords: number;
 };
+
+// ==============================
+// Mock Lab Data Store
+// ==============================
+export const MOCK_LAB_REPORTS: Record<string, any[]> = {};
+export const MOCK_LAB_OBSERVATIONS: Record<string, any[]> = {};
 
 // ==============================
 // Fallback Mock Data Definition
@@ -961,6 +968,83 @@ export const addHealthRecord = async (
       success: false,
       message: "Failed to save health record.",
     });
+  }
+};
+
+// ==============================
+// Lab Reports & Observations Endpoints
+// ==============================
+export const getLabReports = async (req: AuthenticatedRequest, res: Response) => {
+  const patientId = req.params.patientId as string;
+  const user = req.user;
+
+  if (!user) {
+    return res.status(401).json({ success: false, message: "Unauthorized." });
+  }
+
+  const allowed = await canAccessPatient(user, patientId);
+  if (!allowed) {
+    return res.status(403).json({ success: false, message: "Forbidden. Access to lab reports is restricted." });
+  }
+
+  if (process.env.USE_MOCK_DATA === "true") {
+    const reports = [...(MOCK_LAB_REPORTS[patientId] || [])].sort(
+      (a, b) => new Date(b.createdAt || b.reportDate || Date.now()).getTime() - new Date(a.createdAt || a.reportDate || Date.now()).getTime()
+    );
+    return res.status(200).json({
+      success: true,
+      totalReports: reports.length,
+      reports,
+    });
+  }
+
+  try {
+    const reports = await LabReport.find({ patientId }).sort({ createdAt: -1 });
+    return res.status(200).json({
+      success: true,
+      totalReports: reports.length,
+      reports,
+    });
+  } catch (error) {
+    console.error("Error fetching lab reports:", error);
+    return res.status(500).json({ success: false, message: "Failed to fetch lab reports." });
+  }
+};
+
+export const getLabObservations = async (req: AuthenticatedRequest, res: Response) => {
+  const patientId = req.params.patientId as string;
+  const user = req.user;
+
+  if (!user) {
+    return res.status(401).json({ success: false, message: "Unauthorized." });
+  }
+
+  const allowed = await canAccessPatient(user, patientId);
+  if (!allowed) {
+    return res.status(403).json({ success: false, message: "Forbidden. Access to lab observations is restricted." });
+  }
+
+  if (process.env.USE_MOCK_DATA === "true") {
+    const observations = [...(MOCK_LAB_OBSERVATIONS[patientId] || [])].sort(
+      (a, b) => new Date(b.specimenDate || b.createdAt || Date.now()).getTime() - new Date(a.specimenDate || a.createdAt || Date.now()).getTime()
+    );
+    return res.status(200).json({
+      success: true,
+      totalObservations: observations.length,
+      observations,
+    });
+  }
+
+  try {
+    const observations = await LabObservation.find({ patientId }).sort({ specimenDate: -1, createdAt: -1 });
+    return res.status(200).json({
+      success: true,
+      totalObservations: observations.length,
+      observations,
+    });
+  } catch (error) {
+    console.error("Error fetching lab observations:", error);
+    return res.status(500).json({ success: false, message: "Failed to fetch lab observations." });
   }
 };
 

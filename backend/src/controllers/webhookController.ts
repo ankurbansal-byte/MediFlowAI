@@ -34,6 +34,17 @@ import {
 } from "../services/pendingClarificationService";
 import { PARAMETER_REGISTRY } from "../utils/parameterRegistry";
 import { CandidateRecord, GlucoseContext, MessageIntent } from "../utils/intelligenceContract";
+import { extractMedicalDocumentText, extractStructuredLabData } from "../services/documentService";
+import { LabReport, LabObservation } from "../models/LabReport";
+import { MOCK_LAB_REPORTS, MOCK_LAB_OBSERVATIONS } from "./patientController";
+import {
+  getLabProcessingSuccessMessage,
+  getLabNoResultsMessage,
+  getLabUnsupportedFileMessage,
+  getLabFileTooLargeMessage,
+  getLabProcessingFailureMessage,
+  formatLatestLabObservation,
+} from "../utils/whatsappResponses";
 
 // Simple in-memory cache for processed/processing message IDs to prevent duplicate webhook delivery/processing.
 const processingMessageIds = new Set<string>();
@@ -850,6 +861,222 @@ async function handleVoiceFailureResponse(err: any, from: string, patient: any) 
   await sendWhatsAppMessage(from, responseText);
 }
 
+async function handleDocumentIngestion(
+  incomingMessage: any,
+  patient: any,
+  from: string,
+  whatsappMessageId: string,
+  messageDate: Date,
+  resolvedLang: LanguageStyle
+) {
+  const messageType = incomingMessage.type;
+  const mediaObj = messageType === "image" ? incomingMessage.image : incomingMessage.document;
+  const mediaId = mediaObj?.id;
+  const mimeType = mediaObj?.mime_type;
+
+  // 1. Missing media ID
+  if (!mediaId) {
+    const errorMsg = getLabUnsupportedFileMessage(resolvedLang);
+    await sendWhatsAppMessage(from, errorMsg);
+    return;
+  }
+
+  // 2. Validate MIME type early
+  const cleanMime = mimeType?.toLowerCase();
+  const supportedMimes = ["image/jpeg", "image/png", "application/pdf"];
+  if (!cleanMime || !supportedMimes.includes(cleanMime)) {
+    const errorMsg = getLabUnsupportedFileMessage(resolvedLang);
+    await sendWhatsAppMessage(from, errorMsg);
+    return;
+  }
+
+  const token = process.env.WHATSAPP_TOKEN;
+  if (!token) {
+    const errorMsg = getLabProcessingFailureMessage(resolvedLang);
+    await sendWhatsAppMessage(from, errorMsg);
+    return;
+  }
+
+  let filePath: string | null = null;
+
+  try {
+    // 3. Metadata retrieval with timeout (15s)
+    let metadataResponse;
+    try {
+      metadataResponse = await axios.get(
+        `https://graph.facebook.com/v23.0/${mediaId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 15000,
+        }
+      );
+    } catch (metaErr) {
+      console.error("❌ Document metadata retrieval failed:", metaErr);
+      const errorMsg = getLabProcessingFailureMessage(resolvedLang);
+      await sendWhatsAppMessage(from, errorMsg);
+      return;
+    }
+
+    const {
+      url: mediaUrl,
+      file_size: metaFileSize,
+    } = metadataResponse.data;
+
+    // Validate size limit (5MB)
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    if (metaFileSize && metaFileSize > MAX_FILE_SIZE) {
+      const errorMsg = getLabFileTooLargeMessage(resolvedLang);
+      await sendWhatsAppMessage(from, errorMsg);
+      return;
+    }
+
+    // 4. Download media file
+    let downloadResponse;
+    try {
+      downloadResponse = await axios.get(mediaUrl, {
+        responseType: "arraybuffer",
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 15000,
+      });
+    } catch (dlErr) {
+      console.error("❌ Document download failed:", dlErr);
+      const errorMsg = getLabProcessingFailureMessage(resolvedLang);
+      await sendWhatsAppMessage(from, errorMsg);
+      return;
+    }
+
+    const buffer = downloadResponse.data;
+    if (!buffer || buffer.byteLength === 0) {
+      const errorMsg = getLabProcessingFailureMessage(resolvedLang);
+      await sendWhatsAppMessage(from, errorMsg);
+      return;
+    }
+
+    // Post-download size check
+    if (buffer.byteLength > MAX_FILE_SIZE) {
+      const errorMsg = getLabFileTooLargeMessage(resolvedLang);
+      await sendWhatsAppMessage(from, errorMsg);
+      return;
+    }
+
+    // 5. Save temporarily
+    const folder = path.join(process.cwd(), "uploads");
+    if (!fs.existsSync(folder)) {
+      fs.mkdirSync(folder);
+    }
+    const ext = cleanMime === "application/pdf" ? "pdf" : (cleanMime === "image/png" ? "png" : "jpg");
+    filePath = path.join(folder, `lab_${whatsappMessageId}_${mediaId}.${ext}`);
+    fs.writeFileSync(filePath, buffer);
+
+    // 6. OCR Text Extraction (timeout via service if needed, but handled or mocked)
+    let ocrText = "";
+    try {
+      ocrText = await extractMedicalDocumentText(filePath, cleanMime);
+    } catch (ocrErr) {
+      console.error("❌ OCR failed:", ocrErr);
+      const errorMsg = getLabProcessingFailureMessage(resolvedLang);
+      await sendWhatsAppMessage(from, errorMsg);
+      return;
+    }
+
+    if (!ocrText || !ocrText.trim()) {
+      const errorMsg = getLabNoResultsMessage(resolvedLang);
+      await sendWhatsAppMessage(from, errorMsg);
+      return;
+    }
+
+    // 7. Structured Extraction
+    let observations: any[] = [];
+    try {
+      observations = await extractStructuredLabData(ocrText);
+    } catch (extErr) {
+      console.error("❌ Structured lab extraction failed:", extErr);
+      const errorMsg = getLabProcessingFailureMessage(resolvedLang);
+      await sendWhatsAppMessage(from, errorMsg);
+      return;
+    }
+
+    if (!observations || observations.length === 0) {
+      const errorMsg = getLabNoResultsMessage(resolvedLang);
+      await sendWhatsAppMessage(from, errorMsg);
+      return;
+    }
+
+    // 8. Save LabReport and LabObservations
+    const labReportData = {
+      patientId: patient.patientId,
+      hospitalId: patient.hospitalId,
+      whatsappMessageId,
+      mediaType: messageType,
+      mimeType: cleanMime,
+      reportDate: messageDate,
+      laboratoryName: "Extracted Lab",
+      status: "success",
+      extractionMetadata: { ocrTextLength: ocrText.length }
+    };
+
+    let reportId: any = "mock-report-id";
+
+    if (process.env.USE_MOCK_DATA === "true") {
+      if (!MOCK_LAB_REPORTS[patient.patientId]) {
+        MOCK_LAB_REPORTS[patient.patientId] = [];
+      }
+      MOCK_LAB_REPORTS[patient.patientId].push(labReportData);
+    } else {
+      const reportDoc = await LabReport.create(labReportData);
+      reportId = reportDoc._id;
+    }
+
+    const savedObservations: any[] = [];
+    for (let i = 0; i < observations.length; i++) {
+      const obs = observations[i];
+      const obsPayload = {
+        patientId: patient.patientId,
+        hospitalId: patient.hospitalId,
+        labReportId: reportId,
+        testName: obs.testName,
+        canonicalTestKey: obs.canonicalTestKey || null,
+        value: obs.value,
+        unit: obs.unit || "",
+        referenceRangeText: obs.referenceRangeText || "",
+        flag: obs.flag || "",
+        specimenDate: obs.specimenDate ? new Date(obs.specimenDate) : messageDate,
+        source: messageType === "image" ? "whatsapp_image" as const : "whatsapp_document" as const,
+        whatsappMessageId: `${whatsappMessageId}_obs${i}`,
+      };
+
+      if (process.env.USE_MOCK_DATA === "true") {
+        if (!MOCK_LAB_OBSERVATIONS[patient.patientId]) {
+          MOCK_LAB_OBSERVATIONS[patient.patientId] = [];
+        }
+        MOCK_LAB_OBSERVATIONS[patient.patientId].push(obsPayload);
+      } else {
+        await LabObservation.create(obsPayload);
+      }
+      savedObservations.push(obsPayload);
+    }
+
+    // Reply with localized success
+    const successMsg = getLabProcessingSuccessMessage(savedObservations.length, resolvedLang);
+    await sendWhatsAppMessage(from, successMsg);
+
+  } catch (err: any) {
+    console.error("❌ Exception during document ingestion:", err);
+    const errorMsg = getLabProcessingFailureMessage(resolvedLang);
+    await sendWhatsAppMessage(from, errorMsg);
+  } finally {
+    // 9. Privacy Cleanup: Short-lived temporary file cleanup on both success and failure
+    if (filePath && fs.existsSync(filePath)) {
+      try {
+        fs.unlinkSync(filePath);
+        console.log(`🧹 Privacy Cleanup: Successfully deleted temporary report file at ${filePath}`);
+      } catch (cleanupErr: any) {
+        console.error(`⚠️ Failed to delete temporary report file at ${filePath}:`, cleanupErr.message || cleanupErr);
+      }
+    }
+  }
+}
+
 // Receive WhatsApp Messages
 export const receiveMessage = async (req: Request, res: Response) => {
   console.log(`🔍 [Webhook Diagnostic] [Phase A: Request Received] Path: ${req.originalUrl}, Method: ${req.method}`);
@@ -920,6 +1147,17 @@ export const receiveMessage = async (req: Request, res: Response) => {
             break;
           }
         }
+        if (!existsInDb) {
+          for (const pId in MOCK_LAB_REPORTS) {
+            const match = MOCK_LAB_REPORTS[pId].find(
+              (r: any) => r.whatsappMessageId === whatsappMessageId
+            );
+            if (match) {
+              existsInDb = true;
+              break;
+            }
+          }
+        }
       } else {
         const escapedId = whatsappMessageId.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
         const record = await HealthRecord.findOne({
@@ -930,6 +1168,11 @@ export const receiveMessage = async (req: Request, res: Response) => {
         }, { _id: 1 });
         if (record) {
           existsInDb = true;
+        } else {
+          const report = await LabReport.findOne({ whatsappMessageId }, { _id: 1 });
+          if (report) {
+            existsInDb = true;
+          }
         }
       }
 
@@ -967,6 +1210,20 @@ export const receiveMessage = async (req: Request, res: Response) => {
           }
           return res.sendStatus(200);
         }
+      }
+
+      // ==========================
+      // Lab Report/Document Ingestion
+      // ==========================
+      if ((messageType === "image" || messageType === "document") && from) {
+        console.log(`🖼️ Document/Image Message Received (type: ${messageType})`);
+        const pending = getPendingClarification(patient.patientId);
+        const resolvedLang = (pending?.language || "english") as LanguageStyle;
+        await handleDocumentIngestion(incomingMessage, patient, from, whatsappMessageId, messageDate, resolvedLang);
+        if (whatsappMessageId) {
+          markMessageAsProcessed(whatsappMessageId);
+        }
+        return res.sendStatus(200);
       }
 
       // ==========================
@@ -1339,13 +1596,45 @@ async function handleQueryFlow(
 
   let resultMsg = "";
   if (queryPattern.type === "latest" && queryPattern.parameter) {
-    const records = await getPatientRecords(patient.patientId, patient.hospitalId);
-    const matched = records.find(r => r.parameter === queryPattern.parameter);
-    if (matched) {
-      const unit = matched.unit || PARAMETER_REGISTRY[matched.parameter]?.defaultUnit || "";
-      resultMsg = formatLatestReading(matched.parameter, matched.value, unit, matched.context, resolvedLang, matched.timeContext);
+    const isVital = PARAMETER_REGISTRY[queryPattern.parameter] !== undefined;
+    if (isVital) {
+      const records = await getPatientRecords(patient.patientId, patient.hospitalId);
+      const matched = records.find(r => r.parameter === queryPattern.parameter);
+      if (matched) {
+        const unit = matched.unit || PARAMETER_REGISTRY[matched.parameter]?.defaultUnit || "";
+        resultMsg = formatLatestReading(matched.parameter, matched.value, unit, matched.context, resolvedLang, matched.timeContext);
+      } else {
+        resultMsg = formatNoRecords(resolvedLang, queryPattern.parameter);
+      }
     } else {
-      resultMsg = formatNoRecords(resolvedLang, queryPattern.parameter);
+      let matchedObservation = null;
+      if (process.env.USE_MOCK_DATA === "true") {
+        const list = MOCK_LAB_OBSERVATIONS[patient.patientId] || [];
+        matchedObservation = list
+          .filter(obs => obs.canonicalTestKey === queryPattern.parameter || obs.testName.toLowerCase().includes(queryPattern.parameter || ""))
+          .sort((a, b) => new Date(b.specimenDate || b.createdAt || Date.now()).getTime() - new Date(a.specimenDate || a.createdAt || Date.now()).getTime())[0];
+      } else {
+        matchedObservation = await LabObservation.findOne({
+          patientId: patient.patientId,
+          $or: [
+            { canonicalTestKey: queryPattern.parameter },
+            { testName: { $regex: new RegExp(queryPattern.parameter || "", "i") } }
+          ]
+        }).sort({ specimenDate: -1, createdAt: -1 });
+      }
+
+      if (matchedObservation) {
+        resultMsg = formatLatestLabObservation(
+          matchedObservation.testName,
+          matchedObservation.value,
+          matchedObservation.unit || "",
+          matchedObservation.referenceRangeText || undefined,
+          matchedObservation.flag || undefined,
+          resolvedLang
+        );
+      } else {
+        resultMsg = formatNoRecords(resolvedLang, queryPattern.parameter);
+      }
     }
   } else if (queryPattern.type === "today") {
     // Boundary of today based on IST (offset +330 min)

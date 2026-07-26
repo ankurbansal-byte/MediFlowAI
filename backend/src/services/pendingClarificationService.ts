@@ -128,7 +128,26 @@ export function detectQueryPattern(msg: string): { type: "latest" | "today" | nu
       body_temperature: ["temp", "temperature", "fever", "bukhar", "तापमान"],
       weight: ["weight", "vajan", "wajan", "kg", "वजन"],
       respiratory_rate: ["breath", "breathing", "resp", "respiratory", "saans"],
-      height: ["height", "lambai", "kad"]
+      height: ["height", "lambai", "kad"],
+      hba1c: ["hba1c", "hb a1c", "a1c"],
+      hemoglobin: ["hemoglobin", "hb", "hemo", "heamoglobin"],
+      creatinine: ["creatinine", "creatinin"],
+      fasting_blood_sugar: ["fbs", "fasting blood sugar", "fasting sugar"],
+      post_prandial_blood_sugar: ["ppbs", "post-prandial", "post prandial"],
+      random_blood_sugar: ["rbs", "random blood sugar", "random sugar"],
+      urea: ["urea"],
+      tsh: ["tsh"],
+      t3: ["t3"],
+      t4: ["t4"],
+      vitamin_d: ["vitamin d", "vit d"],
+      vitamin_b12: ["vitamin b12", "vit b12"],
+      rbc: ["rbc"],
+      wbc: ["wbc"],
+      platelets: ["platelets"],
+      cholesterol: ["cholesterol"],
+      hdl: ["hdl"],
+      ldl: ["ldl"],
+      triglycerides: ["triglycerides"]
     };
 
     for (const [param, keywords] of Object.entries(keywordsMap)) {

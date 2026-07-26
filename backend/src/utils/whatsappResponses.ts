@@ -91,6 +91,96 @@ export function formatConfirmation(records: any[], lang: LanguageStyle): string 
 }
 
 /**
+ * Localized Lab Report processing success response.
+ */
+export function getLabProcessingSuccessMessage(count: number, lang: LanguageStyle): string {
+  if (lang === "hindi") {
+    return `रिपोर्ट प्रोसेस हो गई 👍 ${count} लैब परिणाम सेव किए गए।`;
+  } else if (lang === "hinglish") {
+    return `Report process ho gayi 👍 ${count} lab results save kiye gaye.`;
+  } else {
+    return `Report processed successfully 👍 ${count} lab results saved.`;
+  }
+}
+
+/**
+ * Localized response when no readable lab results are found.
+ */
+export function getLabNoResultsMessage(lang: LanguageStyle): string {
+  if (lang === "hindi") {
+    return "रिपोर्ट में कोई पठनीय लैब परिणाम नहीं मिले।";
+  } else if (lang === "hinglish") {
+    return "Koi readable lab results nahi mile report mein.";
+  } else {
+    return "No readable lab results found in the report.";
+  }
+}
+
+/**
+ * Localized unsupported document/file format response.
+ */
+export function getLabUnsupportedFileMessage(lang: LanguageStyle): string {
+  if (lang === "hindi") {
+    return "यह दस्तावेज़ फ़ॉर्मेट समर्थित नहीं है। कृपया इमेज (JPEG, PNG) या पीडीएफ रिपोर्ट भेजें।";
+  } else if (lang === "hinglish") {
+    return "Yeh document format supported nahi hai. Kripya image (JPEG, PNG) ya PDF report bhejein.";
+  } else {
+    return "Unsupported document format. Please send an image (JPEG, PNG) or a PDF report.";
+  }
+}
+
+/**
+ * Localized document/file too large response.
+ */
+export function getLabFileTooLargeMessage(lang: LanguageStyle): string {
+  if (lang === "hindi") {
+    return "रिपोर्ट फ़ाइल बहुत बड़ी है। कृपया 5MB से छोटी फ़ाइल भेजें।";
+  } else if (lang === "hinglish") {
+    return "Report file bahut badi hai. Kripya 5MB se chhota document bhejein.";
+  } else {
+    return "Report file is too large. Please send a file under 5MB.";
+  }
+}
+
+/**
+ * Localized document/file processing failure response.
+ */
+export function getLabProcessingFailureMessage(lang: LanguageStyle): string {
+  if (lang === "hindi") {
+    return "रिपोर्ट प्रोसेस करने में समस्या हुई। कृपया बाद में प्रयास करें।";
+  } else if (lang === "hinglish") {
+    return "Report process karne mein dikkat hui. Kripya baad mein try karein.";
+  } else {
+    return "Failed to process report. Please try again later.";
+  }
+}
+
+/**
+ * Localized lab observation query format.
+ */
+export function formatLatestLabObservation(
+  testName: string,
+  value: any,
+  unit: string,
+  referenceRangeText: string | undefined,
+  flag: string | undefined,
+  lang: LanguageStyle
+): string {
+  const space = unit && (unit.endsWith("%") || unit.startsWith("%")) ? "" : " ";
+  const unitStr = unit ? `${space}${unit}` : "";
+  const flagStr = flag ? ` [${flag.toUpperCase()}]` : "";
+  const refStr = referenceRangeText ? ` (Ref: ${referenceRangeText})` : "";
+
+  if (lang === "hindi") {
+    return `आपकी नवीनतम ${testName} रिपोर्ट ${value}${unitStr}${flagStr}${refStr} है।`;
+  } else if (lang === "hinglish") {
+    return `Aapki latest ${testName} reading ${value}${unitStr}${flagStr}${refStr} hai.`;
+  } else {
+    return `Your latest ${testName} reading is ${value}${unitStr}${flagStr}${refStr}.`;
+  }
+}
+
+/**
  * Localized voice note could not be understood/transcribed response.
  */
 export function getVoiceNotUnderstoodMessage(lang: LanguageStyle): string {
