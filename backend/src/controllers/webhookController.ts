@@ -959,6 +959,8 @@ async function handleDocumentIngestion(
       return;
     }
 
+    console.log(`🔍 [Stage Diagnostic] [MEDIA_DOWNLOADED] Succeeded. MimeType: ${cleanMime}, Size: ${buffer.byteLength} bytes`);
+
     // 5. Save temporarily
     const folder = path.join(process.cwd(), "uploads");
     if (!fs.existsSync(folder)) {
@@ -995,6 +997,8 @@ async function handleDocumentIngestion(
       await sendWhatsAppMessage(from, errorMsg);
       return;
     }
+
+    console.log(`🔍 [Stage Diagnostic] [LAB_STRUCTURED_EXTRACTION_RESULT] Count: ${observations.length}, Tests: ${observations.map(o => o.canonicalTestKey || o.testName).join(", ")}`);
 
     if (!observations || observations.length === 0) {
       const errorMsg = getLabNoResultsMessage(resolvedLang);
@@ -1055,6 +1059,8 @@ async function handleDocumentIngestion(
       }
       savedObservations.push(obsPayload);
     }
+
+    console.log(`🔍 [Stage Diagnostic] [LAB_PERSISTENCE_RESULT] Succeeded. Saved observations count: ${savedObservations.length}`);
 
     // Reply with localized success
     const successMsg = getLabProcessingSuccessMessage(savedObservations.length, resolvedLang);
