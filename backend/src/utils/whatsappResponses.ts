@@ -330,3 +330,110 @@ export function getImplausibleValueClarification(parameter: string, value: any, 
     return `The reading for ${name} (${value}) seems unusual. Please re-check and enter the correct reading.`;
   }
 }
+
+/**
+ * Format latest reading response for read-back query.
+ */
+export function formatLatestReading(
+  parameter: string,
+  value: any,
+  unit: string,
+  context: string | undefined,
+  lang: LanguageStyle,
+  timeContext?: string
+): string {
+  const name = getFriendlyName(parameter, lang);
+  const contextLabel = context && context !== "unknown" ? getContextLabel(context, lang) : "";
+  const space = unit === "%" ? "" : " ";
+
+  let tcLabel = "";
+  if (timeContext) {
+    if (lang === "hindi") {
+      tcLabel = timeContext === "morning" ? "सुबह" : timeContext === "afternoon" ? "दोपहर" : timeContext === "evening" ? "शाम" : "रात";
+    } else if (lang === "hinglish") {
+      tcLabel = timeContext === "morning" ? "Morning" : timeContext === "afternoon" ? "Dopahar" : timeContext === "evening" ? "Shaam" : "Raat";
+    } else {
+      tcLabel = timeContext.charAt(0).toUpperCase() + timeContext.slice(1);
+    }
+  }
+
+  let details: string[] = [];
+  if (contextLabel) details.push(contextLabel);
+  if (tcLabel) details.push(tcLabel);
+
+  const contextStr = details.length > 0 ? ` (${details.join(" - ")})` : "";
+
+  if (lang === "hindi") {
+    return `आपकी नवीनतम ${name} रीडिंग ${value}${space}${unit}${contextStr} है।`;
+  } else if (lang === "hinglish") {
+    return `Aapki latest ${name} reading ${value}${space}${unit}${contextStr} hai.`;
+  } else {
+    return `Your latest ${name} reading is ${value}${space}${unit}${contextStr}.`;
+  }
+}
+
+/**
+ * Format compact list of today's readings.
+ */
+export function formatTodaysReadings(records: any[], lang: LanguageStyle): string {
+  let title = "Today's readings:";
+  if (lang === "hindi") {
+    title = "आज की रीडिंग:";
+  } else if (lang === "hinglish") {
+    title = "Aaj ki readings:";
+  }
+
+  const lines = records.map(r => {
+    const name = getFriendlyName(r.parameter, lang);
+    const capName = (lang !== "hindi" && name.length > 0) ? name.charAt(0).toUpperCase() + name.slice(1) : name;
+    const unit = r.unit || PARAMETER_REGISTRY[r.parameter]?.defaultUnit || "";
+    const space = unit === "%" ? "" : " ";
+
+    const contextLabel = r.context && r.context !== "unknown" ? getContextLabel(r.context, lang) : "";
+
+    let tcLabel = "";
+    if (r.timeContext) {
+      if (lang === "hindi") {
+        tcLabel = r.timeContext === "morning" ? "सुबह" : r.timeContext === "afternoon" ? "दोपहर" : r.timeContext === "evening" ? "शाम" : "रात";
+      } else if (lang === "hinglish") {
+        tcLabel = r.timeContext === "morning" ? "Morning" : r.timeContext === "afternoon" ? "Dopahar" : r.timeContext === "evening" ? "Shaam" : "Raat";
+      } else {
+        tcLabel = r.timeContext.charAt(0).toUpperCase() + r.timeContext.slice(1);
+      }
+    }
+
+    let details: string[] = [];
+    if (contextLabel) details.push(contextLabel);
+    if (tcLabel) details.push(tcLabel);
+
+    const detailStr = details.length > 0 ? ` (${details.join(" - ")})` : "";
+
+    return `• ${capName} ${r.value}${space}${unit}${detailStr}`;
+  });
+
+  return `${title}\n${lines.join("\n")}`;
+}
+
+/**
+ * Format response when no records are found.
+ */
+export function formatNoRecords(lang: LanguageStyle, parameter?: string): string {
+  if (parameter) {
+    const name = getFriendlyName(parameter, lang);
+    if (lang === "hindi") {
+      return `${name} की कोई रीडिंग नहीं मिली।`;
+    } else if (lang === "hinglish") {
+      return `${name} ki koi reading nahi mili.`;
+    } else {
+      return `No reading found for ${name}.`;
+    }
+  } else {
+    if (lang === "hindi") {
+      return "आज की कोई रीडिंग नहीं मिली।";
+    } else if (lang === "hinglish") {
+      return "Aaj ki koi reading nahi mili.";
+    } else {
+      return "No readings found for today.";
+    }
+  }
+}

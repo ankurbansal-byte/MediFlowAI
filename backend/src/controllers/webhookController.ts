@@ -28,6 +28,9 @@ import {
   completePendingClarification,
   cancelPendingClarification,
   PendingClarification,
+  detectQueryPattern,
+  getRecentlyResolvedContext,
+  setRecentlyResolvedContext,
 } from "../services/pendingClarificationService";
 import { PARAMETER_REGISTRY } from "../utils/parameterRegistry";
 import { CandidateRecord, GlucoseContext, MessageIntent } from "../utils/intelligenceContract";
@@ -87,6 +90,9 @@ import {
   getCorrectionTargetNotFoundMessage,
   getEmergencyResponse,
   getImplausibleValueClarification,
+  formatLatestReading,
+  formatNoRecords,
+  formatTodaysReadings,
 } from "../utils/whatsappResponses";
 
 // Resolve language style with fallback to detection, prioritizing pending state's language if available
@@ -342,6 +348,20 @@ async function processMessageFlow(
     }
     newlySavedRecords.push(rPayload);
     console.log("✅ Saved complete candidate:", rPayload.parameter);
+  }
+
+  if (newlySavedRecords.length > 0) {
+    const resolvedRecords = newlySavedRecords.map(r => ({
+      patientId: r.patientId,
+      parameter: r.parameter,
+      value: r.value,
+      unit: r.unit,
+      context: r.context,
+      timeContext: r.timeContext,
+      recordedAt: r.recordedAt,
+      whatsappMessageId: r.whatsappMessageId,
+    }));
+    setRecentlyResolvedContext(patient.patientId, resolvedRecords);
   }
 
   // Check emergency flow
@@ -657,6 +677,24 @@ async function handleCorrectionFlow(
   const records = await getPatientRecords(patient.patientId, patient.hospitalId);
   console.log("DEBUG patient records count:", records.length, records);
 
+  const recentlyResolved = getRecentlyResolvedContext(patient.patientId);
+  if (recentlyResolved && recentlyResolved.records.length > 0) {
+    const lastResolved = recentlyResolved.records[0];
+    if (!parsed.parameter) {
+      if (lastResolved.parameter === "blood_sugar" && parseGlucoseContext(message)) {
+        parsed.parameter = "blood_sugar";
+      } else {
+        parsed.parameter = lastResolved.parameter;
+      }
+    }
+    if (parsed.oldValue === null || parsed.oldValue === undefined) {
+      parsed.oldValue = lastResolved.value;
+    }
+    if (parsed.newValue === null || parsed.newValue === undefined) {
+      parsed.newValue = lastResolved.value;
+    }
+  }
+
   const { targets } = await resolveTargetRecord(patient, parsed, records);
   console.log("DEBUG targets count:", targets.length, targets);
 
@@ -922,6 +960,24 @@ export const receiveMessage = async (req: Request, res: Response) => {
 
         const pending = getPendingClarification(patient.patientId);
 
+        // Read-back query flow integration
+        const queryPattern = detectQueryPattern(message);
+        if (queryPattern.type !== null) {
+          console.log("🔍 Read-back query detected:", queryPattern);
+          const savedPending = pending;
+          if (pending) {
+            clearPendingClarification(patient.patientId);
+          }
+          await handleQueryFlow(message, patient, from, whatsappMessageId, messageDate, queryPattern);
+          if (savedPending) {
+            setPendingClarification(patient.patientId, savedPending);
+          }
+          if (whatsappMessageId) {
+            markMessageAsProcessed(whatsappMessageId);
+          }
+          return res.sendStatus(200);
+        }
+
         if (pending) {
           const resolvedPendingLang = (pending.language || "english") as LanguageStyle;
           // Check for cancel command
@@ -929,6 +985,21 @@ export const receiveMessage = async (req: Request, res: Response) => {
             cancelPendingClarification(patient.patientId);
             clearPendingClarification(patient.patientId);
             await sendWhatsAppMessage(from, getCancellationAcknowledgement(resolvedPendingLang));
+            if (whatsappMessageId) {
+              markMessageAsProcessed(whatsappMessageId);
+            }
+            return res.sendStatus(200);
+          }
+
+          if (isExplicitNewObservation(message, pending)) {
+            console.log("⚠️ Explicit new observation bypass detected. Suspending active pending clarification.");
+            const savedPending = pending;
+            clearPendingClarification(patient.patientId);
+            await processMessageFlow(message, patient, from, whatsappMessageId, messageDate);
+            const newPending = getPendingClarification(patient.patientId);
+            if (!newPending) {
+              setPendingClarification(patient.patientId, savedPending);
+            }
             if (whatsappMessageId) {
               markMessageAsProcessed(whatsappMessageId);
             }
@@ -1186,6 +1257,125 @@ export const receiveMessage = async (req: Request, res: Response) => {
   res.sendStatus(200);
 };
 
+function isExplicitNewObservation(message: string, pending: PendingClarification): boolean {
+  const detected = detectParameterFromMessage(message);
+  if (!detected) return false;
+
+  // An explicit new observation MUST contain a numeric vital value
+  const cleaned = stripNumbersBelongingToDatesAndTimes(message);
+  const hasNumbers = /\b\d+\b/.test(cleaned);
+  if (!hasNumbers) {
+    return false;
+  }
+
+  const pendingParams = new Set(pending.candidateRecords.map(r => r.parameter));
+  if (pending.unresolvedMeasurements && pending.unresolvedMeasurements.length > 0) {
+    // If it mentions other numbers besides the pending unresolved ones, it's a new observation
+    if (hasOtherNumbers(message, pending.unresolvedMeasurements)) {
+      return true;
+    }
+    return false;
+  }
+
+  return true;
+}
+
+function stripNumbersBelongingToDatesAndTimes(msg: string): string {
+  let cleaned = msg.toLowerCase();
+  cleaned = cleaned.replace(/\b\d{4}-\d{2}-\d{2}\b/g, "");
+  cleaned = cleaned.replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g, "");
+  cleaned = cleaned.replace(/\b\d{1,2}[:.]\d{2}\s*(?:am|pm)?\b/gi, "");
+  cleaned = cleaned.replace(/\b\d+\s*(?:am|pm|hours|hrs|hr|minutes|mins|min|seconds|sec)\b/gi, "");
+  return cleaned;
+}
+
+async function handleQueryFlow(
+  message: string,
+  patient: any,
+  from: string,
+  whatsappMessageId: string,
+  messageDate: Date,
+  queryPattern: { type: "latest" | "today"; parameter?: string }
+) {
+  const resolvedLang = detectLanguageStyle(message);
+
+  let resultMsg = "";
+  if (queryPattern.type === "latest" && queryPattern.parameter) {
+    const records = await getPatientRecords(patient.patientId, patient.hospitalId);
+    const matched = records.find(r => r.parameter === queryPattern.parameter);
+    if (matched) {
+      const unit = matched.unit || PARAMETER_REGISTRY[matched.parameter]?.defaultUnit || "";
+      resultMsg = formatLatestReading(matched.parameter, matched.value, unit, matched.context, resolvedLang, matched.timeContext);
+    } else {
+      resultMsg = formatNoRecords(resolvedLang, queryPattern.parameter);
+    }
+  } else if (queryPattern.type === "today") {
+    // Boundary of today based on IST (offset +330 min)
+    const tzOffsetMinutes = process.env.WHATSAPP_TIMEZONE_OFFSET_MINUTES
+      ? parseInt(process.env.WHATSAPP_TIMEZONE_OFFSET_MINUTES, 10)
+      : 330;
+
+    const localMsgTime = messageDate.getTime() + (tzOffsetMinutes * 60 * 1000);
+    const localMsgDate = new Date(localMsgTime);
+    const localYStr = localMsgDate.getUTCFullYear();
+    const localMStr = localMsgDate.getUTCMonth();
+    const localDStr = localMsgDate.getUTCDate();
+
+    const records = await getPatientRecords(patient.patientId, patient.hospitalId);
+    const todayRecords = records.filter(r => {
+      const recLocalTime = new Date(r.recordedAt).getTime() + (tzOffsetMinutes * 60 * 1000);
+      const recLocalDate = new Date(recLocalTime);
+      return recLocalDate.getUTCFullYear() === localYStr &&
+             recLocalDate.getUTCMonth() === localMStr &&
+             recLocalDate.getUTCDate() === localDStr;
+    });
+
+    // Sort multiple same-day readings morning -> afternoon -> evening -> night
+    const tcOrder = { morning: 1, afternoon: 2, evening: 3, night: 4, undefined: 5 };
+    todayRecords.sort((a, b) => {
+      const aTc = (a.timeContext || "undefined") as keyof typeof tcOrder;
+      const bTc = (b.timeContext || "undefined") as keyof typeof tcOrder;
+      const tcDiff = (tcOrder[aTc] || 5) - (tcOrder[bTc] || 5);
+      if (tcDiff !== 0) return tcDiff;
+      return new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime();
+    });
+
+    if (todayRecords.length > 0) {
+      resultMsg = formatTodaysReadings(todayRecords, resolvedLang);
+    } else {
+      resultMsg = formatNoRecords(resolvedLang);
+    }
+  } else {
+    // General "what did I send" gets all today's readings
+    const tzOffsetMinutes = process.env.WHATSAPP_TIMEZONE_OFFSET_MINUTES
+      ? parseInt(process.env.WHATSAPP_TIMEZONE_OFFSET_MINUTES, 10)
+      : 330;
+
+    const localMsgTime = messageDate.getTime() + (tzOffsetMinutes * 60 * 1000);
+    const localMsgDate = new Date(localMsgTime);
+    const localYStr = localMsgDate.getUTCFullYear();
+    const localMStr = localMsgDate.getUTCMonth();
+    const localDStr = localMsgDate.getUTCDate();
+
+    const records = await getPatientRecords(patient.patientId, patient.hospitalId);
+    const todayRecords = records.filter(r => {
+      const recLocalTime = new Date(r.recordedAt).getTime() + (tzOffsetMinutes * 60 * 1000);
+      const recLocalDate = new Date(recLocalTime);
+      return recLocalDate.getUTCFullYear() === localYStr &&
+             recLocalDate.getUTCMonth() === localMStr &&
+             recLocalDate.getUTCDate() === localDStr;
+    });
+
+    if (todayRecords.length > 0) {
+      resultMsg = formatTodaysReadings(todayRecords, resolvedLang);
+    } else {
+      resultMsg = formatNoRecords(resolvedLang);
+    }
+  }
+
+  await sendWhatsAppMessage(from, resultMsg);
+}
+
 // ==========================
 // Helpers
 // ==========================
@@ -1366,6 +1556,18 @@ async function saveAndAcknowledgeRecords(
     clearPendingClarification(patient.patientId);
 
     if (savedRecords.length > 0) {
+      const resolvedRecords = savedRecords.map(r => ({
+        patientId: r.patientId,
+        parameter: r.parameter,
+        value: r.value,
+        unit: r.unit,
+        context: r.context,
+        timeContext: r.timeContext,
+        recordedAt: r.recordedAt,
+        whatsappMessageId: r.whatsappMessageId,
+      }));
+      setRecentlyResolvedContext(patient.patientId, resolvedRecords);
+
       const resolvedLang = (pending.language || "english") as LanguageStyle;
       const successMsg = formatConfirmation(savedRecords, resolvedLang);
       await sendWhatsAppMessage(from, successMsg);
