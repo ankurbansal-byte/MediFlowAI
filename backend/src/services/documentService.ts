@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import dotenv from "dotenv";
+import fs from "fs";
 
 dotenv.config();
 
@@ -36,12 +37,41 @@ export async function extractMedicalDocumentText(
     return mockExtractMedicalDocumentText(filePath, mimeType);
   }
 
-  // Fallback production implementation using standard prompt/OCR or OpenRouter multimodal
+  console.log(`🔍 [Stage Diagnostic] [DOCUMENT_TEXT_EXTRACTION_STARTED] MimeType: ${mimeType}`);
+
   try {
     const modelName = process.env.OPENROUTER_MODEL || "tencent/hy3";
-    // For images, we can do a multimodal request or simple fallback. Since we are testing with mock files,
-    // let's return a basic placeholder or throw since proper real OCR setup is out of scope for V1 mock tests.
-    return "This is fallback raw OCR text from " + filePath;
+    const fileBuffer = fs.readFileSync(filePath);
+    const base64Data = fileBuffer.toString("base64");
+    const dataUrl = `data:${mimeType};base64,${base64Data}`;
+
+    const completion = await client.chat.completions.create({
+      model: modelName,
+      max_tokens: 1500,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "You are an advanced medical document OCR system. Extract all text from this laboratory report image verbatim. Include all test names, numeric values, units, reference ranges, and abnormal flags. Maintain the column and tabular structures as much as possible so that test names and values are clearly associated. Do not summarize, diagnose, or synthesize. If some text is unreadable, output '[unreadable]'.",
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: dataUrl,
+              },
+            },
+          ],
+        } as any,
+      ],
+    });
+
+    const ocrText = completion.choices[0]?.message?.content || "";
+
+    console.log(`🔍 [Stage Diagnostic] [DOCUMENT_TEXT_EXTRACTION_RESULT] Non-empty: ${!!ocrText.trim()}, Char count: ${ocrText.length}`);
+
+    return ocrText;
   } catch (err: any) {
     console.error("❌ Document OCR service error:", err.message || err);
     throw new Error("OCR text extraction failed.");
