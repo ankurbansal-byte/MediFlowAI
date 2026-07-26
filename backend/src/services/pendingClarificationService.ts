@@ -124,7 +124,7 @@ export function detectQueryPattern(msg: string): { type: "latest" | "today" | nu
       blood_sugar: ["sugar", "glucose", "shugar", "चीनी", "शुगर"],
       blood_pressure: ["bp", "blood pressure", "pressure", "बीपी", "रक्तचाप"],
       heart_rate: ["pulse", "heart rate", "hr", "bpm", "dhadkan", "पल्स", "धड़कन"],
-      oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "ऑक्सीजन"],
+      oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "ऑक्सीजन", "ओक्सीजन", "ऑक्सिजन"],
       body_temperature: ["temp", "temperature", "fever", "bukhar", "तापमान"],
       weight: ["weight", "vajan", "wajan", "kg", "वजन"],
       respiratory_rate: ["breath", "breathing", "resp", "respiratory", "saans"],

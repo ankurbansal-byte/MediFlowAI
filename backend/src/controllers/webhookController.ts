@@ -903,6 +903,9 @@ export const receiveMessage = async (req: Request, res: Response) => {
         return res.sendStatus(200);
       }
 
+      // Synchronously and immediately mark as currently processing to avoid async race condition
+      processingMessageIds.add(whatsappMessageId);
+
       let existsInDb = false;
       if (process.env.USE_MOCK_DATA === "true") {
         for (const pId in MOCK_RECORDS) {
@@ -933,11 +936,9 @@ export const receiveMessage = async (req: Request, res: Response) => {
       if (existsInDb) {
         console.log(`🔍 [Webhook Diagnostic] [Phase D: DB Duplicate Caught] Message ID: ${whatsappMessageId}`);
         markMessageAsProcessed(whatsappMessageId);
+        processingMessageIds.delete(whatsappMessageId);
         return res.sendStatus(200);
       }
-
-      // Mark as currently processing
-      processingMessageIds.add(whatsappMessageId);
     }
 
     try {
