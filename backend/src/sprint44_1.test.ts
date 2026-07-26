@@ -18,6 +18,7 @@ process.env.USE_MOCK_DATA = "true";
 process.env.WHATSAPP_TOKEN = "mock-whatsapp-token";
 process.env.PHONE_NUMBER_ID = "mock-phone-id";
 process.env.WHATSAPP_TIMEZONE_OFFSET_MINUTES = "330"; // IST
+process.env.OPENROUTER_VISION_MODEL = "google/gemini-2.5-flash";
 
 let axiosPostCalls: Array<{ url: string; data: any }> = [];
 let axiosGetCalls: Array<{ url: string; config?: any }> = [];

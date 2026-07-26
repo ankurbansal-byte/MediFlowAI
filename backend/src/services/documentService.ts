@@ -39,14 +39,19 @@ export async function extractMedicalDocumentText(
 
   console.log(`🔍 [Stage Diagnostic] [DOCUMENT_TEXT_EXTRACTION_STARTED] MimeType: ${mimeType}`);
 
+  const visionModel = process.env.OPENROUTER_VISION_MODEL;
+  if (!visionModel || !visionModel.trim()) {
+    console.error("❌ [Configuration Error] OPENROUTER_VISION_MODEL environment variable is missing.");
+    throw new Error("OPENROUTER_VISION_MODEL is missing.");
+  }
+
   try {
-    const modelName = process.env.OPENROUTER_MODEL || "tencent/hy3";
     const fileBuffer = fs.readFileSync(filePath);
     const base64Data = fileBuffer.toString("base64");
     const dataUrl = `data:${mimeType};base64,${base64Data}`;
 
     const completion = await client.chat.completions.create({
-      model: modelName,
+      model: visionModel,
       max_tokens: 1500,
       messages: [
         {
@@ -69,11 +74,18 @@ export async function extractMedicalDocumentText(
 
     const ocrText = completion.choices[0]?.message?.content || "";
 
-    console.log(`🔍 [Stage Diagnostic] [DOCUMENT_TEXT_EXTRACTION_RESULT] Non-empty: ${!!ocrText.trim()}, Char count: ${ocrText.length}`);
+    console.log(`🔍 [Stage Diagnostic] [DOCUMENT_TEXT_EXTRACTION_RESULT] Success: true, Model: ${visionModel}, Non-empty: ${!!ocrText.trim()}, Char count: ${ocrText.length}`);
 
     return ocrText;
   } catch (err: any) {
-    console.error("❌ Document OCR service error:", err.message || err);
+    const errMsg = err.message || String(err);
+    console.error(`🔍 [Stage Diagnostic] [DOCUMENT_TEXT_EXTRACTION_RESULT] Success: false, Model: ${visionModel}`);
+
+    if (errMsg.includes("No endpoints found that support image input") || err.status === 404 || err.statusCode === 404 || errMsg.includes("404")) {
+      console.error("❌ [Vision Model Unavailable] VISION_MODEL_UNAVAILABLE: OpenRouter vision endpoint is unavailable or does not support image input.");
+    }
+
+    console.error("❌ Document OCR service error:", errMsg);
     throw new Error("OCR text extraction failed.");
   }
 }
