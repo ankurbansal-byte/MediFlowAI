@@ -299,3 +299,34 @@ export function getCorrectionTargetNotFoundMessage(
     return `Sorry, I couldn't find any prior ${name} reading with value${oldValStr}. Please try again with the correct info.`;
   }
 }
+
+/**
+ * Centralized, natural, language-matched urgent/emergency response warning.
+ * Never diagnoses condition, calculates probability, or claims heart attack/stroke.
+ */
+export function getEmergencyResponse(lang: LanguageStyle, savedSummary?: string): string {
+  if (lang === "hindi") {
+    const prefix = savedSummary ? `(आपकी ${savedSummary} सेव कर ली गई है।) ` : "";
+    return `${prefix}⚠️ आपातकालीन स्थिति: कृपया तुरंत नजदीकी अस्पताल के इमरजेंसी वार्ड में जाएं या स्थानीय आपातकालीन सेवाओं से संपर्क करें। तत्काल सहायता के लिए व्हाट्सएप पर निर्भर न रहें।`;
+  } else if (lang === "hinglish") {
+    const prefix = savedSummary ? `(Aapki ${savedSummary} record ho gayi hai.) ` : "";
+    return `${prefix}⚠️ EMERGENCY: Kripya turant nazdeeki hospital ke emergency ward mein jayein ya local emergency services ko call karein. Urgent help ke liye WhatsApp par depend na rahein.`;
+  } else {
+    const prefix = savedSummary ? `(Your ${savedSummary} has been recorded.) ` : "";
+    return `${prefix}⚠️ EMERGENCY: Please seek immediate medical help at the nearest emergency room or hospital, or call local emergency services. Do not rely on WhatsApp for urgent care.`;
+  }
+}
+
+/**
+ * Centralized, natural, language-matched clarification message for implausible/dangerous-looking measurements.
+ */
+export function getImplausibleValueClarification(parameter: string, value: any, lang: LanguageStyle): string {
+  const name = getFriendlyName(parameter, lang);
+  if (lang === "hindi") {
+    return `${name} की रीडिंग (${value}) कुछ असामान्य लग रही है। कृपया दोबारा जांचें और सही रीडिंग दर्ज करें।`;
+  } else if (lang === "hinglish") {
+    return `${name} ki reading (${value}) kuch unusual lag rahi hai. Kripya fir se check karke sahi reading enter karein.`;
+  } else {
+    return `The reading for ${name} (${value}) seems unusual. Please re-check and enter the correct reading.`;
+  }
+}

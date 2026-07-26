@@ -11,6 +11,8 @@ import {
   isCorrectionMessage,
   parseCorrectionMessage,
   ParsedCorrection,
+  detectEmergencyUrgency,
+  detectParameterFromMessage,
 } from "../utils/healthRecordParser";
 import axios from "axios";
 import fs from "fs";
@@ -82,7 +84,9 @@ import {
   getFriendlyName,
   formatCorrectionConfirmation,
   getAmbiguousCorrectionClarification,
-  getCorrectionTargetNotFoundMessage
+  getCorrectionTargetNotFoundMessage,
+  getEmergencyResponse,
+  getImplausibleValueClarification,
 } from "../utils/whatsappResponses";
 
 // Resolve language style with fallback to detection, prioritizing pending state's language if available
@@ -111,7 +115,8 @@ async function processMessageFlow(
   from: string,
   whatsappMessageId: string,
   messageDate: Date,
-  pendingToResolve?: any
+  pendingToResolve?: any,
+  isEmergency?: boolean
 ) {
   let extractedData = "";
   try {
@@ -125,7 +130,7 @@ async function processMessageFlow(
 
   let action = "RECORD";
   let missingFields: string[] = [];
-  let language = "english";
+  let language = "unknown";
   let candidateRecords: CandidateRecord[] = [];
   let reason = "";
   let aiUnresolved: number[] = [];
@@ -153,12 +158,12 @@ async function processMessageFlow(
   // Fallback to local deterministic extraction if AI failed, errored, or returned empty/invalid response
   if (!parseSuccess) {
     const fallbackResult = deterministicExtract(message);
+    language = fallbackResult.language || detectLanguageStyle(message);
     if (fallbackResult && fallbackResult.candidateRecords && fallbackResult.candidateRecords.length > 0) {
       console.log("🛠️ Falling back to deterministic local extraction:", JSON.stringify(fallbackResult, null, 2));
       action = fallbackResult.action;
       intent = fallbackResult.intent;
       missingFields = fallbackResult.missingFields;
-      language = fallbackResult.language;
       candidateRecords = fallbackResult.candidateRecords;
       reason = fallbackResult.reason;
       aiUnresolved = fallbackResult.unresolvedMeasurements;
@@ -204,6 +209,7 @@ async function processMessageFlow(
 
   const completeCandidates: CandidateRecord[] = [];
   const incompleteCandidates: CandidateRecord[] = [];
+  const implausibleCandidates: CandidateRecord[] = [];
 
   for (const item of candidateRecords) {
     const isSugarIncomplete = item.parameter === "blood_sugar" && (
@@ -232,6 +238,7 @@ async function processMessageFlow(
         completeCandidates.push(item);
       } else {
         console.log(`[Parser] Deterministic validation failed for candidate:`, item);
+        implausibleCandidates.push(item);
       }
     }
   }
@@ -312,6 +319,41 @@ async function processMessageFlow(
     }
     newlySavedRecords.push(rPayload);
     console.log("✅ Saved complete candidate:", rPayload.parameter);
+  }
+
+  // Check emergency flow
+  if (isEmergency) {
+    if (pendingToResolve) {
+      completePendingClarification(patient.patientId);
+      clearPendingClarification(patient.patientId);
+    }
+    const savedSummary = newlySavedRecords.length > 0
+      ? newlySavedRecords.map(r => `${r.value} ${getFriendlyName(r.parameter, resolvedLang)}`).join(resolvedLang === "hindi" ? " और " : (resolvedLang === "hinglish" ? " aur " : " and "))
+      : "";
+    const emergencyMsg = getEmergencyResponse(resolvedLang, savedSummary || undefined);
+    await sendWhatsAppMessage(from, emergencyMsg);
+    console.log("⚠️ Emergency Warning Response sent (complete candidates saved if any).");
+    return;
+  }
+
+  // Check implausible candidates flow
+  if (implausibleCandidates.length > 0) {
+    if (pendingToResolve) {
+      completePendingClarification(patient.patientId);
+      clearPendingClarification(patient.patientId);
+    }
+    const firstImplausible = implausibleCandidates[0];
+    const implausibleVal = firstImplausible.parameter === "blood_pressure"
+      ? `${firstImplausible.systolic}/${firstImplausible.diastolic}`
+      : firstImplausible.value;
+    const implausibleMsg = getImplausibleValueClarification(
+      firstImplausible.parameter,
+      implausibleVal,
+      resolvedLang
+    );
+    await sendWhatsAppMessage(from, implausibleMsg);
+    console.log("⚠️ Implausible Candidate Clarification response sent.");
+    return;
   }
 
   // Determine what pending state should be
@@ -414,37 +456,6 @@ function isGreetingMessage(msg: string): boolean {
     "namaste", "namaskar", "pranam", "bye", "goodbye", "rehne do", "cancel"
   ];
   return greetings.some(g => clean === g || clean.startsWith(g + " ") || clean.endsWith(" " + g));
-}
-
-export function detectParameterFromMessage(msg: string): string | null {
-  const clean = msg.toLowerCase().trim();
-  const keywordsMap: Record<string, string[]> = {
-    blood_sugar: ["sugar", "glucose", "sugar level", "shugar", "cheeni", "schugar", "शुगर", "सीनी", "चीनी"],
-    blood_pressure: ["bp", "blood pressure", "pressure", "बीपी", "रक्तचाप"],
-    heart_rate: ["pulse", "heart rate", "hr", "bpm", "dhadkan", "dil", "beat", "पल्स", "धड़कन"],
-    oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन"],
-    body_temperature: ["temp", "temperature", "fever", "body temp", "bukhar", "bukhaar", "tapman", "तापमान", "बुखार"],
-    weight: ["weight", "vajan", "wajan", "kg", "vazan", "वजन"],
-    respiratory_rate: ["breath", "resp", "respiratory", "saans"],
-    height: ["height", "lambai"]
-  };
-
-  for (const [param, keywords] of Object.entries(keywordsMap)) {
-    for (const kw of keywords) {
-      if (/[\u0900-\u097F]/.test(kw)) {
-        if (clean.includes(kw)) {
-          return param;
-        }
-      } else {
-        const regex = new RegExp(`\\b${kw}\\b`, "i");
-        if (regex.test(clean)) {
-          return param;
-        }
-      }
-    }
-  }
-
-  return null;
 }
 
 export function hasOtherNumbers(msg: string, allowedNumbers: number[]): boolean {
@@ -864,6 +875,17 @@ export const receiveMessage = async (req: Request, res: Response) => {
         }
 
         console.log(`🔍 [Webhook Diagnostic] [Phase E: Patient Found] PatientId: ${patient.patientId}, Name: ${patient.fullName}`);
+
+        // Clinical Safety Early Emergency Warning Detection
+        const isEmergency = detectEmergencyUrgency(message);
+        if (isEmergency) {
+          console.log("⚠️ Emergency message detected! Bypassing normal turn flow for safety.");
+          await processMessageFlow(message, patient, from, whatsappMessageId, messageDate, undefined, true);
+          if (whatsappMessageId) {
+            markMessageAsProcessed(whatsappMessageId);
+          }
+          return res.sendStatus(200);
+        }
 
         // Correction Flow Integration
         if (isCorrectionMessage(message)) {

@@ -8,6 +8,7 @@ import axios from "axios";
 
 // Enable mock data mode explicitly
 process.env.USE_MOCK_DATA = "true";
+process.env.WHATSAPP_TIMEZONE_OFFSET_MINUTES = "0";
 
 // Helper to create mock Express Response
 const mockResponse = () => {
