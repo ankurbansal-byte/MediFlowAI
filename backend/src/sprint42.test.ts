@@ -184,10 +184,10 @@ async function runSprint42Tests() {
   resetState();
   await receiveMessage(makePayload("917618432290", "sugar 145", "msg-8-1"), mockResponse() as any);
   await receiveMessage(makePayload("917618432290", "after meal", "msg-8-2"), mockResponse() as any);
-  assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Test 8: Sugar saved");
+  assert((MOCK_RECORDS["PAT-101"]?.length as number) === 1, "Test 8: Sugar saved");
 
   await receiveMessage(makePayload("917618432290", "aur BP 130/80 bhi tha", "msg-8-3"), mockResponse() as any);
-  assert(MOCK_RECORDS["PAT-101"]?.length === 2, "Test 8: BP saved independently");
+  assert((MOCK_RECORDS["PAT-101"]?.length as number) === 2, "Test 8: BP saved independently");
   assert(MOCK_RECORDS["PAT-101"]?.[1]?.parameter === "blood_pressure", "Test 8: BP is second record");
   console.log("✅ Test 8 Passed");
 
@@ -199,7 +199,7 @@ async function runSprint42Tests() {
   await receiveMessage(makePayload("917618432290", "after meal", "msg-9-2"), mockResponse() as any);
 
   await receiveMessage(makePayload("917618432290", "pulse 82 bhi tha", "msg-9-3"), mockResponse() as any);
-  assert(MOCK_RECORDS["PAT-101"]?.length === 2, "Test 9: Pulse saved independently");
+  assert((MOCK_RECORDS["PAT-101"]?.length as number) === 2, "Test 9: Pulse saved independently");
   assert(MOCK_RECORDS["PAT-101"]?.[1]?.parameter === "heart_rate", "Test 9: Heart rate correctly saved");
   console.log("✅ Test 9 Passed");
 
@@ -242,7 +242,7 @@ async function runSprint42Tests() {
 
   // Send an ambiguous message that could have been an answer if active
   await receiveMessage(makePayload("917618432290", "fasting", "msg-12-2"), mockResponse() as any);
-  assert(MOCK_RECORDS["PAT-101"]?.length === 0, "Test 12: Expired pending state did not hijack 'fasting'");
+  assert((MOCK_RECORDS["PAT-101"]?.length as number) === 0, "Test 12: Expired pending state did not hijack 'fasting'");
   console.log("✅ Test 12 Passed");
 
   // =========================================================================
@@ -250,7 +250,7 @@ async function runSprint42Tests() {
   // =========================================================================
   resetState();
   await receiveMessage(makePayload("917618432290", "fasting", "msg-13-1"), mockResponse() as any);
-  assert(MOCK_RECORDS["PAT-101"]?.length === 0, "Test 13: Short answer alone does not create record");
+  assert((MOCK_RECORDS["PAT-101"]?.length as number) === 0, "Test 13: Short answer alone does not create record");
   const fallbackOutbound = axiosPostCalls[0]?.data?.text?.body || "";
   assert(fallbackOutbound.includes("samajhne") || fallbackOutbound.includes("understand"), "Test 13: Safely failed with a generic understanding error message");
   console.log("✅ Test 13 Passed");
@@ -332,7 +332,7 @@ async function runSprint42Tests() {
   // =========================================================================
   resetState();
   await receiveMessage(makePayload("917618432290", "last sugar 145 thi kya?", "msg-21-1"), mockResponse() as any);
-  assert(MOCK_RECORDS["PAT-101"]?.length === 0, "Test 21: Query containing numerical value not saved as new record");
+  assert((MOCK_RECORDS["PAT-101"]?.length as number) === 0, "Test 21: Query containing numerical value not saved as new record");
   console.log("✅ Test 21 Passed");
 
   // =========================================================================
