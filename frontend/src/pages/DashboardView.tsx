@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import api from "../api/axios";
 import PatientProfileCard from "../components/PatientProfileCard";
 import ClinicalIntelligencePanel from "../components/ClinicalIntelligencePanel";
 import SummaryCard from "../components/SummaryCard";
@@ -63,6 +64,32 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   onTabChange,
   setSelectedHistoryDate,
 }) => {
+  const [labObservations, setLabObservations] = useState<any[]>([]);
+  const [isLabsLoading, setIsLabsLoading] = useState(false);
+  const [hasLabsError, setHasLabsError] = useState(false);
+
+  useEffect(() => {
+    if (effectivePatientId) {
+      setIsLabsLoading(true);
+      setHasLabsError(false);
+      api.get(`/patient/lab-observations/${effectivePatientId}`)
+        .then(res => {
+          if (res.data.success) {
+            setLabObservations(res.data.observations || []);
+          } else {
+            setHasLabsError(true);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching lab observations in DashboardView:", err);
+          setHasLabsError(true);
+        })
+        .finally(() => {
+          setIsLabsLoading(false);
+        });
+    }
+  }, [effectivePatientId]);
+
   // 1. Factual Health Summary calculation for Last 30 Days (for patients)
   const factualSummaryBlocks = React.useMemo(() => {
     const parameters = [
@@ -424,6 +451,78 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           <div style={{ marginTop: "18px", padding: "12px", background: "#fdf2f8", border: "1px solid #fbcfe8", borderRadius: "10px", fontSize: "0.75rem", color: "#9d174d", fontWeight: 650, lineHeight: "1.5" }}>
             ⚠️ Factual Clinical Disclaimer: This summary is automatically derived strictly from recorded patient-reported values. It is descriptive and factual only. It does not diagnose disease, recommend medication, change treatment, claim medical certainty, or make clinical decisions. Any clinical adjustments must be made by the licensed practitioner.
           </div>
+        </section>
+
+        {/* Your Lab Results Section */}
+        <section aria-labelledby="lab-results-title" style={{
+          background: "#ffffff",
+          border: "1px solid var(--line, #e4e7eb)",
+          borderRadius: "14px",
+          padding: "24px",
+          boxShadow: "0 4px 16px rgba(23, 49, 84, 0.02)"
+        }}>
+          <h2 id="lab-results-title" style={{ margin: "0 0 8px 0", color: "var(--navy)", fontSize: "1.5rem", fontWeight: 800 }}>
+            🧪 Your Lab Results
+          </h2>
+          <p style={{ margin: "0 0 20px 0", color: "var(--muted)", fontSize: "0.95rem" }}>
+            Laboratory findings and observations extracted from your shared reports.
+          </p>
+
+          {isLabsLoading ? (
+            <div style={{ padding: "20px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.95rem" }}>
+              Loading lab results...
+            </div>
+          ) : hasLabsError ? (
+            <div style={{ padding: "20px", border: "1px dashed #fda4af", borderRadius: "8px", color: "#ef4444", fontSize: "0.95rem", fontWeight: 600 }}>
+              Failed to retrieve laboratory records. Please check your connection and try again.
+            </div>
+          ) : labObservations.length === 0 ? (
+            <div style={{ padding: "20px", border: "1px dashed var(--line)", borderRadius: "8px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.9rem" }}>
+              No laboratory records found. Send a report via WhatsApp to see observations here.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {labObservations.map((obs, idx) => (
+                <div key={idx} style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "16px",
+                  background: "#f8fafc",
+                  border: "1px solid var(--line, #e4e7eb)",
+                  borderRadius: "10px",
+                  fontWeight: 700,
+                  fontSize: "0.95rem"
+                }}>
+                  <div>
+                    <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 700, display: "block" }}>
+                      {new Date(obs.specimenDate || obs.createdAt).toLocaleDateString()}
+                    </span>
+                    <span style={{ color: "var(--navy)", fontWeight: 800, fontSize: "1.05rem" }}>
+                      {obs.testName}
+                    </span>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <strong style={{ fontSize: "1.2rem", color: "var(--navy)" }}>
+                      {obs.value} <span style={{ fontSize: "0.8rem", color: "var(--muted)" }}>{obs.unit}</span>
+                    </strong>
+                    {obs.flag && (
+                      <span style={{
+                        display: "block",
+                        marginTop: "4px",
+                        fontSize: "0.72rem",
+                        fontWeight: 800,
+                        textTransform: "uppercase",
+                        color: obs.flag.toLowerCase() === "high" || obs.flag.toLowerCase() === "low" ? "#ef4444" : "#10b981"
+                      }}>
+                        [{obs.flag}]
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Quick Actions / Navigation */}

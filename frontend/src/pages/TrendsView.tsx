@@ -38,17 +38,27 @@ const TrendsView: React.FC<TrendsViewProps> = ({
 }) => {
   const [glucoseContextFilter, setGlucoseContextFilter] = useState<string>("all");
   const [labObservations, setLabObservations] = useState<any[]>([]);
+  const [isLabsLoading, setIsLabsLoading] = useState(false);
+  const [hasLabsError, setHasLabsError] = useState(false);
 
   useEffect(() => {
     if (patientId) {
+      setIsLabsLoading(true);
+      setHasLabsError(false);
       api.get(`/patient/lab-observations/${patientId}`)
         .then(res => {
           if (res.data.success) {
             setLabObservations(res.data.observations || []);
+          } else {
+            setHasLabsError(true);
           }
         })
         .catch(err => {
           console.error("Error fetching lab observations in TrendsView:", err);
+          setHasLabsError(true);
+        })
+        .finally(() => {
+          setIsLabsLoading(false);
         });
     }
   }, [patientId]);
@@ -447,7 +457,15 @@ const TrendsView: React.FC<TrendsViewProps> = ({
           Laboratory findings and observations extracted from your shared reports.
         </p>
 
-        {labObservations.length === 0 ? (
+        {isLabsLoading ? (
+          <div style={{ padding: "20px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.95rem" }}>
+            Loading lab results...
+          </div>
+        ) : hasLabsError ? (
+          <div style={{ padding: "20px", border: "1px dashed #fda4af", borderRadius: "8px", color: "#ef4444", fontSize: "0.95rem", fontWeight: 600 }}>
+            Failed to retrieve laboratory records. Please check your connection and try again.
+          </div>
+        ) : labObservations.length === 0 ? (
           <div style={{ padding: "20px", border: "1px dashed var(--line)", borderRadius: "8px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.9rem" }}>
             No laboratory records found. Send a report via WhatsApp to see observations here.
           </div>
