@@ -41,6 +41,14 @@ const TrendsView: React.FC<TrendsViewProps> = ({
   const [isLabsLoading, setIsLabsLoading] = useState(false);
   const [hasLabsError, setHasLabsError] = useState(false);
 
+  // AI Health Summary states
+  const [summaryDays, setSummaryDays] = useState<7 | 30 | 90>(30);
+  const [summaryText, setSummaryText] = useState<string>("");
+  const [summaryMode, setSummaryMode] = useState<"AI" | "deterministic_fallback" | "">("");
+  const [isSummaryLoading, setIsSummaryLoading] = useState<boolean>(false);
+  const [hasSummaryError, setHasSummaryError] = useState<boolean>(false);
+  const [summaryMetrics, setSummaryMetrics] = useState<any>(null);
+
   useEffect(() => {
     if (patientId) {
       setIsLabsLoading(true);
@@ -62,6 +70,30 @@ const TrendsView: React.FC<TrendsViewProps> = ({
         });
     }
   }, [patientId]);
+
+  useEffect(() => {
+    if (patientId) {
+      setIsSummaryLoading(true);
+      setHasSummaryError(false);
+      api.get(`/patient/summary-ai/${patientId}?days=${summaryDays}`)
+        .then(res => {
+          if (res.data.success) {
+            setSummaryText(res.data.summary || "");
+            setSummaryMode(res.data.mode || "");
+            setSummaryMetrics(res.data.deterministicMetrics || null);
+          } else {
+            setHasSummaryError(true);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching AI summary:", err);
+          setHasSummaryError(true);
+        })
+        .finally(() => {
+          setIsSummaryLoading(false);
+        });
+    }
+  }, [patientId, summaryDays]);
 
   // Group chronological Health Records by recorded calendar date
   const groupedRecords = React.useMemo(() => {
@@ -192,6 +224,124 @@ const TrendsView: React.FC<TrendsViewProps> = ({
     return trend.filter(r => r.context === glucoseContextFilter);
   }, [trend, selectedParameter, glucoseContextFilter]);
 
+  const renderAISummarySection = () => {
+    const hasData = summaryMetrics && (summaryMetrics.totalRoutineReadings > 0 || summaryMetrics.totalLabObservations > 0);
+
+    return (
+      <section aria-labelledby="ai-summary-title" style={{
+        background: "#ffffff",
+        border: "1px solid var(--line, #e4e7eb)",
+        borderRadius: "14px",
+        padding: "24px",
+        marginBottom: "28px",
+        boxShadow: "0 4px 20px rgba(10,37,64,0.02)"
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+          <div>
+            <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#238b82", textTransform: "uppercase", letterSpacing: "0.05em", display: "block" }}>
+              MediFlowAI Intelligence
+            </span>
+            <h2 id="ai-summary-title" style={{ margin: "2px 0 0 0", color: "var(--navy)", fontSize: "1.3rem", fontWeight: 800 }}>
+              ✨ AI Health Record Summary
+            </h2>
+          </div>
+
+          {/* Timeframe selector buttons */}
+          <div style={{ display: "flex", gap: "6px" }}>
+            {([
+              { value: 7, label: "7 Days" },
+              { value: 30, label: "30 Days" },
+              { value: 90, label: "90 Days" }
+            ] as const).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setSummaryDays(opt.value)}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: "20px",
+                  border: "1px solid " + (summaryDays === opt.value ? "#0080ff" : "var(--line, #e4e7eb)"),
+                  background: summaryDays === opt.value ? "#f0f7ff" : "transparent",
+                  color: summaryDays === opt.value ? "#0080ff" : "var(--muted)",
+                  fontSize: "0.8rem",
+                  fontWeight: 750,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease"
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {isSummaryLoading ? (
+          <div style={{ padding: "30px 0", textAlign: "center", color: "var(--muted)", fontStyle: "italic", fontWeight: 650 }}>
+            Analyzing chronological observations...
+          </div>
+        ) : hasSummaryError ? (
+          <div style={{ padding: "20px", border: "1px dashed #fca5a5", borderRadius: "10px", color: "#ef4444", fontWeight: 700, fontSize: "0.9rem" }}>
+            ⚠️ Failed to retrieve AI summary. Please check your network connection and retry.
+          </div>
+        ) : !hasData ? (
+          <div style={{ padding: "20px", background: "#f8fafc", border: "1.5px dashed var(--line, #e4e7eb)", borderRadius: "10px", textAlign: "center" }}>
+            <span style={{ fontSize: "1.5rem", display: "block", marginBottom: "8px" }}>📊</span>
+            <p style={{ margin: 0, color: "var(--muted)", fontSize: "0.9rem", fontWeight: 600 }}>
+              No health records or laboratory observations recorded in the last {summaryDays} days to summarize.
+            </p>
+          </div>
+        ) : (
+          <div>
+            <div style={{ display: "flex", gap: "10px", marginBottom: "16px", flexWrap: "wrap" }}>
+              <span style={{
+                fontSize: "0.72rem",
+                fontWeight: 800,
+                textTransform: "uppercase",
+                background: summaryMode === "AI" ? "#e0f2fe" : "#f1f5f9",
+                color: summaryMode === "AI" ? "#0369a1" : "#475569",
+                padding: "4px 10px",
+                borderRadius: "12px"
+              }}>
+                {summaryMode === "AI" ? "🤖 AI-Generated Narrative" : "📊 Factual Failsafe Narrative"}
+              </span>
+              <span style={{ fontSize: "0.72rem", fontWeight: 750, color: "var(--muted)" }}>
+                Contains {summaryMetrics?.totalRoutineReadings || 0} routine vitals and {summaryMetrics?.totalLabObservations || 0} lab findings
+              </span>
+            </div>
+
+            <div style={{
+              color: "var(--navy)",
+              fontSize: "0.95rem",
+              lineHeight: "1.6",
+              fontWeight: 600,
+              whiteSpace: "pre-wrap",
+              background: "#fafbfd",
+              padding: "16px",
+              borderRadius: "10px",
+              border: "1px solid #f1f5f9"
+            }}>
+              {summaryText}
+            </div>
+
+            <div style={{
+              marginTop: "16px",
+              padding: "12px",
+              background: "#fff1f2",
+              border: "1px solid #ffe4e6",
+              borderRadius: "8px",
+              fontSize: "0.75rem",
+              color: "#be123c",
+              fontWeight: 700,
+              lineHeight: "1.4"
+            }}>
+              ⚠️ Intelligence Disclaimer: This clinical record summary is automatically compiled based strictly on patient-reported measurements. It is purely descriptive and factual, and does not diagnose disease, formulate medical treatments, adjust medications, or replace direct advice from a licensed physician.
+            </div>
+          </div>
+        )}
+      </section>
+    );
+  };
+
   return (
     <>
       <div className="trends-header" style={{ paddingBottom: "20px", borderBottom: "1px solid var(--line)", marginBottom: "28px" }}>
@@ -201,6 +351,8 @@ const TrendsView: React.FC<TrendsViewProps> = ({
           View and analyze your physiological trends and historical health measurements.
         </p>
       </div>
+
+      {renderAISummarySection()}
 
       <HealthSummary
         trends={filteredTrends}

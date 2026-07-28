@@ -122,6 +122,14 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
   const [followUpDate, setFollowUpDate] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // AI Longitudinal Health Record Summary states
+  const [summaryDays, setSummaryDays] = useState<7 | 30 | 90>(30);
+  const [summaryText, setSummaryText] = useState("");
+  const [summaryMode, setSummaryMode] = useState<"AI" | "deterministic_fallback" | "">("");
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [hasSummaryError, setHasSummaryError] = useState(false);
+  const [summaryMetrics, setSummaryMetrics] = useState<any>(null);
+
   const fetchEncounterVitals = async (encId: string) => {
     setIsVitalsLoading(true);
     try {
@@ -160,6 +168,30 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
     setTrendPeriod(period);
     await fetchPatientTrend(patientId, selectedParameter, period);
   };
+
+  useEffect(() => {
+    if (patientId) {
+      setIsSummaryLoading(true);
+      setHasSummaryError(false);
+      api.get(`/patient/summary-ai/${patientId}?days=${summaryDays}`)
+        .then(res => {
+          if (res.data.success) {
+            setSummaryText(res.data.summary || "");
+            setSummaryMode(res.data.mode || "");
+            setSummaryMetrics(res.data.deterministicMetrics || null);
+          } else {
+            setHasSummaryError(true);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching patient AI summary in Doctor Workspace:", err);
+          setHasSummaryError(true);
+        })
+        .finally(() => {
+          setIsSummaryLoading(false);
+        });
+    }
+  }, [patientId, summaryDays]);
 
   useEffect(() => {
     const loadWorkspaceData = async () => {
@@ -864,6 +896,117 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
           <div style={{ minHeight: "350px" }}>
             {activeWorkspaceTab === "overview" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                {/* ✨ AI Longitudinal Health Record Summary Section for Doctor */}
+                <div style={{
+                  background: "#ffffff",
+                  border: "1px solid var(--line, #e4e7eb)",
+                  borderRadius: "14px",
+                  padding: "24px",
+                  boxShadow: "0 4px 20px rgba(10,37,64,0.02)"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+                    <div>
+                      <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#238b82", textTransform: "uppercase", letterSpacing: "0.05em", display: "block" }}>
+                        MediFlowAI Intelligence
+                      </span>
+                      <h4 style={{ margin: "2px 0 0 0", color: "var(--navy)", fontSize: "1.2rem", fontWeight: 800 }}>
+                        ✨ AI Health Record Summary
+                      </h4>
+                    </div>
+
+                    {/* Timeframe selector buttons */}
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      {([
+                        { value: 7, label: "7 Days" },
+                        { value: 30, label: "30 Days" },
+                        { value: 90, label: "90 Days" }
+                      ] as const).map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setSummaryDays(opt.value)}
+                          style={{
+                            padding: "6px 12px",
+                            borderRadius: "20px",
+                            border: "1px solid " + (summaryDays === opt.value ? "#0080ff" : "var(--line, #e4e7eb)"),
+                            background: summaryDays === opt.value ? "#f0f7ff" : "transparent",
+                            color: summaryDays === opt.value ? "#0080ff" : "var(--muted)",
+                            fontSize: "0.78rem",
+                            fontWeight: 750,
+                            cursor: "pointer",
+                            transition: "all 0.15s ease"
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {isSummaryLoading ? (
+                    <div style={{ padding: "20px 0", textAlign: "center", color: "var(--muted)", fontStyle: "italic", fontWeight: 650 }}>
+                      Analyzing patient's longitudinal health records...
+                    </div>
+                  ) : hasSummaryError ? (
+                    <div style={{ padding: "16px", border: "1px dashed #fca5a5", borderRadius: "10px", color: "#ef4444", fontWeight: 700, fontSize: "0.88rem" }}>
+                      ⚠️ Failed to retrieve AI summary. Please check your network connection and retry.
+                    </div>
+                  ) : (!summaryMetrics || (summaryMetrics.totalRoutineReadings === 0 && summaryMetrics.totalLabObservations === 0)) ? (
+                    <div style={{ padding: "16px", background: "#f8fafc", border: "1.5px dashed var(--line, #e4e7eb)", borderRadius: "10px", textAlign: "center" }}>
+                      <p style={{ margin: 0, color: "var(--muted)", fontSize: "0.88rem", fontWeight: 600 }}>
+                        No records or observations in the last {summaryDays} days to summarize.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ display: "flex", gap: "10px", marginBottom: "12px", flexWrap: "wrap" }}>
+                        <span style={{
+                          fontSize: "0.68rem",
+                          fontWeight: 800,
+                          textTransform: "uppercase",
+                          background: summaryMode === "AI" ? "#e0f2fe" : "#f1f5f9",
+                          color: summaryMode === "AI" ? "#0369a1" : "#475569",
+                          padding: "3px 8px",
+                          borderRadius: "10px"
+                        }}>
+                          {summaryMode === "AI" ? "🤖 AI-Generated" : "📊 Factual Failsafe"}
+                        </span>
+                        <span style={{ fontSize: "0.68rem", fontWeight: 750, color: "var(--muted)" }}>
+                          Based on {summaryMetrics?.totalRoutineReadings || 0} routine vitals and {summaryMetrics?.totalLabObservations || 0} lab findings
+                        </span>
+                      </div>
+
+                      <div style={{
+                        color: "var(--navy)",
+                        fontSize: "0.9rem",
+                        lineHeight: "1.55",
+                        fontWeight: 600,
+                        whiteSpace: "pre-wrap",
+                        background: "#fafbfd",
+                        padding: "14px",
+                        borderRadius: "8px",
+                        border: "1px solid #f1f5f9",
+                        marginBottom: "12px"
+                      }}>
+                        {summaryText}
+                      </div>
+
+                      <div style={{
+                        padding: "10px",
+                        background: "#fff1f2",
+                        border: "1px solid #ffe4e6",
+                        borderRadius: "8px",
+                        fontSize: "0.72rem",
+                        color: "#be123c",
+                        fontWeight: 700,
+                        lineHeight: "1.4"
+                      }}>
+                        ⚠️ Clinical Decision Support Note: This AI summary is compiled strictly from patient-reported logs and structured lab findings. It is purely descriptive and factual, and does not replace your independent clinical judgment or diagnostic decision-making.
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* 📊 Compact Factual Health Summary Card */}
                 <div style={{
                   background: "var(--surface, #ffffff)",

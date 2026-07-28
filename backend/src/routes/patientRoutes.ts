@@ -15,6 +15,7 @@ import {
   updatePatientDetailByAdmin,
   getLabReports,
   getLabObservations,
+  getPatientSummaryAI,
 } from "../controllers/patientController";
 
 const router = Router();
@@ -35,6 +36,8 @@ router.post("/record", addHealthRecord);
 
 router.get("/lab-reports/:patientId", getLabReports);
 router.get("/lab-observations/:patientId", getLabObservations);
+
+router.get("/summary-ai/:patientId", getPatientSummaryAI);
 
 router.get("/timeline/:patientId", getPatientTimeline);
 

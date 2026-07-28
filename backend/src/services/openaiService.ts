@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import dotenv from "dotenv";
+import { DeterministicAnalyticsResult } from "../utils/analyticsHelper";
 
 dotenv.config();
 
@@ -11,11 +12,18 @@ const client = new OpenAI({
 
 // Testing / Mock support
 let mockExtractHealthData: ((message: string) => Promise<string>) | null = null;
+let mockGenerateHealthRecordSummary: ((analytics: DeterministicAnalyticsResult) => Promise<string>) | null = null;
 
 export function setMockExtractHealthData(
   fn: ((message: string) => Promise<string>) | null
 ) {
   mockExtractHealthData = fn;
+}
+
+export function setMockGenerateHealthRecordSummary(
+  fn: ((analytics: DeterministicAnalyticsResult) => Promise<string>) | null
+) {
+  mockGenerateHealthRecordSummary = fn;
 }
 
 // ================================
@@ -185,5 +193,148 @@ Return ONLY valid JSON. No markdown backticks (such as \`\`\`json), no extra tex
     console.error("📝 Error details:", error?.message || error);
 
     return "";
+  }
+}
+
+// ================================
+// AI Health Record Summary Layer
+// ================================
+export function validateHealthSummarySafety(text: string): boolean {
+  const clean = text.toLowerCase();
+
+  // Prohibited diagnostic patterns
+  const prohibitedDiagnosis = [
+    "you have diabetes",
+    "you have hypertension",
+    "diagnose",
+    "diagnosing",
+    "diagnosed with",
+    "your hypertension",
+    "your diabetes",
+    "uncontrolled hypertension",
+    "worsening diabetes"
+  ];
+
+  // Prohibited prescriptive patterns
+  const prohibitedPrescriptive = [
+    "prescribe",
+    "prescription",
+    "take medication",
+    "stop taking",
+    "start taking",
+    "change your medication",
+    "change your dose",
+    "increase your dose",
+    "decrease your dose",
+    "alter your treatment",
+    "recommend starting",
+    "recommend stopping",
+    "prescribing"
+  ];
+
+  // Prohibited certainty/alarmist patterns
+  const prohibitedCertainty = [
+    "with certainty",
+    "with medical certainty",
+    "certainly have",
+    "surely have",
+    "guarantee"
+  ];
+
+  const allProhibited = [...prohibitedDiagnosis, ...prohibitedPrescriptive, ...prohibitedCertainty];
+
+  for (const phrase of allProhibited) {
+    if (clean.includes(phrase)) {
+      console.warn(`[Safety Gate] Unsafe AI summary discarded. Found prohibited phrase: "${phrase}"`);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export async function generateHealthRecordSummary(
+  analytics: DeterministicAnalyticsResult
+): Promise<string> {
+  if (mockGenerateHealthRecordSummary) {
+    const res = await mockGenerateHealthRecordSummary(analytics);
+    if (!validateHealthSummarySafety(res)) {
+      throw new Error("AI summary failed safety validation gate due to prohibited clinical terms.");
+    }
+    return res;
+  }
+
+  try {
+    const modelName = process.env.OPENROUTER_MODEL || "tencent/hy3";
+    const compactFacts = JSON.stringify({
+      periodDays: analytics.periodDays,
+      totalRoutineReadings: analytics.totalRoutineReadings,
+      totalLabObservations: analytics.totalLabObservations,
+      parameterMetrics: Object.keys(analytics.parameterMetrics).reduce((acc: any, key) => {
+        const m = analytics.parameterMetrics[key];
+        acc[key] = {
+          count: m.count,
+          latest: m.latest,
+          min: m.min,
+          max: m.max,
+          average: m.average,
+          byContext: m.byContext,
+        };
+        return acc;
+      }, {}),
+      comparisons: analytics.comparisons,
+      labObservations: analytics.labObservations,
+    });
+
+    const prompt = `
+You are MediFlowAI Health Record Intelligence Engine.
+You will be provided with compact, factual, deterministic analytics representing a patient's longitudinal health record over a selected time window of ${analytics.periodDays} days.
+
+Factual analytics:
+${compactFacts}
+
+Instructions:
+1. Generate a concise, objective, patient-friendly health summary strictly grounded in the provided factual data.
+2. Clearly mention the summary period window (${analytics.periodDays} days) and the total counts.
+3. Call out routine reading trends, latest values, and comparisons between current and previous periods where data permits.
+4. Distinguish Blood Pressure systolic and diastolic readings.
+5. Distinguish Blood Sugar glucose contexts (e.g. fasting vs post_meal) and do not combine them together.
+6. Summarize lab observations factually, stating actual flags or reference ranges if they are explicitly present in the data. Never invent or guess medical normal reference ranges.
+7. NEVER invent or fabricate data, values, or trends.
+8. STRIKT REGULATION: You must NOT:
+   - Diagnose any disease or claim a patient has a condition (e.g. do NOT say "You have diabetes" or "Your hypertension is worsening").
+   - Prescribe medications or change treatments.
+   - Recommend starting, stopping, or altering any medication.
+   - Claim medical certainty.
+9. Use extremely cautious, record-oriented language like "Your recorded systolic BP readings were higher in the later part of this period..." or "Your fasting sugar observations averaged..." instead of "Your hypertension is uncontrolled".
+10. End with a standard factual disclaimer: "This is a descriptive summary of recorded health data and does not constitute a clinical diagnosis or medical treatment advice."
+
+Response length should be concise and well-structured, under 500 words. Return raw markdown text. Do not return code block formatting.
+    `;
+
+    const completion = await client.chat.completions.create({
+      model: modelName,
+      max_tokens: 1000,
+      messages: [
+        {
+          role: "system",
+          content: "You are a professional clinical recording summarization system. Ground your outputs strictly in data."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ]
+    });
+
+    const resultText = completion.choices[0]?.message?.content || "";
+    if (!validateHealthSummarySafety(resultText)) {
+      throw new Error("AI summary failed safety validation gate due to prohibited clinical terms.");
+    }
+    return resultText;
+  } catch (error: any) {
+    console.error("❌ [AI Service Error] generateHealthRecordSummary failed via OpenRouter client.");
+    console.error("📝 Error details:", error?.message || error);
+    throw error;
   }
 }

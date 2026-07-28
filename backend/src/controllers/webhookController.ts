@@ -17,9 +17,11 @@ import {
 import axios from "axios";
 import fs from "fs";
 import path from "path";
-import { extractHealthData } from "../services/openaiService";
+import { extractHealthData, generateHealthRecordSummary } from "../services/openaiService";
 import { Request, Response } from "express";
 import { findEnrolledPatientByWhatsApp } from "../utils/phoneHelper";
+import { calculateDeterministicAnalytics } from "../utils/analyticsHelper";
+import { buildDeterministicNarrativeSummary } from "../utils/fallbackHelper";
 import { MOCK_RECORDS } from "./patientController";
 import {
   getPendingClarification,
@@ -1596,12 +1598,38 @@ async function handleQueryFlow(
   from: string,
   whatsappMessageId: string,
   messageDate: Date,
-  queryPattern: { type: "latest" | "today"; parameter?: string }
+  queryPattern: { type: "latest" | "today" | "summary"; parameter?: string; days?: number }
 ) {
   const resolvedLang = detectLanguageStyle(message);
 
   let resultMsg = "";
-  if (queryPattern.type === "latest" && queryPattern.parameter) {
+  if (queryPattern.type === "summary") {
+    const days = queryPattern.days || 30;
+    let routineRecords: any[] = [];
+    let labObservations: any[] = [];
+
+    if (process.env.USE_MOCK_DATA === "true") {
+      routineRecords = MOCK_RECORDS[patient.patientId] || [];
+      labObservations = MOCK_LAB_OBSERVATIONS[patient.patientId] || [];
+    } else {
+      try {
+        routineRecords = await HealthRecord.find({ patientId: patient.patientId }).sort({ recordedAt: -1 });
+        labObservations = await LabObservation.find({ patientId: patient.patientId }).sort({ specimenDate: -1, createdAt: -1 });
+      } catch (error) {
+        console.error("Error fetching records for WhatsApp summary query:", error);
+      }
+    }
+
+    const analytics = calculateDeterministicAnalytics(routineRecords, labObservations, days);
+    try {
+      resultMsg = await generateHealthRecordSummary(analytics);
+      if (!resultMsg || resultMsg.trim().length === 0) {
+        throw new Error("Empty AI narrative.");
+      }
+    } catch (err) {
+      resultMsg = buildDeterministicNarrativeSummary(analytics);
+    }
+  } else if (queryPattern.type === "latest" && queryPattern.parameter) {
     const isVital = PARAMETER_REGISTRY[queryPattern.parameter] !== undefined;
     if (isVital) {
       const records = await getPatientRecords(patient.patientId, patient.hospitalId);

@@ -1132,6 +1132,82 @@ export const canAccessPatient = async (reqUser: any, patientId: string): Promise
 };
 
 // ==============================
+// Get Patient Summary AI
+// ==============================
+import { calculateDeterministicAnalytics } from "../utils/analyticsHelper";
+import { generateHealthRecordSummary } from "../services/openaiService";
+import { buildDeterministicNarrativeSummary } from "../utils/fallbackHelper";
+
+export const getPatientSummaryAI = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  const patientId = req.params.patientId as string;
+  const days = Number(req.query.days) || 30;
+  const user = req.user;
+
+  if (!user) {
+    return res.status(401).json({ success: false, message: "Unauthorized." });
+  }
+
+  const allowed = await canAccessPatient(user, patientId);
+  if (!allowed) {
+    return res.status(403).json({ success: false, message: "Forbidden. You do not have access to this patient's records." });
+  }
+
+  let routineRecords: any[] = [];
+  let labObservations: any[] = [];
+
+  if (process.env.USE_MOCK_DATA === "true") {
+    routineRecords = MOCK_RECORDS[patientId] || [];
+    labObservations = MOCK_LAB_OBSERVATIONS[patientId] || [];
+  } else {
+    try {
+      routineRecords = await HealthRecord.find({ patientId }).sort({ recordedAt: -1 });
+      labObservations = await LabObservation.find({ patientId }).sort({ specimenDate: -1, createdAt: -1 });
+    } catch (error) {
+      console.error("Error fetching records for summary:", error);
+      return res.status(500).json({ success: false, message: "Failed to retrieve underlying medical records." });
+    }
+  }
+
+  // Calculate deterministic metrics
+  const analytics = calculateDeterministicAnalytics(routineRecords, labObservations, days);
+
+  let summaryText = "";
+  let mode: "AI" | "deterministic_fallback" = "AI";
+
+  try {
+    summaryText = await generateHealthRecordSummary(analytics);
+    if (!summaryText || summaryText.trim().length === 0) {
+      throw new Error("Empty AI narrative received.");
+    }
+  } catch (error) {
+    console.warn("AI summary generation failed. Triggering deterministic fallback.", error);
+    summaryText = buildDeterministicNarrativeSummary(analytics);
+    mode = "deterministic_fallback";
+  }
+
+  return res.status(200).json({
+    success: true,
+    patientId,
+    period: days,
+    generatedAt: new Date(),
+    mode,
+    deterministicMetrics: {
+      totalRoutineReadings: analytics.totalRoutineReadings,
+      totalLabObservations: analytics.totalLabObservations,
+      earliestDate: analytics.earliestDate,
+      latestDate: analytics.latestDate,
+    },
+    parameterMetrics: analytics.parameterMetrics,
+    comparisons: analytics.comparisons,
+    labObservations: analytics.labObservations,
+    summary: summaryText,
+  });
+};
+
+// ==============================
 // Get Patient Timeline
 // ==============================
 export const getPatientTimeline = async (

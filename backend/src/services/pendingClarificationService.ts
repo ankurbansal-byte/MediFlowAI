@@ -79,8 +79,21 @@ export function clearRecentlyResolvedContext(patientId: string): void {
  * Deterministically checks if a message contains a query intent for read-back/read-only.
  * Returns the matched parameter string or "today" or null if not a query.
  */
-export function detectQueryPattern(msg: string): { type: "latest" | "today" | null; parameter?: string } {
+export function detectQueryPattern(msg: string): { type: "latest" | "today" | "summary" | null; parameter?: string; days?: number } {
   const clean = msg.toLowerCase().trim();
+
+  // 1. Check for Summary Query (highest priority among queries)
+  const summaryKeywords = ["summary", "summarize", "samry", "summarise"];
+  const hasSummaryKeyword = summaryKeywords.some(kw => clean.includes(kw));
+  if (hasSummaryKeyword) {
+    // Extract days: 7, 30, 90
+    let days = 30;
+    const match = clean.match(/\b(7|30|90)\b/);
+    if (match) {
+      days = parseInt(match[1], 10);
+    }
+    return { type: "summary", days };
+  }
 
   // To prevent false positives where a new health reading contains relative temporal words like "today" or "aaj",
   // we require actual query keywords or question markers to classify it as a read-back query.
