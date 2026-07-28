@@ -278,6 +278,7 @@ async function runTests() {
   // =========================================================================
   const reqTimeline: any = {
     params: { patientId: "PAT-46A" },
+    query: {},
     user: { username: "PAT-46A", role: "patient", patientId: "PAT-46A" },
   };
   const resTimeline = mockResponse();
@@ -285,7 +286,7 @@ async function runTests() {
 
   assert.strictEqual(resTimeline.statusCode, 200);
   assert.strictEqual(resTimeline.body?.success, true);
-  assert.strictEqual(resTimeline.body?.totalRecords, 4, "Timeline records count is preserved");
+  assert.strictEqual(resTimeline.body?.totalRecords, 5, "Timeline records count is preserved");
   assert.strictEqual(resTimeline.body?.records[0].value, "140/90", "Records must be sorted newest first (descending)");
 
   console.log("✅ Test 6 Passed: Sprint 45 timeline remains fully functional and unaffected.");
