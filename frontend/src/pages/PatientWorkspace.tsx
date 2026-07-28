@@ -50,6 +50,10 @@ interface PatientSummaryMap {
 }
 
 interface TimelineItem {
+  id?: string;
+  patientId?: string;
+  category?: "health_reading" | "lab_observation";
+  displayLabel?: string;
   parameter: string;
   value: string | number;
   unit: string;
@@ -57,6 +61,12 @@ interface TimelineItem {
   timeContext?: string;
   recordedAt: string;
   source: string;
+  systolic?: number;
+  diastolic?: number;
+  testName?: string;
+  flag?: string;
+  referenceRangeText?: string;
+  labReportId?: string;
 }
 
 interface WorkspaceTrendRecord {
@@ -1094,10 +1104,11 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                         return valB - valA;
                       })
                       .map((record, index) => {
-                        const displayParam = record.parameter.replace("_", " ").toUpperCase().replace(/\b\w/g, c => c.toUpperCase());
+                        const isLab = record.category === "lab_observation";
+                        const displayParam = record.displayLabel || (isLab ? record.testName : record.parameter.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()));
                         const isNewest = index === 0;
                         const dateStr = record.recordedAt ? (
-                          record.timeContext ? (
+                          !isLab && record.timeContext ? (
                             `${record.timeContext.charAt(0).toUpperCase() + record.timeContext.slice(1)} · ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(record.recordedAt))}`
                           ) : (
                             formatRecordDateTime(record.recordedAt)
@@ -1112,8 +1123,8 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                             justifyContent: "space-between",
                             alignItems: "center",
                             padding: "16px",
-                            background: isNewest ? "#f0f9ff" : "#ffffff",
-                            border: isNewest ? "1.5px solid #0080ff" : "1px solid var(--line, #e4e7eb)",
+                            background: isNewest ? "#f0f9ff" : (isLab ? "#fbfaff" : "#ffffff"),
+                            border: isNewest ? "1.5px solid #0080ff" : (isLab ? "1px solid #e0d7ff" : "1px solid var(--line, #e4e7eb)"),
                             borderRadius: "10px",
                             boxShadow: isNewest ? "0 4px 12px rgba(0, 128, 255, 0.08)" : "none",
                             transition: "all 0.15s ease"
@@ -1134,8 +1145,21 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                               fontSize: "1.05rem",
                               color: "var(--navy, #0a2540)",
                               fontWeight: 800,
-                              display: "block"
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px"
                             }}>
+                              <span style={{
+                                fontSize: "0.65rem",
+                                fontWeight: 850,
+                                background: isLab ? "#f5f3ff" : "#f1f5f9",
+                                color: isLab ? "#6b21a8" : "#475569",
+                                padding: "2px 6px",
+                                borderRadius: "4px",
+                                textTransform: "uppercase"
+                              }}>
+                                {isLab ? "LAB" : "ROUTINE"}
+                              </span>
                               {displayParam}
                             </span>
                             <span style={{
@@ -1143,9 +1167,9 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                               color: "var(--muted, #486581)",
                               textTransform: "capitalize",
                               display: "block",
-                              marginTop: "2px"
+                              marginTop: "4px"
                             }}>
-                              Source: {record.source}
+                              Source: {isLab ? "Lab Report" : (record.source ?? "Unknown")}
                             </span>
                           </div>
 
@@ -1156,10 +1180,26 @@ const PatientWorkspace: React.FC<PatientWorkspaceProps> = ({
                               fontWeight: 850
                             }}>
                               {record.value} <span style={{ fontSize: "0.8rem", fontWeight: 650, color: "var(--muted)" }}>{record.unit}</span>
-                              {record.parameter === "blood_sugar" && record.context && formatGlucoseContext(record.context) ? (
+                              {!isLab && record.parameter === "blood_sugar" && record.context && formatGlucoseContext(record.context) ? (
                                 <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--muted)", marginLeft: "4px" }}> · {formatGlucoseContext(record.context)}</span>
                               ) : null}
                             </strong>
+
+                            {isLab && (record.referenceRangeText || record.flag) && (
+                              <div style={{ fontSize: "0.78rem", color: "var(--muted)", marginTop: "4px" }}>
+                                {record.referenceRangeText && <span>Ref: <strong>{record.referenceRangeText}</strong></span>}
+                                {record.flag && (
+                                  <span style={{
+                                    marginLeft: "8px",
+                                    fontWeight: 800,
+                                    color: record.flag.toLowerCase() === "high" || record.flag.toLowerCase() === "low" ? "#ef4444" : "#10b981",
+                                    textTransform: "uppercase"
+                                  }}>
+                                    [{record.flag}]
+                                  </span>
+                                )}
+                              </div>
+                            )}
 
                             {isNewest && (
                               <span style={{
