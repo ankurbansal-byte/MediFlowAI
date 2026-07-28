@@ -1132,7 +1132,7 @@ export const canAccessPatient = async (reqUser: any, patientId: string): Promise
 };
 
 // ==============================
-// Get Patient Timeline
+// Get Patient Timeline (Sprint 45 Longitudinal Health Record & Unified Timeline)
 // ==============================
 export const getPatientTimeline = async (
   req: AuthenticatedRequest,
@@ -1150,36 +1150,180 @@ export const getPatientTimeline = async (
     return res.status(403).json({ success: false, message: "Forbidden. You do not have access to this patient's records." });
   }
 
+  const categoryFilter = req.query.category as string; // all, health_reading, lab_observation
+  const daysFilter = req.query.days ? Number(req.query.days) : undefined;
+  const parameterFilter = req.query.parameter as string; // e.g. blood_sugar, fbs
+
+  const normalizeRoutine = (r: any) => {
+    let systolic: number | undefined;
+    let diastolic: number | undefined;
+    if (r.parameter === "blood_pressure" && typeof r.value === "string") {
+      const parts = r.value.split("/");
+      if (parts.length === 2) {
+        systolic = parseInt(parts[0], 10);
+        diastolic = parseInt(parts[1], 10);
+      }
+    }
+    return {
+      id: r._id ? r._id.toString() : r.whatsappMessageId || `hr_${Math.random().toString(36).substr(2, 9)}`,
+      patientId: r.patientId || patientId,
+      category: "health_reading",
+      displayLabel: r.parameter === "blood_sugar" ? "Blood Sugar" :
+                    r.parameter === "blood_pressure" ? "Blood Pressure" :
+                    r.parameter === "heart_rate" ? "Heart Rate" :
+                    r.parameter === "body_temperature" ? "Temperature" :
+                    r.parameter === "weight" ? "Weight" :
+                    r.parameter === "oxygen_saturation" ? "Oxygen Saturation" :
+                    r.parameter === "respiratory_rate" ? "Respiratory Rate" :
+                    r.parameter === "height" ? "Height" :
+                    r.parameter.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
+      parameter: r.parameter,
+      value: r.value,
+      unit: r.unit || "",
+      recordedAt: r.recordedAt,
+      source: r.source || "Unknown",
+      context: r.context,
+      timeContext: r.timeContext,
+      confidence: r.confidence,
+      encounterId: r.encounterId,
+      hospitalId: r.hospitalId,
+      doctorId: r.doctorId,
+      recordedBy: r.recordedBy,
+      systolic,
+      diastolic
+    };
+  };
+
+  const normalizeLabObservation = (lo: any) => {
+    return {
+      id: lo._id ? lo._id.toString() : lo.whatsappMessageId || `lo_${Math.random().toString(36).substr(2, 9)}`,
+      patientId: lo.patientId || patientId,
+      category: "lab_observation",
+      displayLabel: lo.testName,
+      parameter: lo.canonicalTestKey || lo.testName,
+      value: lo.value,
+      unit: lo.unit || "",
+      recordedAt: lo.specimenDate || lo.createdAt || new Date(),
+      source: lo.source || "whatsapp_document",
+      testName: lo.testName,
+      flag: lo.flag || "",
+      referenceRangeText: lo.referenceRangeText || "",
+      labReportId: lo.labReportId ? lo.labReportId.toString() : undefined,
+      hospitalId: lo.hospitalId
+    };
+  };
+
   if (process.env.USE_MOCK_DATA === "true") {
-    const records = [...(MOCK_RECORDS[patientId] || [])].sort(
-      (a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
-    );
+    let routineList: any[] = [];
+    let labList: any[] = [];
+
+    // 1. Fetch routine records
+    if (!categoryFilter || categoryFilter === "all" || categoryFilter === "health_reading") {
+      routineList = [...(MOCK_RECORDS[patientId] || [])].map(normalizeRoutine);
+    }
+
+    // 2. Fetch lab observations
+    if (!categoryFilter || categoryFilter === "all" || categoryFilter === "lab_observation") {
+      labList = [...(MOCK_LAB_OBSERVATIONS[patientId] || [])].map(normalizeLabObservation);
+    }
+
+    // Combine
+    let combined = [...routineList, ...labList];
+
+    // Filter by days
+    if (daysFilter) {
+      const limitDate = new Date();
+      limitDate.setDate(limitDate.getDate() - daysFilter);
+      combined = combined.filter(r => new Date(r.recordedAt).getTime() >= limitDate.getTime());
+    }
+
+    // Filter by parameter
+    if (parameterFilter) {
+      const pLower = parameterFilter.toLowerCase();
+      combined = combined.filter(r => {
+        if (r.category === "health_reading") {
+          return r.parameter.toLowerCase() === pLower;
+        } else {
+          return (r.testName && r.testName.toLowerCase().includes(pLower)) ||
+                 (r.parameter && String(r.parameter).toLowerCase().includes(pLower));
+        }
+      });
+    }
+
+    // Sort descending by recordedAt
+    combined.sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime());
+
     return res.status(200).json({
       success: true,
-      totalRecords: records.length,
-      records,
+      totalRecords: combined.length,
+      records: combined,
     });
   }
 
   try {
-    const records = await HealthRecord.find({
-      patientId,
-    })
-      .sort({
-        recordedAt: -1,
-      })
-      .select(
-        "-_id parameter value unit context timeContext recordedAt source confidence originalMessage encounterId hospitalId doctorId recordedBy"
-      );
+    let routineList: any[] = [];
+    let labList: any[] = [];
+
+    // 1. Fetch from HealthRecord
+    if (!categoryFilter || categoryFilter === "all" || categoryFilter === "health_reading") {
+      const hrQuery: any = { patientId };
+      if (daysFilter) {
+        const limitDate = new Date();
+        limitDate.setDate(limitDate.getDate() - daysFilter);
+        hrQuery.recordedAt = { $gte: limitDate };
+      }
+      if (parameterFilter) {
+        hrQuery.parameter = parameterFilter;
+      }
+      const rawRoutine = await HealthRecord.find(hrQuery).sort({ recordedAt: -1 });
+      routineList = rawRoutine.map(normalizeRoutine);
+    }
+
+    // 2. Fetch from LabObservation
+    if (!categoryFilter || categoryFilter === "all" || categoryFilter === "lab_observation") {
+      const loQuery: any = { patientId };
+      const andClauses: any[] = [];
+
+      if (daysFilter) {
+        const limitDate = new Date();
+        limitDate.setDate(limitDate.getDate() - daysFilter);
+        andClauses.push({
+          $or: [
+            { specimenDate: { $gte: limitDate } },
+            { specimenDate: { $exists: false }, createdAt: { $gte: limitDate } }
+          ]
+        });
+      }
+      if (parameterFilter) {
+        andClauses.push({
+          $or: [
+            { testName: { $regex: new RegExp(parameterFilter, "i") } },
+            { canonicalTestKey: { $regex: new RegExp(parameterFilter, "i") } }
+          ]
+        });
+      }
+
+      if (andClauses.length > 0) {
+        loQuery.$and = andClauses;
+      }
+
+      const rawLab = await LabObservation.find(loQuery).sort({ specimenDate: -1, createdAt: -1 });
+      labList = rawLab.map(normalizeLabObservation);
+    }
+
+    // Combine
+    const combined = [...routineList, ...labList];
+
+    // Sort descending by recordedAt
+    combined.sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime());
 
     return res.status(200).json({
       success: true,
-      totalRecords: records.length,
-      records,
+      totalRecords: combined.length,
+      records: combined,
     });
   } catch (error) {
-    console.error(error);
-
+    console.error("Error fetching longitudinal health timeline:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to fetch patient timeline.",
