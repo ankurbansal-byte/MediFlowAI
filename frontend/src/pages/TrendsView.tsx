@@ -45,6 +45,14 @@ const TrendsView: React.FC<TrendsViewProps> = ({
   const [historyCategory, setHistoryCategory] = useState<string>("all");
   const [historyTimeframe, setHistoryTimeframe] = useState<string>("all");
 
+  // Progressive disclosure state for complete health history date groups
+  const [visibleGroupsCount, setVisibleGroupsCount] = useState<number>(3);
+
+  // Reset visible groups count when filters change
+  useEffect(() => {
+    setVisibleGroupsCount(3);
+  }, [historyCategory, historyTimeframe, selectedHistoryDate]);
+
   useEffect(() => {
     if (patientId) {
       setIsLabsLoading(true);
@@ -295,13 +303,26 @@ const TrendsView: React.FC<TrendsViewProps> = ({
       </div>
 
       {/* Complete Historical Record List with Calendar and Date-Grouping */}
-      <section aria-labelledby="full-history-title" style={{ borderTop: "1px solid var(--line)", paddingTop: "40px", marginTop: "40px" }}>
-        <h2 id="full-history-title" style={{ margin: "0 0 4px 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 600 }}>
-          Complete Health History
-        </h2>
-        <p style={{ margin: "0 0 20px 0", color: "var(--muted)", fontSize: "0.88rem" }}>
-          The chronological archive of all your logged health records and WhatsApp health updates.
-        </p>
+      <section
+        aria-labelledby="full-history-title"
+        style={{
+          marginTop: "32px",
+          padding: "24px",
+          background: "#ffffff", // Pure white card surface
+          border: "1px solid var(--color-border)",
+          borderRadius: "var(--radius-lg)",
+          boxShadow: "var(--shadow-sm)"
+        }}
+      >
+        <div style={{ borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: "16px", marginBottom: "20px" }}>
+          <p className="summary-section__eyebrow" style={{ margin: 0, color: "var(--color-brand-primary)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Chronological Archive</p>
+          <h2 id="full-history-title" style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 600 }}>
+            Complete Health History
+          </h2>
+          <p style={{ margin: "4px 0 0 0", color: "var(--muted)", fontSize: "0.88rem" }}>
+            The chronological archive of all your logged health records and WhatsApp health updates.
+          </p>
+        </div>
 
         {/* Sprint 45 Unified Timeline Filters */}
         <div style={{
@@ -489,7 +510,7 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                   No health records found for the selected date.
                 </p>
               ) : (
-                groupedAndFilteredTimeline.map((group) => {
+                groupedAndFilteredTimeline.slice(0, visibleGroupsCount).map((group) => {
                   const dateHeaderStr = new Intl.DateTimeFormat("en-GB", {
                     day: "numeric",
                     month: "short",
@@ -497,13 +518,13 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                   }).format(group.dateObj).toUpperCase();
 
                   return (
-                    <div key={group.dateStr} style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "12px", padding: "20px", boxShadow: "0 2px 8px rgba(10,37,64,0.01)" }}>
-                      <div style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: "10px", marginBottom: "14px", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                        <h3 style={{ margin: 0, fontSize: "1.05rem", color: "var(--navy)", fontWeight: 600, letterSpacing: "0.02em" }}>
+                    <div key={group.dateStr} style={{ borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: "18px", marginBottom: "18px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "12px" }}>
+                        <h3 style={{ margin: 0, fontSize: "0.95rem", color: "var(--navy)", fontWeight: 600, letterSpacing: "0.02em" }}>
                           📅 {dateHeaderStr}
                         </h3>
-                        <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontWeight: 500, textTransform: "uppercase" }}>
-                          {group.records.length} HEALTH RECORD{group.records.length !== 1 ? "S" : ""}
+                        <span style={{ fontSize: "0.72rem", color: "var(--muted)", fontWeight: 500, textTransform: "uppercase" }}>
+                          {group.records.length} record{group.records.length !== 1 ? "s" : ""}
                         </span>
                       </div>
 
@@ -520,11 +541,11 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                                 display: "flex",
                                 justifyContent: "space-between",
                                 alignItems: "center",
-                                padding: "12px 16px",
+                                padding: "10px 14px",
                                 background: isLab ? "#fbfaff" : "#f8fafc",
                                 border: isLab ? "1px solid #e0d7ff" : "1px solid #e2e8f0",
                                 borderRadius: "8px",
-                                fontSize: "0.95rem",
+                                fontSize: "0.88rem",
                                 fontWeight: 500,
                                 transition: "all 0.15s ease"
                               }}
@@ -532,7 +553,7 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                             >
                               <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap" }}>
                                 <span style={{
-                                  fontSize: "0.7rem",
+                                  fontSize: "0.68rem",
                                   fontWeight: 500,
                                   background: isLab ? "#f5f3ff" : "#e2e8f0",
                                   color: isLab ? "#6b21a8" : "#475569",
@@ -548,7 +569,7 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                                 <span style={{ color: "var(--navy)", fontWeight: 600 }}>{displayParam}</span>
                                 <span style={{ margin: "0 8px", color: "#cbd5e1" }}>—</span>
                                 <strong style={{ color: "var(--navy)", fontWeight: 600 }}>
-                                  {record.value} <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontWeight: 400 }}>{record.unit}</span>
+                                  {record.value} <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 400 }}>{record.unit}</span>
                                   {!isLab && record.parameter === "blood_sugar" && record.context && formatGlucoseContext(record.context) ? (
                                     <span style={{ color: "var(--muted)", fontWeight: 500 }}> · {formatGlucoseContext(record.context)}</span>
                                   ) : null}
@@ -556,7 +577,7 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                               </div>
 
                               {isLab && (record.referenceRangeText || record.flag) && (
-                                <div style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
+                                <div style={{ fontSize: "0.78rem", color: "var(--muted)" }}>
                                   {record.referenceRangeText && <span>Ref: <strong>{record.referenceRangeText}</strong></span>}
                                   {record.flag && (
                                     <span style={{
@@ -579,18 +600,87 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                 })
               )}
             </div>
+
+            {/* View More / Show Less Progressive Disclosure Actions */}
+            {groupedAndFilteredTimeline.length > 3 && (
+              <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "24px" }}>
+                {visibleGroupsCount < groupedAndFilteredTimeline.length && (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleGroupsCount(prev => prev + 5)}
+                    style={{
+                      padding: "10px 20px",
+                      borderRadius: "var(--radius-md)",
+                      border: "1px solid var(--color-brand-primary)",
+                      background: "transparent",
+                      color: "var(--color-brand-primary)",
+                      fontWeight: 600,
+                      fontSize: "0.88rem",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = "var(--color-brand-bg-subtle)";
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    View more records
+                  </button>
+                )}
+                {visibleGroupsCount > 3 && (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleGroupsCount(3)}
+                    style={{
+                      padding: "10px 20px",
+                      borderRadius: "var(--radius-md)",
+                      border: "1px solid var(--color-text-secondary)",
+                      background: "transparent",
+                      color: "var(--color-text-secondary)",
+                      fontWeight: 600,
+                      fontSize: "0.88rem",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = "var(--color-border-subtle)";
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    Show less
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </section>
 
       {/* Your Lab Results Section */}
-      <section aria-labelledby="lab-results-title" style={{ borderTop: "1px solid var(--line)", paddingTop: "40px", marginTop: "40px" }}>
-        <h2 id="lab-results-title" style={{ margin: "0 0 8px 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 600 }}>
-          🧪 Your Lab Results
-        </h2>
-        <p style={{ margin: "0 0 20px 0", color: "var(--muted)", fontSize: "0.88rem" }}>
-          Laboratory findings and observations extracted from your shared reports.
-        </p>
+      <section
+        aria-labelledby="lab-results-title"
+        style={{
+          marginTop: "32px",
+          padding: "24px",
+          background: "#f0fdfa", // Very light Aqua/Teal tint
+          border: "1px solid #ccfbf1", // Soft aqua border
+          borderRadius: "var(--radius-lg)",
+          boxShadow: "var(--shadow-sm)"
+        }}
+      >
+        <div style={{ borderBottom: "1px solid #ccfbf1", paddingBottom: "16px", marginBottom: "20px" }}>
+          <p className="summary-section__eyebrow" style={{ margin: 0, color: "var(--color-brand-primary)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Laboratory Findings</p>
+          <h2 id="lab-results-title" style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 600 }}>
+            🧪 Your Lab Results
+          </h2>
+          <p style={{ margin: "4px 0 0 0", color: "var(--muted)", fontSize: "0.88rem" }}>
+            Laboratory findings and observations extracted from your shared reports.
+          </p>
+        </div>
 
         {isLabsLoading ? (
           <div style={{ padding: "20px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.88rem" }}>
@@ -601,7 +691,7 @@ const TrendsView: React.FC<TrendsViewProps> = ({
             Failed to retrieve laboratory records. Please check your connection and try again.
           </div>
         ) : labObservations.length === 0 ? (
-          <div style={{ padding: "20px", border: "1px dashed var(--line)", borderRadius: "8px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.85rem" }}>
+          <div style={{ padding: "20px", border: "1px dashed #ccfbf1", borderRadius: "8px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.85rem" }}>
             No laboratory records found. Send a report via WhatsApp to see observations here.
           </div>
         ) : (
@@ -613,9 +703,8 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                 alignItems: "center",
                 padding: "12px 16px",
                 background: "#ffffff",
-                border: "1px solid var(--line, #e4e7eb)",
-                borderRadius: "10px",
-                fontWeight: 500,
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius-md)",
                 fontSize: "0.88rem"
               }}>
                 <div>
@@ -627,9 +716,9 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                   </span>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <strong style={{ fontSize: "1.05rem", color: "var(--navy)", fontWeight: 600 }}>
+                  <span style={{ fontSize: "1rem", color: "var(--navy)", fontWeight: 600 }}>
                     {obs.value} <span style={{ fontSize: "0.78rem", color: "var(--muted)", fontWeight: 400 }}>{obs.unit}</span>
-                  </strong>
+                  </span>
                   {obs.flag && (
                     <span style={{
                       display: "block",

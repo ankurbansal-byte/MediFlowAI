@@ -164,11 +164,22 @@ const TrendChart = ({ records, period, onPeriodChange, isLoading, hasError, para
   }, [bpData, numericData, isBP, parameter]);
 
   return (
-    <section className="trend-section" aria-labelledby="clinical-trend-title">
-      <div className="trend-section__heading-row">
+    <section
+      className="trend-section"
+      style={{
+        marginTop: "32px",
+        padding: "24px",
+        background: "#fafbfd", // Subtle analytics Slate/Blue background tint
+        border: "1px solid var(--color-border)",
+        borderRadius: "var(--radius-lg)",
+        boxShadow: "var(--shadow-sm)"
+      }}
+      aria-labelledby="clinical-trend-title"
+    >
+      <div className="trend-section__heading-row" style={{ paddingBottom: "12px" }}>
         <div>
-          <p className="summary-section__eyebrow">Health trends</p>
-          <h2 className="trend-section__heading" id="clinical-trend-title">
+          <p className="summary-section__eyebrow" style={{ margin: 0, color: "var(--color-brand-primary)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Health trends</p>
+          <h2 className="trend-section__heading" id="clinical-trend-title" style={{ margin: "4px 0 0 0" }}>
             {formatParameterTitle(parameter)}
           </h2>
         </div>
