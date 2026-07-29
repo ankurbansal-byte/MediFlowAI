@@ -432,7 +432,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
                           className="account-dropdown-item account-dropdown-item--danger"
                           type="button"
                         >
-                          ⏾ Sign Out
+                          ⏻ Sign Out
                         </button>
                       </div>
                     </>
@@ -512,7 +512,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
           <div className="modal-backdrop-premium" onClick={() => setIsLogoutModalOpen(false)}>
             <div className="modal-content-premium" onClick={e => e.stopPropagation()}>
               <div className="modal-header-premium">
-                <span className="modal-icon-premium">⏾</span>
+                <span className="modal-icon-premium">⏻</span>
                 <h2 className="modal-title-premium">Sign out of MediFlowAI?</h2>
               </div>
               <p className="modal-body-premium">

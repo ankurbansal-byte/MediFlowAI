@@ -1013,11 +1013,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                     ✦
                   </span>
                   <strong style={{ fontSize: "1.1rem", color: "var(--color-text-primary)", fontWeight: 600 }}>
-                    AI Clinical Insights
+                    AI Health Insights
                   </strong>
                 </div>
                 <p style={{ margin: "4px 0 0 0", color: "var(--color-text-secondary)", fontSize: "0.85rem", lineHeight: "1.5" }}>
-                  Formulate clinical summaries and smart guidance powered by MediFlowAI, cross-referencing routine readings with laboratory report observations.
+                  Formulate health summaries and smart guidance powered by MediFlowAI, cross-referencing routine readings with laboratory report observations.
                 </p>
               </div>
               <button
