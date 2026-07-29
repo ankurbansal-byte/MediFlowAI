@@ -21,7 +21,36 @@ type PatientDiscoveryResult = {
 // Mock Lab Data Store
 // ==============================
 export const MOCK_LAB_REPORTS: Record<string, any[]> = {};
-export const MOCK_LAB_OBSERVATIONS: Record<string, any[]> = {};
+export const MOCK_LAB_OBSERVATIONS: Record<string, any[]> = {
+  "PAT-110": [
+    {
+      patientId: "PAT-110",
+      hospitalId: "HOSP-001",
+      testName: "Fasting Blood Glucose",
+      canonicalTestKey: "fbs",
+      value: 105,
+      unit: "mg/dL",
+      referenceRangeText: "70-100",
+      flag: "high",
+      specimenDate: new Date("2026-07-26T08:00:00.000Z"),
+      source: "whatsapp_image",
+      whatsappMessageId: "msg_fbs_001_obs0",
+    },
+    {
+      patientId: "PAT-110",
+      hospitalId: "HOSP-001",
+      testName: "Postprandial Blood Glucose",
+      canonicalTestKey: "ppbs",
+      value: 135,
+      unit: "mg/dL",
+      referenceRangeText: "80-140",
+      flag: "normal",
+      specimenDate: new Date("2026-07-26T12:00:00.000Z"),
+      source: "whatsapp_image",
+      whatsappMessageId: "msg_fbs_001_obs1",
+    }
+  ]
+};
 
 // ==============================
 // Fallback Mock Data Definition
