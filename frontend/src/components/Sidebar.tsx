@@ -222,7 +222,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             onClick={onLogoutConfirmTrigger}
           >
-            <span className="sidebar__icon" aria-hidden="true">⏾</span>
+            <span className="sidebar__icon" aria-hidden="true">⏻</span>
             <span>Sign Out</span>
           </button>
         )}

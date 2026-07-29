@@ -91,7 +91,7 @@
   height: 100vh;
   flex-shrink: 0;
   transition: width 0.2s ease;
-  width: 256px;
+  width: 230px;
   z-index: 995;
 }
 
@@ -2635,7 +2635,7 @@
 }
 
 .patient-portal-footer__logo {
-  color: var(--color-brand-primary);
+  color: #2563EB;
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -2666,7 +2666,7 @@
 }
 
 .patient-portal-footer__link:hover {
-  color: var(--color-brand-primary);
+  color: #2563EB;
 }
 
 .patient-portal-footer__bullet {
@@ -2680,7 +2680,7 @@
 
 /* 2. Dark Premium Sidebar treatment using Deep Ink Navy #0F172A */
 .dashboard--patient .sidebar {
-  background: #0F172A !important;
+  background: linear-gradient(180deg, #0F172A 0%, #151F32 100%) !important;
   border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
   color: #94A3B8 !important; /* light supporting neutral text */
 }
@@ -2689,10 +2689,19 @@
   color: #F8FAFC !important; /* Cloud White */
 }
 
-.dashboard--patient .sidebar__role-context {
-  background-color: rgba(204, 251, 241, 0.1) !important; /* Soft Aqua translucent */
-  color: #CCFBF1 !important; /* Soft Aqua */
+.dashboard--patient .sidebar__brand-mark {
+  background: linear-gradient(135deg, #2563EB 0%, #4338CA 100%) !important;
+  color: #FFFFFF !important;
+  border-radius: 6px !important;
   font-weight: 600 !important;
+}
+
+.dashboard--patient .sidebar__role-context {
+  background-color: rgba(67, 56, 202, 0.2) !important; /* translucent indigo */
+  color: #818CF8 !important; /* Soft Indigo */
+  font-weight: 600 !important;
+  font-size: 0.7rem !important;
+  letter-spacing: 0.05em !important;
 }
 
 .dashboard--patient .sidebar__collapse-toggle {
@@ -2712,24 +2721,26 @@
 }
 
 .dashboard--patient .sidebar__link:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
   color: #F8FAFC !important;
 }
 
-/* Active State using MediFlow Teal #0F766E */
+/* Active State using Royal Blue & Indigo Accent */
 .dashboard--patient .sidebar__link--active {
-  background: #0F766E !important;
-  color: #F8FAFC !important;
+  background: linear-gradient(135deg, #2563EB 0%, #4338CA 100%) !important;
+  color: #FFFFFF !important;
   font-weight: 600 !important;
-  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+  border-left: 3px solid #38BDF8 !important;
+  padding-left: 11px !important;
 }
 
 .dashboard--patient .sidebar__link--active .sidebar__icon {
-  color: #F8FAFC !important;
+  color: #FFFFFF !important;
 }
 
 .dashboard--patient .sidebar__icon {
-  color: #CCFBF1 !important; /* Soft Aqua */
+  color: #60A5FA !important; /* Soft Blue */
 }
 
 .dashboard--patient .sidebar__support {
@@ -2741,8 +2752,8 @@
 }
 
 .dashboard--patient .sidebar__signout-btn:hover {
-  background: rgba(239, 68, 68, 0.15) !important;
-  color: #FCA5A5 !important;
+  background: rgba(225, 29, 72, 0.15) !important; /* Rose accent */
+  color: #FDA4AF !important;
 }
 
 .dashboard--patient .sidebar__assistance {
@@ -2751,11 +2762,11 @@
 
 .dashboard--patient .sidebar__assistance-icon {
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  color: #CCFBF1 !important;
+  color: #60A5FA !important;
 }
 
 .dashboard--patient .sidebar__assistance-text small {
-  color: #CCFBF1 !important;
+  color: #60A5FA !important;
 }
 
 /* 3. Polish Trend Graph Container */
