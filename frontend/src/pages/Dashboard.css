@@ -2600,3 +2600,263 @@
 .btn-premium--danger:hover {
   background: #b91c1c;
 }
+
+/* ==========================================================================
+   PATIENT PORTAL REFINEMENTS (SPRINT 46 / PREMIUM UX PASS)
+   ========================================================================== */
+
+/* 1. Tasteful Compact Footer */
+.patient-portal-footer {
+  margin-top: 48px;
+  padding-bottom: 24px;
+}
+
+.patient-portal-footer__divider {
+  height: 1px;
+  background: var(--color-border);
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.patient-portal-footer__content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: var(--color-text-tertiary);
+  font-size: 0.78rem;
+}
+
+.patient-portal-footer__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.patient-portal-footer__logo {
+  color: var(--color-brand-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.patient-portal-footer__name {
+  color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.patient-portal-footer__tagline {
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.patient-portal-footer__links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.patient-portal-footer__link {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.patient-portal-footer__link:hover {
+  color: var(--color-brand-primary);
+}
+
+.patient-portal-footer__bullet {
+  color: var(--color-border);
+}
+
+.patient-portal-footer__copyright {
+  color: var(--color-text-tertiary);
+  margin-left: 4px;
+}
+
+/* 2. Dark Premium Sidebar treatment using Deep Ink Navy #0F172A */
+.dashboard--patient .sidebar {
+  background: #0F172A !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #94A3B8 !important; /* light supporting neutral text */
+}
+
+.dashboard--patient .sidebar__brand-name {
+  color: #F8FAFC !important; /* Cloud White */
+}
+
+.dashboard--patient .sidebar__role-context {
+  background-color: rgba(204, 251, 241, 0.1) !important; /* Soft Aqua translucent */
+  color: #CCFBF1 !important; /* Soft Aqua */
+  font-weight: 600 !important;
+}
+
+.dashboard--patient .sidebar__collapse-toggle {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #E2E8F0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.dashboard--patient .sidebar__collapse-toggle:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.dashboard--patient .sidebar__link {
+  color: #94A3B8 !important;
+  font-weight: 500 !important;
+  transition: all 0.15s ease !important;
+}
+
+.dashboard--patient .sidebar__link:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #F8FAFC !important;
+}
+
+/* Active State using MediFlow Teal #0F766E */
+.dashboard--patient .sidebar__link--active {
+  background: #0F766E !important;
+  color: #F8FAFC !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.2) !important;
+}
+
+.dashboard--patient .sidebar__link--active .sidebar__icon {
+  color: #F8FAFC !important;
+}
+
+.dashboard--patient .sidebar__icon {
+  color: #CCFBF1 !important; /* Soft Aqua */
+}
+
+.dashboard--patient .sidebar__support {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.dashboard--patient .sidebar__signout-btn {
+  color: #94A3B8 !important;
+}
+
+.dashboard--patient .sidebar__signout-btn:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #FCA5A5 !important;
+}
+
+.dashboard--patient .sidebar__assistance {
+  color: #64748B !important;
+}
+
+.dashboard--patient .sidebar__assistance-icon {
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #CCFBF1 !important;
+}
+
+.dashboard--patient .sidebar__assistance-text small {
+  color: #CCFBF1 !important;
+}
+
+/* 3. Polish Trend Graph Container */
+.trend-chart {
+  background: #ffffff !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-sm) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: 24px !important;
+}
+
+.trend-chart__line {
+  stroke-width: 2 !important; /* Sleek modern thin line */
+}
+
+.trend-chart__point {
+  stroke-width: 2 !important;
+  fill: #ffffff !important;
+}
+
+.trend-chart__grid {
+  stroke: rgba(226, 232, 240, 0.6) !important; /* Ultra-subtle grid lines */
+}
+
+/* 4. Visually Separate Graph and Calendar */
+.calendar-widget-container {
+  background: #ffffff !important; /* Pure white background card */
+  border: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-sm) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: 24px !important;
+}
+
+/* Calendar Day Buttons Clean Polish */
+.calendar-grid-header div {
+  color: var(--color-text-secondary) !important;
+  font-weight: 500 !important;
+}
+
+.calendar-day-btn {
+  background: #ffffff !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: var(--radius-md) !important;
+  transition: all 0.15s ease !important;
+}
+
+.calendar-day-btn:hover {
+  background: var(--color-border-subtle) !important;
+  border-color: #CBD5E1 !important;
+}
+
+.calendar-day-btn--has-records {
+  background: rgba(204, 251, 241, 0.4) !important; /* Translucent Soft Aqua background */
+  border-color: #CCFBF1 !important;
+}
+
+.calendar-day-btn--has-records .calendar-day-num {
+  color: #0F766E !important; /* MediFlow Teal */
+}
+
+.calendar-day-btn--has-records .calendar-day-count {
+  color: #0F766E !important;
+}
+
+.calendar-day-btn--selected {
+  background: #0F766E !important; /* MediFlow Teal */
+  border-color: #0F766E !important;
+}
+
+.calendar-day-btn--selected .calendar-day-num,
+.calendar-day-btn--selected .calendar-day-count {
+  color: #ffffff !important;
+}
+
+.calendar-day-num {
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+  color: var(--color-text-primary) !important;
+}
+
+.calendar-day-count {
+  font-size: 0.68rem !important;
+  font-weight: 500 !important;
+}
+
+/* Clickable Report Card visual state on Dashboard */
+.clickable-report-card {
+  transition: all 0.15s ease-in-out;
+}
+.clickable-report-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-brand-primary) !important;
+  background: #ffffff !important;
+}
+
+/* Responsive Footer */
+@media (max-width: 768px) {
+  .patient-portal-footer__content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}

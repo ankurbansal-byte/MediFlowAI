@@ -72,7 +72,7 @@ const TrendChart = ({ records, period, onPeriodChange, isLoading, hasError, para
       .filter((record) => Number.isFinite(record.numericValue));
   }, [records, isBP]);
 
-  const { latest, average, minimum, maximum, plotHeight, points, pointString, bpPoints, unit } = useMemo(() => {
+  const { latest, average, minimum, maximum, plotHeight, points, pointString, fillPointsString, bpPoints, unit } = useMemo(() => {
     const plotWidth = chartWidth - padding.left - padding.right;
     const plotH = chartHeight - padding.top - padding.bottom;
 
@@ -133,6 +133,9 @@ const TrendChart = ({ records, period, onPeriodChange, isLoading, hasError, para
       });
 
       const ptsString = pts.map(({ x, y }) => `${x},${y}`).join(" ");
+      const fillPtsString = pts.length > 0
+        ? `${pts[0].x},${padding.top + plotH} ` + pts.map(({ x, y }) => `${x},${y}`).join(" ") + ` ${pts[pts.length - 1].x},${padding.top + plotH}`
+        : "";
       const unitSymbol = numericData[0]?.unit ?? (
         parameter === "blood_sugar" ? "mg/dL" :
         parameter === "heart_rate" ? "bpm" :
@@ -153,6 +156,7 @@ const TrendChart = ({ records, period, onPeriodChange, isLoading, hasError, para
         plotHeight: plotH,
         points: pts,
         pointString: ptsString,
+        fillPointsString: fillPtsString,
         bpPoints: null,
         unit: unitSymbol,
       };
@@ -253,6 +257,17 @@ const TrendChart = ({ records, period, onPeriodChange, isLoading, hasError, para
           )}
 
           <svg aria-labelledby="clinical-trend-title" className="trend-chart__svg" role="img" viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
+            <defs>
+              <linearGradient id="chartFillGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--color-brand-primary)" stopOpacity="0.25" />
+                <stop offset="100%" stopColor="var(--color-brand-primary)" stopOpacity="0.0" />
+              </linearGradient>
+              <linearGradient id="sysFillGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#c84d64" stopOpacity="0.2" />
+                <stop offset="100%" stopColor="#c84d64" stopOpacity="0.0" />
+              </linearGradient>
+            </defs>
+
             <line className="trend-chart__grid" x1={padding.left} x2={chartWidth - padding.right} y1={padding.top} y2={padding.top} />
             <line className="trend-chart__grid" x1={padding.left} x2={chartWidth - padding.right} y1={padding.top + plotHeight / 2} y2={padding.top + plotHeight / 2} />
             <line className="trend-chart__grid" x1={padding.left} x2={chartWidth - padding.right} y1={padding.top + plotHeight} y2={padding.top + plotHeight} />
@@ -264,21 +279,24 @@ const TrendChart = ({ records, period, onPeriodChange, isLoading, hasError, para
                 <polyline className="trend-chart__line" points={bpPoints.sysPtsString} style={{ stroke: "#c84d64" }} />
                 <polyline className="trend-chart__line" points={bpPoints.diaPtsString} style={{ stroke: "#7556ce" }} />
                 {bpPoints.sysPts.map((point, index) => (
-                  <circle className="trend-chart__point" cx={point.x} cy={point.y} key={`sys-${point.recordedAt ?? index}`} r="4.5" style={{ stroke: "#c84d64" }}>
+                  <circle className="trend-chart__point" cx={point.x} cy={point.y} key={`sys-${point.recordedAt ?? index}`} r="3.5" style={{ stroke: "#c84d64" }}>
                     <title>{`Systolic: ${point.value} mmHg on ${formatShortDate(point.recordedAt)}`}</title>
                   </circle>
                 ))}
                 {bpPoints.diaPts.map((point, index) => (
-                  <circle className="trend-chart__point" cx={point.x} cy={point.y} key={`dia-${point.recordedAt ?? index}`} r="4.5" style={{ stroke: "#7556ce" }}>
+                  <circle className="trend-chart__point" cx={point.x} cy={point.y} key={`dia-${point.recordedAt ?? index}`} r="3.5" style={{ stroke: "#7556ce" }}>
                     <title>{`Diastolic: ${point.value} mmHg on ${formatShortDate(point.recordedAt)}`}</title>
                   </circle>
                 ))}
               </>
             ) : (
               <>
+                {fillPointsString && (
+                  <polygon points={fillPointsString} fill="url(#chartFillGradient)" />
+                )}
                 <polyline className="trend-chart__line" points={pointString} />
                 {points.map((point, index) => (
-                  <circle className="trend-chart__point" cx={point.x} cy={point.y} key={`${point.recordedAt ?? index}-${point.value}`} r="4.5">
+                  <circle className="trend-chart__point" cx={point.x} cy={point.y} key={`${point.recordedAt ?? index}-${point.value}`} r="3.5">
                     <title>{`${point.value} ${point.unit ?? unit} on ${formatShortDate(point.recordedAt)}`}</title>
                   </circle>
                 ))}

@@ -475,7 +475,30 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
               }}
             />
           ) : (
-            renderActiveView()
+            <>
+              {renderActiveView()}
+              {user.role === "patient" && (
+                <footer className="patient-portal-footer">
+                  <div className="patient-portal-footer__divider" />
+                  <div className="patient-portal-footer__content">
+                    <div className="patient-portal-footer__brand">
+                      <span className="patient-portal-footer__logo">+</span>
+                      <span className="patient-portal-footer__name">MediFlowAI</span>
+                      <span className="patient-portal-footer__tagline">AI-powered health records, organized around you.</span>
+                    </div>
+                    <div className="patient-portal-footer__links">
+                      <a href="#privacy" className="patient-portal-footer__link">Privacy</a>
+                      <span className="patient-portal-footer__bullet">•</span>
+                      <a href="#terms" className="patient-portal-footer__link">Terms</a>
+                      <span className="patient-portal-footer__bullet">•</span>
+                      <a href="mailto:support@mediflowai.com" className="patient-portal-footer__link">Support</a>
+                      <span className="patient-portal-footer__bullet">•</span>
+                      <span className="patient-portal-footer__copyright">© {new Date().getFullYear()} MediFlowAI</span>
+                    </div>
+                  </div>
+                </footer>
+              )}
+            </>
           )}
         </main>
 

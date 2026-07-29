@@ -499,10 +499,10 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                   return (
                     <div key={group.dateStr} style={{ background: "#ffffff", border: "1px solid var(--line, #e4e7eb)", borderRadius: "12px", padding: "20px", boxShadow: "0 2px 8px rgba(10,37,64,0.01)" }}>
                       <div style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: "10px", marginBottom: "14px", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                        <h3 style={{ margin: 0, fontSize: "1.05rem", color: "var(--navy)", fontWeight: 800, letterSpacing: "0.02em" }}>
+                        <h3 style={{ margin: 0, fontSize: "1.05rem", color: "var(--navy)", fontWeight: 600, letterSpacing: "0.02em" }}>
                           📅 {dateHeaderStr}
                         </h3>
-                        <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontWeight: 750, textTransform: "uppercase" }}>
+                        <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontWeight: 500, textTransform: "uppercase" }}>
                           {group.records.length} HEALTH RECORD{group.records.length !== 1 ? "S" : ""}
                         </span>
                       </div>
@@ -525,7 +525,7 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                                 border: isLab ? "1px solid #e0d7ff" : "1px solid #e2e8f0",
                                 borderRadius: "8px",
                                 fontSize: "0.95rem",
-                                fontWeight: 700,
+                                fontWeight: 500,
                                 transition: "all 0.15s ease"
                               }}
                               className="table-row-hover"
@@ -533,7 +533,7 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                               <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap" }}>
                                 <span style={{
                                   fontSize: "0.7rem",
-                                  fontWeight: 850,
+                                  fontWeight: 500,
                                   background: isLab ? "#f5f3ff" : "#e2e8f0",
                                   color: isLab ? "#6b21a8" : "#475569",
                                   padding: "2px 6px",
@@ -543,14 +543,14 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                                 }}>
                                   {isLab ? "LAB" : "ROUTINE"}
                                 </span>
-                                <span style={{ color: "var(--muted)", fontWeight: 750 }}>{timeStr}</span>
+                                <span style={{ color: "var(--muted)", fontWeight: 500 }}>{timeStr}</span>
                                 <span style={{ margin: "0 8px", color: "#cbd5e1" }}>—</span>
-                                <span style={{ color: "var(--navy)", fontWeight: 800 }}>{displayParam}</span>
+                                <span style={{ color: "var(--navy)", fontWeight: 600 }}>{displayParam}</span>
                                 <span style={{ margin: "0 8px", color: "#cbd5e1" }}>—</span>
-                                <strong style={{ color: "var(--navy)", fontWeight: 850 }}>
-                                  {record.value} <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontWeight: 650 }}>{record.unit}</span>
+                                <strong style={{ color: "var(--navy)", fontWeight: 600 }}>
+                                  {record.value} <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontWeight: 400 }}>{record.unit}</span>
                                   {!isLab && record.parameter === "blood_sugar" && record.context && formatGlucoseContext(record.context) ? (
-                                    <span style={{ color: "var(--muted)", fontWeight: 600 }}> · {formatGlucoseContext(record.context)}</span>
+                                    <span style={{ color: "var(--muted)", fontWeight: 500 }}> · {formatGlucoseContext(record.context)}</span>
                                   ) : null}
                                 </strong>
                               </div>
@@ -561,7 +561,7 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                                   {record.flag && (
                                     <span style={{
                                       marginLeft: "8px",
-                                      fontWeight: 800,
+                                      fontWeight: 600,
                                       color: record.flag.toLowerCase() === "high" || record.flag.toLowerCase() === "low" ? "#ef4444" : "#10b981",
                                       textTransform: "uppercase"
                                     }}>
@@ -585,57 +585,57 @@ const TrendsView: React.FC<TrendsViewProps> = ({
 
       {/* Your Lab Results Section */}
       <section aria-labelledby="lab-results-title" style={{ borderTop: "1px solid var(--line)", paddingTop: "40px", marginTop: "40px" }}>
-        <h2 id="lab-results-title" style={{ margin: "0 0 8px 0", color: "var(--navy)", fontSize: "1.5rem", fontWeight: 800 }}>
+        <h2 id="lab-results-title" style={{ margin: "0 0 8px 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 600 }}>
           🧪 Your Lab Results
         </h2>
-        <p style={{ margin: "0 0 20px 0", color: "var(--muted)", fontSize: "0.95rem" }}>
+        <p style={{ margin: "0 0 20px 0", color: "var(--muted)", fontSize: "0.88rem" }}>
           Laboratory findings and observations extracted from your shared reports.
         </p>
 
         {isLabsLoading ? (
-          <div style={{ padding: "20px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.95rem" }}>
+          <div style={{ padding: "20px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.88rem" }}>
             Loading lab results...
           </div>
         ) : hasLabsError ? (
-          <div style={{ padding: "20px", border: "1px dashed #fda4af", borderRadius: "8px", color: "#ef4444", fontSize: "0.95rem", fontWeight: 600 }}>
+          <div style={{ padding: "20px", border: "1px dashed #fda4af", borderRadius: "8px", color: "#ef4444", fontSize: "0.88rem", fontWeight: 500 }}>
             Failed to retrieve laboratory records. Please check your connection and try again.
           </div>
         ) : labObservations.length === 0 ? (
-          <div style={{ padding: "20px", border: "1px dashed var(--line)", borderRadius: "8px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.9rem" }}>
+          <div style={{ padding: "20px", border: "1px dashed var(--line)", borderRadius: "8px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.85rem" }}>
             No laboratory records found. Send a report via WhatsApp to see observations here.
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {labObservations.map((obs, idx) => (
               <div key={idx} style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                padding: "16px",
+                padding: "12px 16px",
                 background: "#ffffff",
                 border: "1px solid var(--line, #e4e7eb)",
                 borderRadius: "10px",
-                fontWeight: 700,
-                fontSize: "0.95rem"
+                fontWeight: 500,
+                fontSize: "0.88rem"
               }}>
                 <div>
-                  <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 700, display: "block" }}>
+                  <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontWeight: 500, display: "block" }}>
                     {new Date(obs.specimenDate || obs.createdAt).toLocaleDateString()}
                   </span>
-                  <span style={{ color: "var(--navy)", fontWeight: 800, fontSize: "1.05rem" }}>
+                  <span style={{ color: "var(--navy)", fontWeight: 600, fontSize: "0.95rem" }}>
                     {obs.testName}
                   </span>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <strong style={{ fontSize: "1.2rem", color: "var(--navy)" }}>
-                    {obs.value} <span style={{ fontSize: "0.8rem", color: "var(--muted)" }}>{obs.unit}</span>
+                  <strong style={{ fontSize: "1.05rem", color: "var(--navy)", fontWeight: 600 }}>
+                    {obs.value} <span style={{ fontSize: "0.78rem", color: "var(--muted)", fontWeight: 400 }}>{obs.unit}</span>
                   </strong>
                   {obs.flag && (
                     <span style={{
                       display: "block",
-                      marginTop: "4px",
-                      fontSize: "0.72rem",
-                      fontWeight: 800,
+                      marginTop: "2px",
+                      fontSize: "0.7rem",
+                      fontWeight: 600,
                       textTransform: "uppercase",
                       color: obs.flag.toLowerCase() === "high" || obs.flag.toLowerCase() === "low" ? "#ef4444" : "#10b981"
                     }}>
