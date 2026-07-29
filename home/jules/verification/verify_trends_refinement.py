@@ -41,34 +41,49 @@ def run_trends_refinement_verification():
             page.click("text=Detailed Trends & History")
             page.wait_for_selector("text=Health Analytics")
 
-            # Wait for data to load
-            print("⏳ Waiting for health records to load...")
-            page.wait_for_selector("button:has-text('View more records')", timeout=15000)
+            # Wait for data to load in LATEST mode
+            print("⏳ Waiting for health records to load in LATEST mode...")
+            page.wait_for_selector("text=Latest records", timeout=15000)
 
             # Verify Section Visual Separation & Backgrounds
             print("🎨 4. Verifying section layout and styles...")
             page.wait_for_selector("text=Health Summary Engine")
             page.wait_for_selector("text=Complete Health History")
 
-            # Verify initial date groups count is 3 (plus 1 for Calendar Navigation h3 = 4)
-            print("📋 5. Checking that Complete Health History initially shows exactly 3 date groups (plus 1 calendar header)...")
-
+            # Verify initial date groups count in LATEST mode is 1 (plus 1 for Calendar Navigation h3 = 2)
+            print("📋 5. Checking that Complete Health History initially shows exactly 1 date group (plus 1 calendar header)...")
             date_headers = page.locator("section[aria-labelledby='full-history-title'] h3:has-text('📅')")
             header_count_before = date_headers.count()
             print(f"   Initial Headers Visible: {header_count_before}")
-            assert header_count_before == 4, f"Expected exactly 4 headers (3 date groups + 1 calendar), got {header_count_before}"
+            assert header_count_before == 2, f"Expected exactly 2 headers (1 date group + 1 calendar), got {header_count_before}"
+
+            # Verify 'Show all records' button is visible
+            show_all_btn = page.locator("button:has-text('Show all records')")
+            expect(show_all_btn).to_be_visible()
+            print("✅ 'Show all records' button is correctly visible.")
+
+            # Capture initial view screenshot
+            page.screenshot(path="/home/jules/verification/trends_initial_view.png")
+            print("📸 Captured trends_initial_view.png!")
+
+            # Click "Show all records" to enter ALL mode
+            print("🖱️ 6. Clicking 'Show all records' to enter ALL mode...")
+            show_all_btn.click()
+            time.sleep(1) # wait for click/re-render
+
+            # Now in ALL mode, verify initial date groups count is 3 (plus 1 for Calendar Navigation h3 = 4)
+            print("📋 7. Verifying that ALL mode initially shows exactly 3 date groups (plus 1 calendar header)...")
+            header_count_all = date_headers.count()
+            print(f"   Headers Visible in ALL mode: {header_count_all}")
+            assert header_count_all == 4, f"Expected exactly 4 headers (3 date groups + 1 calendar), got {header_count_all}"
 
             # Verify 'View more records' button is visible
             view_more_btn = page.locator("button:has-text('View more records')")
             expect(view_more_btn).to_be_visible()
             print("✅ 'View more records' button is correctly visible.")
 
-            # Capture initial view screenshot
-            page.screenshot(path="/home/jules/verification/trends_initial_view.png")
-            print("📸 Captured trends_initial_view.png!")
-
             # Click "View more records" to expand
-            print("🖱️ 6. Clicking 'View more records' to expand groups by 5...")
+            print("🖱️ 8. Clicking 'View more records' to expand groups by 5...")
             view_more_btn.click()
             time.sleep(1) # wait for click/re-render
 
@@ -82,7 +97,7 @@ def run_trends_refinement_verification():
             print("✅ 'Show less' button is correctly visible.")
 
             # Click 'Show less' to collapse back to 3
-            print("🖱️ 7. Clicking 'Show less' to collapse back...")
+            print("🖱️ 9. Clicking 'Show less' to collapse back...")
             show_less_btn.click()
             time.sleep(1)
 
@@ -91,7 +106,7 @@ def run_trends_refinement_verification():
             assert header_count_collapsed == 4, f"Expected 4 headers after collapse, got {header_count_collapsed}"
 
             # Expand again to show more data in the final screenshot
-            print("🖱️ 8. Expanding again for final screenshot view...")
+            print("🖱️ 10. Expanding again for final screenshot view...")
             page.locator("button:has-text('View more records')").click()
             time.sleep(1)
 

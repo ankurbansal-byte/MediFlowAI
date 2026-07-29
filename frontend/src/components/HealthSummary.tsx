@@ -83,8 +83,8 @@ const HealthSummary = ({
       style={{
         marginTop: "32px",
         padding: "24px",
-        background: "#faf9f6", // Subtle warm neutral tint
-        border: "1px solid var(--color-border)",
+        background: "#f2fbf9", // Very light cool aqua/mint surface
+        border: "1px solid #e2f2ee", // Subtle mint border
         borderRadius: "var(--radius-lg)",
         boxShadow: "var(--shadow-sm)"
       }}
