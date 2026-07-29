@@ -45,13 +45,19 @@ const TrendsView: React.FC<TrendsViewProps> = ({
   const [historyCategory, setHistoryCategory] = useState<string>("all");
   const [historyTimeframe, setHistoryTimeframe] = useState<string>("all");
 
+  // Sprint 46 state management for three distinct history states: "latest" | "all" | "selected"
+  const [historyMode, setHistoryMode] = useState<"latest" | "all">("latest");
+
+  // Determine active mode dynamically: if selectedHistoryDate is present, active mode is "selected"
+  const activeHistoryMode = selectedHistoryDate ? "selected" : historyMode;
+
   // Progressive disclosure state for complete health history date groups
   const [visibleGroupsCount, setVisibleGroupsCount] = useState<number>(3);
 
-  // Reset visible groups count when filters change
+  // Reset visible groups count when filters change or mode changes
   useEffect(() => {
     setVisibleGroupsCount(3);
-  }, [historyCategory, historyTimeframe, selectedHistoryDate]);
+  }, [historyCategory, historyTimeframe, selectedHistoryDate, historyMode]);
 
   useEffect(() => {
     if (patientId) {
@@ -191,14 +197,14 @@ const TrendsView: React.FC<TrendsViewProps> = ({
     }).format(date);
   };
 
-  // Group records that are going to be displayed based on date filtering
+  // Group records that are going to be displayed based on date filtering and activeHistoryMode
   const groupedAndFilteredTimeline = React.useMemo(() => {
     const groups: { dateStr: string; dateObj: Date; records: TimelineRecord[] }[] = [];
 
     const sortedDates = [...recordDates].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
     for (const dStr of sortedDates) {
-      if (selectedHistoryDate && dStr !== selectedHistoryDate) {
+      if (activeHistoryMode === "selected" && selectedHistoryDate && dStr !== selectedHistoryDate) {
         continue;
       }
       const recs = groupedRecords[dStr] || [];
@@ -210,8 +216,14 @@ const TrendsView: React.FC<TrendsViewProps> = ({
         });
       }
     }
+
+    // In latest mode, only show the single latest available record date group from the available real timeline data
+    if (activeHistoryMode === "latest" && groups.length > 0) {
+      return [groups[0]];
+    }
+
     return groups;
-  }, [recordDates, groupedRecords, selectedHistoryDate]);
+  }, [recordDates, groupedRecords, selectedHistoryDate, activeHistoryMode]);
 
   const filteredTrends = React.useMemo(() => {
     if (selectedParameter !== "blood_sugar" || glucoseContextFilter === "all") {
@@ -308,20 +320,132 @@ const TrendsView: React.FC<TrendsViewProps> = ({
         style={{
           marginTop: "32px",
           padding: "24px",
-          background: "#ffffff", // Pure white card surface
-          border: "1px solid var(--color-border)",
+          background: "#faf9f6", // Soft warm neutral / stone surface
+          border: "1px solid #e7e5e4", // Refined stone border
           borderRadius: "var(--radius-lg)",
           boxShadow: "var(--shadow-sm)"
         }}
       >
-        <div style={{ borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: "16px", marginBottom: "20px" }}>
-          <p className="summary-section__eyebrow" style={{ margin: 0, color: "var(--color-brand-primary)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Chronological Archive</p>
-          <h2 id="full-history-title" style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 600 }}>
-            Complete Health History
-          </h2>
-          <p style={{ margin: "4px 0 0 0", color: "var(--muted)", fontSize: "0.88rem" }}>
-            The chronological archive of all your logged health records and WhatsApp health updates.
-          </p>
+        <div style={{ borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: "16px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "16px" }}>
+          <div>
+            <p className="summary-section__eyebrow" style={{ margin: 0, color: "var(--color-brand-primary)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Chronological Archive</p>
+            <h2 id="full-history-title" style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 600 }}>
+              Complete Health History
+            </h2>
+            <div style={{ marginTop: "6px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <span id="history-state-badge" style={{
+                fontSize: "0.7rem",
+                fontWeight: 600,
+                background: "var(--color-brand-bg-subtle)",
+                color: "var(--color-brand-primary)",
+                padding: "3px 8px",
+                borderRadius: "4px",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}>
+                {activeHistoryMode === "latest" ? "Latest records" : activeHistoryMode === "all" ? "All records" : "Selected date"}
+              </span>
+              {activeHistoryMode === "selected" && (
+                <span style={{ fontSize: "0.85rem", color: "var(--color-text-secondary)", fontWeight: 500 }}>
+                  ({new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(selectedHistoryDate!))})
+                </span>
+              )}
+            </div>
+            <p style={{ margin: "6px 0 0 0", color: "var(--muted)", fontSize: "0.88rem" }}>
+              {activeHistoryMode === "latest"
+                ? "Displaying your most recent available health measurements."
+                : activeHistoryMode === "all"
+                ? "The chronological archive of all your logged health records and WhatsApp health updates."
+                : `Displaying records logged specifically on ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(selectedHistoryDate!))}.`
+              }
+            </p>
+          </div>
+
+          {/* Context-aware Controls in Header */}
+          <div style={{ display: "flex", gap: "12px" }}>
+            {activeHistoryMode === "latest" && (
+              <button
+                type="button"
+                onClick={() => setHistoryMode("all")}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--color-brand-primary)",
+                  background: "var(--color-brand-primary)",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Show all records
+              </button>
+            )}
+            {activeHistoryMode === "all" && (
+              <button
+                type="button"
+                onClick={() => setHistoryMode("latest")}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--color-text-secondary)",
+                  background: "#ffffff",
+                  color: "var(--color-text-primary)",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Back to latest
+              </button>
+            )}
+            {activeHistoryMode === "selected" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (setSelectedHistoryDate) setSelectedHistoryDate(null);
+                    setHistoryMode("latest");
+                  }}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--color-text-secondary)",
+                    background: "#ffffff",
+                    color: "var(--color-text-primary)",
+                    fontWeight: 600,
+                    fontSize: "0.85rem",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  Back to latest
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (setSelectedHistoryDate) setSelectedHistoryDate(null);
+                    setHistoryMode("all");
+                  }}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--color-brand-primary)",
+                    background: "transparent",
+                    color: "var(--color-brand-primary)",
+                    fontWeight: 600,
+                    fontSize: "0.85rem",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  Show all records
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Sprint 45 Unified Timeline Filters */}
@@ -413,7 +537,12 @@ const TrendsView: React.FC<TrendsViewProps> = ({
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
             {/* Calendar Widget */}
-            <div className="calendar-widget-container">
+            <div className="calendar-widget-container" style={{
+              background: "#f1f5f9", // Very light blue/slate surface
+              border: "1px solid #cbd5e1", // Slate border
+              borderRadius: "var(--radius-lg)",
+              padding: "24px"
+            }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
                 <h3 style={{ margin: 0, fontSize: "0.95rem", color: "var(--navy)", fontWeight: 600 }}>
                   📅 Calendar Navigation
@@ -506,9 +635,22 @@ const TrendsView: React.FC<TrendsViewProps> = ({
             {/* Date-Grouped Records List */}
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               {groupedAndFilteredTimeline.length === 0 ? (
-                <p style={{ margin: "10px 0", fontStyle: "italic", color: "var(--muted)", fontWeight: 550 }}>
-                  No health records found for the selected date.
-                </p>
+                <div style={{
+                  padding: "32px 24px",
+                  background: "#ffffff",
+                  border: "1px dashed var(--color-border)",
+                  borderRadius: "var(--radius-lg)",
+                  textAlign: "center",
+                  color: "var(--color-text-secondary)"
+                }}>
+                  <span style={{ fontSize: "1.5rem", display: "block", marginBottom: "8px" }}>📅</span>
+                  <p style={{ margin: 0, fontWeight: 500, fontSize: "0.9rem" }}>
+                    No health records found for the selected date.
+                  </p>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "0.8rem", color: "var(--color-text-tertiary)" }}>
+                    Try choosing another date on the calendar, or return to Latest/All records.
+                  </p>
+                </div>
               ) : (
                 groupedAndFilteredTimeline.slice(0, visibleGroupsCount).map((group) => {
                   const dateHeaderStr = new Intl.DateTimeFormat("en-GB", {
@@ -518,8 +660,8 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                   }).format(group.dateObj).toUpperCase();
 
                   return (
-                    <div key={group.dateStr} style={{ borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: "18px", marginBottom: "18px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "12px" }}>
+                    <div key={group.dateStr} style={{ background: "#ffffff", border: "1px solid var(--color-border-subtle)", padding: "18px 20px", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-sm)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "14px" }}>
                         <h3 style={{ margin: 0, fontSize: "0.95rem", color: "var(--navy)", fontWeight: 600, letterSpacing: "0.02em" }}>
                           📅 {dateHeaderStr}
                         </h3>
@@ -528,11 +670,23 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                         </span>
                       </div>
 
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "10px" }}>
                         {group.records.map((record, rIdx) => {
                           const isLab = record.category === "lab_observation";
                           const displayParam = record.displayLabel || (isLab ? record.testName : record.parameter.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()));
                           const timeStr = record.timeContext ? record.timeContext.charAt(0).toUpperCase() + record.timeContext.slice(1) : formatRecordTimeOnly(record.recordedAt);
+
+                          // Subtle icons mapping
+                          const getParamIcon = (p: string) => {
+                            const lowP = p.toLowerCase();
+                            if (lowP.includes("sugar")) return "🩸";
+                            if (lowP.includes("pressure")) return "🩺";
+                            if (lowP.includes("heart") || lowP.includes("rate")) return "❤️";
+                            if (lowP.includes("temp")) return "🌡️";
+                            if (lowP.includes("weight")) return "⚖️";
+                            if (lowP.includes("oxygen")) return "🫁";
+                            return "◈";
+                          };
 
                           return (
                             <div
@@ -542,8 +696,8 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                                 justifyContent: "space-between",
                                 alignItems: "center",
                                 padding: "10px 14px",
-                                background: isLab ? "#fbfaff" : "#f8fafc",
-                                border: isLab ? "1px solid #e0d7ff" : "1px solid #e2e8f0",
+                                background: isLab ? "#fcfbfe" : "#f8fafc",
+                                border: isLab ? "1px solid #f3e8ff" : "1px solid #e2e8f0",
                                 borderRadius: "8px",
                                 fontSize: "0.88rem",
                                 fontWeight: 500,
@@ -551,29 +705,30 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                               }}
                               className="table-row-hover"
                             >
-                              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap" }}>
+                              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
                                 <span style={{
                                   fontSize: "0.68rem",
-                                  fontWeight: 500,
+                                  fontWeight: 600,
                                   background: isLab ? "#f5f3ff" : "#e2e8f0",
                                   color: isLab ? "#6b21a8" : "#475569",
                                   padding: "2px 6px",
                                   borderRadius: "4px",
-                                  marginRight: "10px",
                                   textTransform: "uppercase"
                                 }}>
                                   {isLab ? "LAB" : "ROUTINE"}
                                 </span>
                                 <span style={{ color: "var(--muted)", fontWeight: 500 }}>{timeStr}</span>
-                                <span style={{ margin: "0 8px", color: "#cbd5e1" }}>—</span>
-                                <span style={{ color: "var(--navy)", fontWeight: 600 }}>{displayParam}</span>
-                                <span style={{ margin: "0 8px", color: "#cbd5e1" }}>—</span>
-                                <strong style={{ color: "var(--navy)", fontWeight: 600 }}>
+                                <span style={{ color: "#cbd5e1" }}>·</span>
+                                <span style={{ color: "var(--navy)", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}>
+                                  <span style={{ fontSize: "0.9rem" }}>{isLab ? "🧪" : getParamIcon(record.parameter)}</span> {displayParam}
+                                </span>
+                                <span style={{ color: "#cbd5e1" }}>·</span>
+                                <span style={{ color: "var(--navy)", fontWeight: 600 }}>
                                   {record.value} <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 400 }}>{record.unit}</span>
                                   {!isLab && record.parameter === "blood_sugar" && record.context && formatGlucoseContext(record.context) ? (
-                                    <span style={{ color: "var(--muted)", fontWeight: 500 }}> · {formatGlucoseContext(record.context)}</span>
+                                    <span style={{ color: "var(--color-brand-primary)", fontWeight: 500 }}> · {formatGlucoseContext(record.context)}</span>
                                   ) : null}
-                                </strong>
+                                </span>
                               </div>
 
                               {isLab && (record.referenceRangeText || record.flag) && (

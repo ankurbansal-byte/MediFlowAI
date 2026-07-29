@@ -170,7 +170,7 @@ const TrendChart = ({ records, period, onPeriodChange, isLoading, hasError, para
         marginTop: "32px",
         padding: "24px",
         background: "#fafbfd", // Subtle analytics Slate/Blue background tint
-        border: "1px solid var(--color-border)",
+        border: "1px solid #e2eaf2", // Cool blue border
         borderRadius: "var(--radius-lg)",
         boxShadow: "var(--shadow-sm)"
       }}
