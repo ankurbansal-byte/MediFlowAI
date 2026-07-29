@@ -1,11 +1,63 @@
+/* MediFlowAI Design System Foundation (index.css) */
+
+:root {
+  /* Colors */
+  --color-canvas: #fafafa;
+  --color-bg-card: #ffffff;
+  --color-text-primary: #18181b;      /* Sophisticated deep charcoal/zinc-900 */
+  --color-text-secondary: #52525b;    /* Zinc-600 for secondary body text */
+  --color-text-tertiary: #8e8e93;     /* Accessible grey for metadata/labels */
+
+  --color-brand-primary: #0f766e;     /* Deep, calm, premium teal */
+  --color-brand-hover: #115e59;       /* Darker shade for interaction states */
+  --color-brand-light: #14b8a6;       /* Clean bright teal for accent only */
+  --color-brand-bg-subtle: #f0fdfa;   /* Calm teal tint background */
+
+  --color-border: #e4e4e7;            /* Zinc-200 for clean subtle lines */
+  --color-border-subtle: #f4f4f5;     /* Zinc-100 for lighter division */
+
+  /* Semantic feedback */
+  --color-success: #15803d;
+  --color-success-bg: #f0fdf4;
+  --color-warning: #b45309;
+  --color-warning-bg: #fefce8;
+  --color-error: #b91c1c;
+  --color-error-bg: #fef2f2;
+
+  /* Shadows - Minimal and soft */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 4px 12px -2px rgba(24, 24, 27, 0.03), 0 2px 6px -1px rgba(24, 24, 27, 0.02);
+  --shadow-lg: 0 10px 25px -5px rgba(24, 24, 27, 0.04), 0 8px 16px -6px rgba(24, 24, 27, 0.03);
+
+  /* Typography */
+  --font-stack: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Spacing Scale */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+
+  /* Border Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  /* Layout constraints */
+  --max-width-content: 1120px;
+}
+
 * {
   box-sizing: border-box;
 }
 
 :root {
-  background: #f5f7fb;
-  color: #10213d;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-text-primary);
+  font-family: var(--font-stack);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -15,8 +67,35 @@
 body {
   min-width: 320px;
   margin: 0;
+  background-color: var(--color-canvas);
+  color: var(--color-text-primary);
 }
 
 button {
   font: inherit;
+}
+
+/* Base Form Controls & Interactive Elements */
+input, select, textarea {
+  font-family: inherit;
+  color: var(--color-text-primary);
+}
+
+/* Simple Premium Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-tertiary);
 }

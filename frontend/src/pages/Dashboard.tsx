@@ -36,6 +36,8 @@ export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "sett
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     if (user.role === "admin") return "dashboard";
     if (user.role === "doctor") return "dashboard";
@@ -338,6 +340,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
             </button>
             <Sidebar
               onLogout={onLogout}
+              onLogoutConfirmTrigger={() => setIsLogoutModalOpen(true)}
               userRole={user.role}
               activeTab={activeTab}
               onTabChange={handleTabChange}
@@ -364,6 +367,77 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
           {user.role === "doctor" && !workspacePatientId && (
             <div style={{ marginBottom: "28px" }}>
               <DashboardHeader userRole={user.role} username={user.username} />
+            </div>
+          )}
+
+          {user.role === "patient" && (
+            <div className="patient-top-header">
+              <div className="patient-top-header__breadcrumb">
+                <span className="breadcrumb-app">Portal</span>
+                <span className="breadcrumb-divider">/</span>
+                <span className="breadcrumb-current">
+                  {activeTab === "dashboard" ? "Dashboard" : activeTab === "trends" ? "Health Trends" : activeTab === "ai-insights" ? "AI Insights" : activeTab === "profile" ? "Profile" : "Settings"}
+                </span>
+              </div>
+
+              <div className="patient-top-header__actions">
+                <a
+                  href="mailto:support@mediflowai.com?subject=MediFlowAI%20Support%20Request"
+                  className="patient-top-header__support-link"
+                >
+                  <span className="support-icon">?</span> Support
+                </a>
+
+                <div className="account-dropdown-container">
+                  <button
+                    onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
+                    className="account-dropdown-trigger"
+                    type="button"
+                    aria-label="Account menu"
+                  >
+                    <div className="account-avatar">
+                      {user.fullName ? user.fullName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : user.username.slice(0, 2).toUpperCase()}
+                    </div>
+                    <span className="account-trigger-name">{user.fullName || user.username}</span>
+                    <span className="account-trigger-chevron">▼</span>
+                  </button>
+
+                  {isAccountMenuOpen && (
+                    <>
+                      <div className="account-dropdown-backdrop" onClick={() => setIsAccountMenuOpen(false)} />
+                      <div className="account-dropdown-menu">
+                        <div className="account-dropdown-info">
+                          <span className="account-dropdown-name">{user.fullName || user.username}</span>
+                          <span className="account-dropdown-email">{user.email || "Patient Account"}</span>
+                        </div>
+                        <div className="account-dropdown-divider" />
+                        <button
+                          onClick={() => { handleTabChange("profile"); setIsAccountMenuOpen(false); }}
+                          className="account-dropdown-item"
+                          type="button"
+                        >
+                          👤 Profile
+                        </button>
+                        <button
+                          onClick={() => { handleTabChange("settings"); setIsAccountMenuOpen(false); }}
+                          className="account-dropdown-item"
+                          type="button"
+                        >
+                          ⚙ Settings
+                        </button>
+                        <div className="account-dropdown-divider" />
+                        <button
+                          onClick={() => { setIsLogoutModalOpen(true); setIsAccountMenuOpen(false); }}
+                          className="account-dropdown-item account-dropdown-item--danger"
+                          type="button"
+                        >
+                          ⏾ Sign Out
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -409,6 +483,39 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
           onClose={() => setIsModalOpen(false)}
           onSuccess={handleSuccess}
         />
+
+        {isLogoutModalOpen && (
+          <div className="modal-backdrop-premium" onClick={() => setIsLogoutModalOpen(false)}>
+            <div className="modal-content-premium" onClick={e => e.stopPropagation()}>
+              <div className="modal-header-premium">
+                <span className="modal-icon-premium">⏾</span>
+                <h2 className="modal-title-premium">Sign out of MediFlowAI?</h2>
+              </div>
+              <p className="modal-body-premium">
+                You’ll need to sign in again to access your health records.
+              </p>
+              <div className="modal-actions-premium">
+                <button
+                  className="btn-premium btn-premium--secondary"
+                  onClick={() => setIsLogoutModalOpen(false)}
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn-premium btn-premium--danger"
+                  onClick={() => {
+                    setIsLogoutModalOpen(false);
+                    if (onLogout) onLogout();
+                  }}
+                  type="button"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
