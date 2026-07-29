@@ -225,9 +225,9 @@ const TrendsView: React.FC<TrendsViewProps> = ({
   return (
     <>
       <div className="trends-header" style={{ paddingBottom: "20px", borderBottom: "1px solid var(--line)", marginBottom: "28px" }}>
-        <p className="summary-section__eyebrow" style={{ margin: 0, color: "#238b82", fontSize: "0.75rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>Health Analytics</p>
-        <h1 style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "2rem", fontWeight: 850, letterSpacing: "-0.03em" }}>Health / Trends & Analysis</h1>
-        <p style={{ margin: "6px 0 0 0", color: "var(--muted)", fontSize: "0.95rem" }}>
+        <p className="summary-section__eyebrow" style={{ margin: 0, color: "var(--color-brand-primary)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Health Analytics</p>
+        <h1 style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "1.6rem", fontWeight: 600, letterSpacing: "-0.02em" }}>Health Records / Trends & Analysis</h1>
+        <p style={{ margin: "4px 0 0 0", color: "var(--muted)", fontSize: "0.9rem" }}>
           View and analyze your physiological trends and historical health measurements.
         </p>
       </div>
@@ -248,12 +248,12 @@ const TrendsView: React.FC<TrendsViewProps> = ({
           alignItems: "center",
           gap: "10px",
           flexWrap: "wrap",
-          padding: "12px 16px",
-          background: "#f8fafc",
-          border: "1px solid var(--line, #e4e7eb)",
-          borderRadius: "10px"
+          padding: "10px 16px",
+          background: "var(--color-bg-card)",
+          border: "1px solid var(--color-border)",
+          borderRadius: "var(--radius-md)"
         }}>
-          <span style={{ fontSize: "0.85rem", fontWeight: 750, color: "var(--muted, #486581)" }}>Glucose Filter:</span>
+          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--color-text-secondary)" }}>Glucose Filter:</span>
           {([
             { id: "all", label: "All" },
             { id: "fasting", label: "Fasting" },
@@ -266,11 +266,11 @@ const TrendsView: React.FC<TrendsViewProps> = ({
               onClick={() => setGlucoseContextFilter(ctx.id)}
               style={{
                 padding: "6px 12px",
-                borderRadius: "6px",
-                border: glucoseContextFilter === ctx.id ? "2px solid #0080ff" : "1px solid var(--line, #e4e7eb)",
-                background: glucoseContextFilter === ctx.id ? "#f4f8fc" : "transparent",
-                color: glucoseContextFilter === ctx.id ? "#0080ff" : "var(--navy)",
-                fontWeight: 700,
+                borderRadius: "var(--radius-sm)",
+                border: glucoseContextFilter === ctx.id ? "2px solid var(--color-brand-primary)" : "1px solid var(--color-border)",
+                background: glucoseContextFilter === ctx.id ? "var(--color-brand-bg-subtle)" : "transparent",
+                color: glucoseContextFilter === ctx.id ? "var(--color-brand-primary)" : "var(--color-text-secondary)",
+                fontWeight: 600,
                 fontSize: "0.8rem",
                 cursor: "pointer",
                 transition: "all 0.15s ease"
@@ -296,10 +296,10 @@ const TrendsView: React.FC<TrendsViewProps> = ({
 
       {/* Complete Historical Record List with Calendar and Date-Grouping */}
       <section aria-labelledby="full-history-title" style={{ borderTop: "1px solid var(--line)", paddingTop: "40px", marginTop: "40px" }}>
-        <h2 id="full-history-title" style={{ margin: "0 0 8px 0", color: "var(--navy)", fontSize: "1.5rem", fontWeight: 800 }}>
-          🏥 Complete Health History
+        <h2 id="full-history-title" style={{ margin: "0 0 4px 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 600 }}>
+          Complete Health History
         </h2>
-        <p style={{ margin: "0 0 20px 0", color: "var(--muted)", fontSize: "0.95rem" }}>
+        <p style={{ margin: "0 0 20px 0", color: "var(--muted)", fontSize: "0.88rem" }}>
           The chronological archive of all your logged health records and WhatsApp health updates.
         </p>
 
@@ -309,14 +309,14 @@ const TrendsView: React.FC<TrendsViewProps> = ({
           flexDirection: "column",
           gap: "12px",
           marginBottom: "24px",
-          background: "#f8fafc",
-          border: "1px solid #e2e8f0",
-          borderRadius: "12px",
+          background: "var(--color-bg-card)",
+          border: "1px solid var(--color-border)",
+          borderRadius: "var(--radius-lg)",
           padding: "16px"
         }}>
           {/* Category Filters */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "0.85rem", fontWeight: 750, color: "var(--muted)" }}>Category:</span>
+            <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--color-text-secondary)" }}>Category:</span>
             {[
               { id: "all", label: "All Records" },
               { id: "blood_pressure", label: "Blood Pressure" },
@@ -333,13 +333,13 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                 type="button"
                 onClick={() => setHistoryCategory(cat.id)}
                 style={{
-                  padding: "6px 12px",
-                  borderRadius: "6px",
-                  border: historyCategory === cat.id ? "2px solid #0080ff" : "1px solid #cbd5e1",
-                  background: historyCategory === cat.id ? "#eff6ff" : "#ffffff",
-                  color: historyCategory === cat.id ? "#1e40af" : "var(--navy)",
-                  fontWeight: 700,
-                  fontSize: "0.8rem",
+                  padding: "5px 12px",
+                  borderRadius: "var(--radius-sm)",
+                  border: historyCategory === cat.id ? "2px solid var(--color-brand-primary)" : "1px solid var(--color-border)",
+                  background: historyCategory === cat.id ? "var(--color-brand-bg-subtle)" : "#ffffff",
+                  color: historyCategory === cat.id ? "var(--color-brand-primary)" : "var(--color-text-secondary)",
+                  fontWeight: 600,
+                  fontSize: "0.78rem",
                   cursor: "pointer"
                 }}
               >
@@ -350,7 +350,7 @@ const TrendsView: React.FC<TrendsViewProps> = ({
 
           {/* Timeframe Filters */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "0.85rem", fontWeight: 750, color: "var(--muted)" }}>Timeframe:</span>
+            <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--color-text-secondary)" }}>Timeframe:</span>
             {[
               { id: "all", label: "All" },
               { id: "7", label: "7 Days" },
@@ -363,13 +363,13 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                 type="button"
                 onClick={() => setHistoryTimeframe(tf.id)}
                 style={{
-                  padding: "6px 12px",
-                  borderRadius: "6px",
-                  border: historyTimeframe === tf.id ? "2px solid #10b981" : "1px solid #cbd5e1",
-                  background: historyTimeframe === tf.id ? "#ecfdf5" : "#ffffff",
-                  color: historyTimeframe === tf.id ? "#065f46" : "var(--navy)",
-                  fontWeight: 700,
-                  fontSize: "0.8rem",
+                  padding: "5px 12px",
+                  borderRadius: "var(--radius-sm)",
+                  border: historyTimeframe === tf.id ? "2px solid var(--color-brand-primary)" : "1px solid var(--color-border)",
+                  background: historyTimeframe === tf.id ? "var(--color-brand-bg-subtle)" : "#ffffff",
+                  color: historyTimeframe === tf.id ? "var(--color-brand-primary)" : "var(--color-text-secondary)",
+                  fontWeight: 600,
+                  fontSize: "0.78rem",
                   cursor: "pointer"
                 }}
               >
@@ -394,24 +394,24 @@ const TrendsView: React.FC<TrendsViewProps> = ({
             {/* Calendar Widget */}
             <div className="calendar-widget-container">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
-                <h3 style={{ margin: 0, fontSize: "1.1rem", color: "var(--navy)", fontWeight: 800 }}>
+                <h3 style={{ margin: 0, fontSize: "0.95rem", color: "var(--navy)", fontWeight: 600 }}>
                   📅 Calendar Navigation
                 </h3>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                   <button
                     type="button"
                     onClick={handlePrevMonth}
-                    style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", width: "32px", height: "32px", cursor: "pointer", fontWeight: "bold" }}
+                    style={{ background: "#ffffff", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", width: "32px", height: "32px", cursor: "pointer", fontWeight: "bold" }}
                   >
                     ←
                   </button>
-                  <span style={{ fontWeight: 800, color: "var(--navy)", minWidth: "110px", textAlign: "center" }}>
+                  <span style={{ fontWeight: 600, color: "var(--navy)", minWidth: "110px", textAlign: "center", fontSize: "0.9rem" }}>
                     {monthName} {yearNum}
                   </span>
                   <button
                     type="button"
                     onClick={handleNextMonth}
-                    style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", width: "32px", height: "32px", cursor: "pointer", fontWeight: "bold" }}
+                    style={{ background: "#ffffff", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", width: "32px", height: "32px", cursor: "pointer", fontWeight: "bold" }}
                   >
                     →
                   </button>
@@ -421,7 +421,7 @@ const TrendsView: React.FC<TrendsViewProps> = ({
               {/* Day header and grid */}
               <div className="calendar-grid-header">
                 {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
-                  <div key={dayName} style={{ fontWeight: 800, fontSize: "0.75rem", color: "var(--muted)", textTransform: "uppercase" }}>
+                  <div key={dayName} style={{ fontWeight: 600, fontSize: "0.72rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                     {dayName}
                   </div>
                 ))}
@@ -463,8 +463,8 @@ const TrendsView: React.FC<TrendsViewProps> = ({
 
               {/* Status and Reset */}
               {selectedHistoryDate && (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px", padding: "10px 14px", flexWrap: "wrap", gap: "10px" }}>
-                  <span style={{ fontSize: "0.88rem", color: "#1e40af", fontWeight: 650 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px", background: "var(--color-brand-bg-subtle)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "10px 14px", flexWrap: "wrap", gap: "10px" }}>
+                  <span style={{ fontSize: "0.85rem", color: "var(--color-brand-primary)", fontWeight: 500 }}>
                     🔍 Showing records for <strong>{new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(selectedHistoryDate))}</strong>
                   </span>
                   <button
@@ -474,7 +474,7 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                         setSelectedHistoryDate(null);
                       }
                     }}
-                    style={{ background: "#ffffff", border: "1px solid #bfdbfe", borderRadius: "6px", padding: "4px 10px", fontSize: "0.8rem", color: "#0080ff", fontWeight: 750, cursor: "pointer" }}
+                    style={{ background: "#ffffff", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", padding: "4px 10px", fontSize: "0.8rem", color: "var(--color-brand-primary)", fontWeight: 600, cursor: "pointer" }}
                   >
                     Show All Dates
                   </button>

@@ -62,8 +62,8 @@ def run_sprint29_verification():
         # Step 5: Switch to AI Insights tab
         print("✦ 7. Switching to AI Clinical Insights view...")
         # Since sidebar label is "AI Insights", let's click it in the sidebar
-        page.click("aside.sidebar button:has-text('AI Insights')")
-        page.wait_for_selector("text=✦ Clinical Observations Progress Note")
+        page.click("aside.sidebar button:has-text('Health Insights')")
+        page.wait_for_selector("text=✦ Health Insights")
         page.screenshot(path="/home/jules/verification/patient_ai_insights.png")
         print("📸 Captured patient_ai_insights.png!")
 

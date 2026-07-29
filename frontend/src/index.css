@@ -1,35 +1,33 @@
 /* MediFlowAI Design System Foundation (index.css) */
 
 :root {
-  /* Colors */
-  --color-canvas: #fafafa;
-  --color-bg-card: #ffffff;
-  --color-text-primary: #18181b;      /* Sophisticated deep charcoal/zinc-900 */
-  --color-text-secondary: #52525b;    /* Zinc-600 for secondary body text */
-  --color-text-tertiary: #8e8e93;     /* Accessible grey for metadata/labels */
+  /* Core Premium Palette */
+  --color-canvas: #F8FAFC;             /* Cloud White */
+  --color-bg-card: #ffffff;            /* Pure White for card surfaces */
+  --color-brand-primary: #0F766E;      /* MediFlow Teal */
+  --color-brand-hover: #115e59;        /* Darker shade of Teal for interaction */
+  --color-brand-bg-subtle: #CCFBF1;    /* Soft Aqua as a subtle brand background */
+  --color-text-primary: #0F172A;       /* Deep Ink Navy */
+  --color-text-secondary: #475569;     /* Cool supporting grey/slate-600 */
+  --color-text-tertiary: #94A3B8;      /* Muted slate-400 for meta/labels */
 
-  --color-brand-primary: #0f766e;     /* Deep, calm, premium teal */
-  --color-brand-hover: #115e59;       /* Darker shade for interaction states */
-  --color-brand-light: #14b8a6;       /* Clean bright teal for accent only */
-  --color-brand-bg-subtle: #f0fdfa;   /* Calm teal tint background */
+  --color-border: #E2E8F0;             /* Clean subtle slate-200 border */
+  --color-border-subtle: #F1F5F9;      /* Lighter slate-100 division */
 
-  --color-border: #e4e4e7;            /* Zinc-200 for clean subtle lines */
-  --color-border-subtle: #f4f4f5;     /* Zinc-100 for lighter division */
+  /* Semantic feedback states */
+  --color-success: #0F766E;            /* Aligns with Calm Teal */
+  --color-success-bg: #E6F4F1;
+  --color-warning: #D97706;            /* Refined warm amber */
+  --color-warning-bg: #FEF3C7;
+  --color-error: #E11D48;              /* Soft rose/crimson red */
+  --color-error-bg: #FFE4E6;
 
-  /* Semantic feedback */
-  --color-success: #15803d;
-  --color-success-bg: #f0fdf4;
-  --color-warning: #b45309;
-  --color-warning-bg: #fefce8;
-  --color-error: #b91c1c;
-  --color-error-bg: #fef2f2;
+  /* Shadows - Minimal and extremely soft */
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.02);
+  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.03), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+  --shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.04), 0 8px 16px -6px rgba(15, 23, 42, 0.03);
 
-  /* Shadows - Minimal and soft */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 4px 12px -2px rgba(24, 24, 27, 0.03), 0 2px 6px -1px rgba(24, 24, 27, 0.02);
-  --shadow-lg: 0 10px 25px -5px rgba(24, 24, 27, 0.04), 0 8px 16px -6px rgba(24, 24, 27, 0.03);
-
-  /* Typography */
+  /* Typography - Modern, sophisticated SaaS system */
   --font-stack: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
   /* Spacing Scale */

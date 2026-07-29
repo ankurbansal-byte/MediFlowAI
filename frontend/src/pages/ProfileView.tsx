@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../api/axios";
 import { type User } from "../App";
-import "./Auth.css"; // Reuse modern CSS patterns
+import "./Auth.css";
 
 interface ProfileViewProps {
   user: User;
@@ -43,16 +43,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
   const [hospitalClinicName, setHospitalClinicName] = useState("");
   const [specialization, setSpecialization] = useState("");
   const [yearsOfExperience, setYearsOfExperience] = useState("");
-
-  // Change password fields
-  const [oldPassword, setOldPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showOldPassword, setShowOldPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordFeedback, setPasswordFeedback] = useState("");
-  const [passwordError, setPasswordError] = useState("");
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -134,116 +124,76 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
     }
   };
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordError("");
-    setPasswordFeedback("");
-
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      setPasswordError("Please fill out all password fields.");
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setPasswordError("New passwords do not match.");
-      return;
-    }
-
-    setSaving(true);
-
-    try {
-      const response = await api.put("/auth/profile", {
-        oldPassword,
-        newPassword,
-      });
-
-      if (response.data.success) {
-        setPasswordFeedback("Password changed successfully. Active sessions secured.");
-        setOldPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-      } else {
-        setPasswordError(response.data.message || "Failed to update password.");
-      }
-    } catch (err) {
-      console.error("Change password error:", err);
-      const errRes = (err as { response?: { data?: { message?: string } } }).response?.data;
-      setPasswordError(errRes?.message || "Password change failed. Verify your current password.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   if (loading) {
     return (
-      <div style={{ padding: "40px", textAlign: "center", color: "#0a2540" }}>
-        <h3>Loading your clinical profile...</h3>
+      <div style={{ padding: "40px", textAlign: "center", color: "var(--color-text-primary)" }}>
+        <h3 style={{ fontWeight: 500, fontSize: "1.1rem" }}>Loading your personal profile...</h3>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px" }}>
+    <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "0" }}>
       {/* Header */}
-      <div style={{ marginBottom: "28px", borderBottom: "1px solid var(--line, #e4e7eb)", paddingBottom: "20px" }}>
-        <p className="summary-section__eyebrow" style={{ color: "#0080ff", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.85rem", margin: 0 }}>
+      <div style={{ marginBottom: "28px", borderBottom: "1px solid var(--color-border)", paddingBottom: "20px" }}>
+        <p className="summary-section__eyebrow" style={{ color: "var(--color-brand-primary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.75rem", margin: 0 }}>
           Secure Portal Workspace
         </p>
-        <h1 style={{ margin: "4px 0 0 0", color: "var(--navy, #0a2540)", fontSize: "2rem", fontWeight: 850, letterSpacing: "-0.02em" }}>
+        <h1 style={{ margin: "4px 0 0 0", color: "var(--color-text-primary)", fontSize: "1.6rem", fontWeight: 600, letterSpacing: "-0.02em" }}>
           User Profile Management
         </h1>
-        <p style={{ margin: "4px 0 0 0", color: "var(--muted, #486581)", fontSize: "0.95rem" }}>
-          Review, edit, and secure your personal records and system credentials.
+        <p style={{ margin: "4px 0 0 0", color: "var(--color-text-secondary)", fontSize: "0.9rem" }}>
+          Review and update your personal information and clinical profile contacts.
         </p>
       </div>
 
       {/* Profile Core Block */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "32px" }} className="profile-grid-layout">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "28px" }} className="profile-grid-layout">
 
         {/* Left Column: Avatar & Account Card */}
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           {/* Avatar Placeholder Card */}
           <div style={{
-            background: "var(--surface, #ffffff)",
-            border: "1px solid var(--line, #e4e7eb)",
-            borderRadius: "14px",
-            padding: "32px 24px",
+            background: "var(--color-bg-card)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--radius-lg)",
+            padding: "24px",
             textAlign: "center",
-            boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
+            boxShadow: "var(--shadow-sm)"
           }}>
             <div style={{
-              width: "120px",
-              height: "120px",
+              width: "80px",
+              height: "80px",
               borderRadius: "50%",
-              backgroundColor: "#e6f0ff",
-              color: "#0080ff",
-              fontSize: "48px",
-              fontWeight: 800,
+              backgroundColor: "var(--color-brand-bg-subtle)",
+              color: "var(--color-brand-primary)",
+              fontSize: "1.8rem",
+              fontWeight: 600,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              margin: "0 auto 20px auto",
-              border: "3px solid #0080ff"
+              margin: "0 auto 16px auto",
+              border: "2px solid var(--color-brand-primary)"
             }}>
               {fullName ? fullName.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}
             </div>
 
-            <h3 style={{ margin: "0 0 4px 0", color: "var(--navy, #0a2540)", fontSize: "1.25rem", fontWeight: 850 }}>
+            <h3 style={{ margin: "0 0 4px 0", color: "var(--color-text-primary)", fontSize: "1.1rem", fontWeight: 600 }}>
               {fullName || "User Account"}
             </h3>
-            <p style={{ margin: "0 0 16px 0", color: "#0080ff", fontWeight: 700, fontSize: "0.85rem", textTransform: "uppercase" }}>
+            <p style={{ margin: "0 0 16px 0", color: "var(--color-brand-primary)", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
               {user.role} Portal
             </p>
 
             <div style={{
               display: "inline-block",
-              background: "#f0f4f8",
-              border: "1px solid #cbd5e1",
-              borderRadius: "6px",
-              padding: "6px 12px",
-              fontSize: "0.8rem",
-              color: "#486581",
-              fontWeight: 750
+              background: "var(--color-border-subtle)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "var(--radius-sm)",
+              padding: "4px 10px",
+              fontSize: "0.78rem",
+              color: "var(--color-text-secondary)",
+              fontWeight: 500
             }}>
               ID: {profile?.patientId || profile?.username}
             </div>
@@ -251,50 +201,50 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
 
           {/* Quick Stats/Meta */}
           <div style={{
-            background: "var(--surface, #ffffff)",
-            border: "1px solid var(--line, #e4e7eb)",
-            borderRadius: "14px",
-            padding: "24px",
-            boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
+            background: "var(--color-bg-card)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--radius-lg)",
+            padding: "20px",
+            boxShadow: "var(--shadow-sm)"
           }}>
-            <h4 style={{ margin: "0 0 12px 0", color: "var(--navy, #0a2540)", fontSize: "0.95rem", fontWeight: 800, textTransform: "uppercase" }}>
-              Security Details
+            <h4 style={{ margin: "0 0 12px 0", color: "var(--color-text-primary)", fontSize: "0.85rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+              Account Verification
             </h4>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "0.88rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "0.82rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "var(--muted, #486581)", fontWeight: 600 }}>Verification Status:</span>
-                <span style={{ color: "#0080ff", fontWeight: 750 }}>✓ Verified Email</span>
+                <span style={{ color: "var(--color-text-secondary)" }}>Status:</span>
+                <span style={{ color: "var(--color-brand-primary)", fontWeight: 600 }}>✓ Verified Email</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "var(--muted, #486581)", fontWeight: 600 }}>System Username:</span>
-                <span style={{ color: "var(--navy, #0a2540)", fontWeight: 700, fontFamily: "monospace" }}>{profile?.username}</span>
+                <span style={{ color: "var(--color-text-secondary)" }}>Username:</span>
+                <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontFamily: "monospace" }}>{profile?.username}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Edit Profile & Password Form */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+        {/* Right Column: Edit Profile Form */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
 
           {/* General Information Form */}
           <div style={{
-            background: "var(--surface, #ffffff)",
-            border: "1px solid var(--line, #e4e7eb)",
-            borderRadius: "14px",
-            padding: "28px",
-            boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
+            background: "var(--color-bg-card)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--radius-lg)",
+            padding: "24px",
+            boxShadow: "var(--shadow-sm)"
           }}>
-            <h3 style={{ margin: "0 0 20px 0", color: "var(--navy, #0a2540)", fontSize: "1.2rem", fontWeight: 800, borderBottom: "1px solid var(--line, #e4e7eb)", paddingBottom: "10px" }}>
+            <h3 style={{ margin: "0 0 20px 0", color: "var(--color-text-primary)", fontSize: "1.05rem", fontWeight: 600, borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: "10px" }}>
               General Information
             </h3>
 
-            {error && <div className="auth-error" style={{ marginBottom: "16px" }} role="alert">{error}</div>}
-            {success && <div className="auth-success" style={{ marginBottom: "16px" }} role="alert">{success}</div>}
+            {error && <div className="auth-error" style={{ marginBottom: "16px", padding: "10px", borderRadius: "var(--radius-sm)", fontSize: "0.85rem" }} role="alert">{error}</div>}
+            {success && <div className="auth-success" style={{ marginBottom: "16px", padding: "10px", borderRadius: "var(--radius-sm)", fontSize: "0.85rem" }} role="alert">{success}</div>}
 
-            <form onSubmit={handleProfileSave} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              <div className="auth-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            <form onSubmit={handleProfileSave} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div className="auth-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div className="auth-form-group">
-                  <label htmlFor="p-fullName" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Full Name</label>
+                  <label htmlFor="p-fullName" style={{ display: "block", fontSize: "0.74rem", fontWeight: 600, color: "var(--color-text-secondary)", textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.03em" }}>Full Name</label>
                   <input
                     id="p-fullName"
                     type="text"
@@ -303,11 +253,12 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                     onChange={(e) => setFullName(e.target.value)}
                     required
                     disabled={saving}
+                    style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", fontSize: "0.88rem" }}
                   />
                 </div>
 
                 <div className="auth-form-group">
-                  <label htmlFor="p-email" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Email Address</label>
+                  <label htmlFor="p-email" style={{ display: "block", fontSize: "0.74rem", fontWeight: 600, color: "var(--color-text-secondary)", textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.03em" }}>Email Address</label>
                   <input
                     id="p-email"
                     type="email"
@@ -316,13 +267,14 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     disabled={saving}
+                    style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", fontSize: "0.88rem" }}
                   />
                 </div>
               </div>
 
-              <div className="auth-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+              <div className="auth-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div className="auth-form-group">
-                  <label htmlFor="p-mobileNumber" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Mobile Number</label>
+                  <label htmlFor="p-mobileNumber" style={{ display: "block", fontSize: "0.74rem", fontWeight: 600, color: "var(--color-text-secondary)", textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.03em" }}>Mobile Number</label>
                   <input
                     id="p-mobileNumber"
                     type="tel"
@@ -331,12 +283,13 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                     onChange={(e) => setMobileNumber(e.target.value)}
                     required
                     disabled={saving}
+                    style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", fontSize: "0.88rem" }}
                   />
                 </div>
 
                 {user.role === "patient" ? (
                   <div className="auth-form-group">
-                    <label htmlFor="p-dob" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Date of Birth</label>
+                    <label htmlFor="p-dob" style={{ display: "block", fontSize: "0.74rem", fontWeight: 600, color: "var(--color-text-secondary)", textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.03em" }}>Date of Birth</label>
                     <input
                       id="p-dob"
                       type="date"
@@ -345,11 +298,12 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                       onChange={(e) => setDob(e.target.value)}
                       required
                       disabled={saving}
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", fontSize: "0.88rem" }}
                     />
                   </div>
                 ) : (
                   <div className="auth-form-group">
-                    <label htmlFor="p-yearsExp" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Years of Experience</label>
+                    <label htmlFor="p-yearsExp" style={{ display: "block", fontSize: "0.74rem", fontWeight: 600, color: "var(--color-text-secondary)", textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.03em" }}>Years of Experience</label>
                     <input
                       id="p-yearsExp"
                       type="text"
@@ -358,6 +312,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                       value={yearsOfExperience}
                       onChange={(e) => setYearsOfExperience(e.target.value)}
                       disabled={saving}
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", fontSize: "0.88rem" }}
                     />
                   </div>
                 )}
@@ -365,9 +320,9 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
 
               {user.role === "patient" ? (
                 <>
-                  <div className="auth-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                  <div className="auth-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                     <div className="auth-form-group">
-                      <label htmlFor="p-gender" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Gender</label>
+                      <label htmlFor="p-gender" style={{ display: "block", fontSize: "0.74rem", fontWeight: 600, color: "var(--color-text-secondary)", textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.03em" }}>Gender</label>
                       <select
                         id="p-gender"
                         className="auth-select"
@@ -375,7 +330,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                         onChange={(e) => setGender(e.target.value)}
                         required
                         disabled={saving}
-                        style={{ width: "100%", padding: "12px 14px", border: "1.5px solid #cbd2d9", borderRadius: "8px" }}
+                        style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", fontSize: "0.88rem", background: "transparent" }}
                       >
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
@@ -384,7 +339,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                     </div>
 
                     <div className="auth-form-group">
-                      <label htmlFor="p-emergency" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Emergency Contact</label>
+                      <label htmlFor="p-emergency" style={{ display: "block", fontSize: "0.74rem", fontWeight: 600, color: "var(--color-text-secondary)", textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.03em" }}>Emergency Contact</label>
                       <input
                         id="p-emergency"
                         type="text"
@@ -393,12 +348,13 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                         value={emergencyContact}
                         onChange={(e) => setEmergencyContact(e.target.value)}
                         disabled={saving}
+                        style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", fontSize: "0.88rem" }}
                       />
                     </div>
                   </div>
 
                   <div className="auth-form-group">
-                    <label htmlFor="p-address" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Home Address</label>
+                    <label htmlFor="p-address" style={{ display: "block", fontSize: "0.74rem", fontWeight: 600, color: "var(--color-text-secondary)", textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.03em" }}>Home Address</label>
                     <input
                       id="p-address"
                       type="text"
@@ -407,13 +363,14 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
                       disabled={saving}
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", fontSize: "0.88rem" }}
                     />
                   </div>
                 </>
               ) : (
-                <div className="auth-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                <div className="auth-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                   <div className="auth-form-group">
-                    <label htmlFor="p-hospital" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Hospital / Clinic Name</label>
+                    <label htmlFor="p-hospital" style={{ display: "block", fontSize: "0.74rem", fontWeight: 600, color: "var(--color-text-secondary)", textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.03em" }}>Hospital / Clinic Name</label>
                     <input
                       id="p-hospital"
                       type="text"
@@ -422,11 +379,12 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                       onChange={(e) => setHospitalClinicName(e.target.value)}
                       required
                       disabled={saving}
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", fontSize: "0.88rem" }}
                     />
                   </div>
 
                   <div className="auth-form-group">
-                    <label htmlFor="p-specialization" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Specialization</label>
+                    <label htmlFor="p-specialization" style={{ display: "block", fontSize: "0.74rem", fontWeight: 600, color: "var(--color-text-secondary)", textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.03em" }}>Specialization</label>
                     <input
                       id="p-specialization"
                       type="text"
@@ -435,151 +393,14 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onProfileUpdate }) => {
                       onChange={(e) => setSpecialization(e.target.value)}
                       required
                       disabled={saving}
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", fontSize: "0.88rem" }}
                     />
                   </div>
                 </div>
               )}
 
-              <button type="submit" className="auth-submit-btn" style={{ padding: "14px", borderRadius: "8px", background: "#0080ff", color: "#ffffff", fontWeight: 750, border: "none", cursor: "pointer", transition: "all 0.15s ease", marginTop: "10px" }} disabled={saving}>
+              <button type="submit" className="auth-submit-btn" style={{ padding: "12px", borderRadius: "var(--radius-md)", background: "var(--color-brand-primary)", color: "#ffffff", fontWeight: 600, fontSize: "0.88rem", border: "none", cursor: "pointer", transition: "all 0.15s ease", marginTop: "10px" }} disabled={saving}>
                 {saving ? "Saving Changes..." : "Save Profile Details"}
-              </button>
-            </form>
-          </div>
-
-          {/* Change Password Block */}
-          <div style={{
-            background: "var(--surface, #ffffff)",
-            border: "1px solid var(--line, #e4e7eb)",
-            borderRadius: "14px",
-            padding: "28px",
-            boxShadow: "0 10px 30px rgba(10, 37, 64, 0.04)"
-          }}>
-            <h3 style={{ margin: "0 0 6px 0", color: "var(--navy, #0a2540)", fontSize: "1.25rem", fontWeight: 800 }}>
-              Change Password
-            </h3>
-            <p style={{ margin: "0 0 20px 0", color: "var(--muted, #486581)", fontSize: "0.85rem" }}>
-              Securely update your system credentials.
-            </p>
-
-            {passwordError && <div className="auth-error" style={{ marginBottom: "16px" }} role="alert">{passwordError}</div>}
-            {passwordFeedback && <div className="auth-success" style={{ marginBottom: "16px" }} role="alert">{passwordFeedback}</div>}
-
-            <form onSubmit={handlePasswordChange} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              <div className="auth-form-group">
-                <label htmlFor="p-oldPass" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Current Password</label>
-                <div style={{ position: "relative" }}>
-                  <input
-                    id="p-oldPass"
-                    type={showOldPassword ? "text" : "password"}
-                    className="auth-input"
-                    style={{ paddingRight: "40px" }}
-                    value={oldPassword}
-                    onChange={(e) => setOldPassword(e.target.value)}
-                    disabled={saving}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowOldPassword(!showOldPassword)}
-                    aria-label={showOldPassword ? "Hide password" : "Show password"}
-                    style={{
-                      position: "absolute",
-                      right: "12px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      fontSize: "16px",
-                      color: "#627d98",
-                      padding: "4px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {showOldPassword ? "🙈" : "👁"}
-                  </button>
-                </div>
-              </div>
-
-              <div className="auth-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                <div className="auth-form-group">
-                  <label htmlFor="p-newPass" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>New Password</label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      id="p-newPass"
-                      type={showNewPassword ? "text" : "password"}
-                      className="auth-input"
-                      style={{ paddingRight: "40px" }}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      disabled={saving}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      aria-label={showNewPassword ? "Hide password" : "Show password"}
-                      style={{
-                        position: "absolute",
-                        right: "12px",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        fontSize: "16px",
-                        color: "#627d98",
-                        padding: "4px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {showNewPassword ? "🙈" : "👁"}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="auth-form-group">
-                  <label htmlFor="p-confirmPass" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#627d98", textTransform: "uppercase", marginBottom: "6px" }}>Confirm New Password</label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      id="p-confirmPass"
-                      type={showConfirmPassword ? "text" : "password"}
-                      className="auth-input"
-                      style={{ paddingRight: "40px" }}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      disabled={saving}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                      style={{
-                        position: "absolute",
-                        right: "12px",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        fontSize: "16px",
-                        color: "#627d98",
-                        padding: "4px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {showConfirmPassword ? "🙈" : "👁"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <button type="submit" className="auth-submit-btn" style={{ padding: "14px", borderRadius: "8px", background: "#ef4444", color: "#ffffff", fontWeight: 750, border: "none", cursor: "pointer", transition: "all 0.15s ease" }} disabled={saving}>
-                {saving ? "Updating..." : "Update Password Credentials"}
               </button>
             </form>
           </div>

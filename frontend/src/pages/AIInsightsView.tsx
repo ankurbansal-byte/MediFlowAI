@@ -34,18 +34,18 @@ const AIInsightsView: React.FC<AIInsightsViewProps> = ({
   return (
     <>
       <div className="ai-insights-header" style={{ paddingBottom: "20px", borderBottom: "1px solid var(--line)", marginBottom: "28px" }}>
-        <p className="summary-section__eyebrow" style={{ margin: 0, color: "#238b82", fontSize: "0.75rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>Clinical Intelligence</p>
-        <h1 style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "2rem", fontWeight: 850, letterSpacing: "-0.03em" }}>AI Clinical Insights</h1>
-        <p style={{ margin: "6px 0 0 0", color: "var(--muted)", fontSize: "0.95rem" }}>
-          Dynamic physiological summaries, alerts, clinical interpretation, and care guidance.
+        <p className="summary-section__eyebrow" style={{ margin: 0, color: "var(--color-brand-primary)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Personalized Guidance</p>
+        <h1 style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "1.6rem", fontWeight: 600, letterSpacing: "-0.02em" }}>Health Insights</h1>
+        <p style={{ margin: "4px 0 0 0", color: "var(--muted)", fontSize: "0.9rem" }}>
+          Understand your physiological trends, review changes over time, and prepare talking points for your doctor.
         </p>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px" }}>
         {/* Parameter Selector for AI Insights */}
-        <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "12px", padding: "20px" }}>
-          <h3 style={{ margin: "0 0 14px 0", color: "var(--navy)", fontSize: "0.95rem", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Select Parameter for Observation Progress Note
+        <div style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)", padding: "20px" }}>
+          <h3 style={{ margin: "0 0 14px 0", color: "var(--navy)", fontSize: "0.85rem", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Select a Vital Metric to View Insights
           </h3>
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
             {(Object.keys(parameterConfigs) as HealthParameter[]).map((key) => {
@@ -63,12 +63,12 @@ const AIInsightsView: React.FC<AIInsightsViewProps> = ({
                     alignItems: "center",
                     gap: "8px",
                     padding: "10px 16px",
-                    borderRadius: "8px",
-                    border: isSelected ? "2px solid #238b82" : "1px solid var(--line)",
-                    background: isSelected ? "#e7f8f5" : "var(--surface)",
-                    color: isSelected ? "#115e59" : "var(--navy)",
-                    fontWeight: isSelected ? "750" : "600",
-                    fontSize: "0.86rem",
+                    borderRadius: "var(--radius-md)",
+                    border: isSelected ? "2px solid var(--color-brand-primary)" : "1px solid var(--color-border)",
+                    background: isSelected ? "var(--color-brand-bg-subtle)" : "transparent",
+                    color: isSelected ? "var(--color-brand-primary)" : "var(--color-text-secondary)",
+                    fontWeight: isSelected ? "600" : "500",
+                    fontSize: "0.85rem",
                     cursor: "pointer",
                     transition: "all 0.15s ease",
                     outline: "none",

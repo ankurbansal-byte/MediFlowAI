@@ -280,6 +280,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
           <SettingsView
             user={user}
             onLogout={onLogout}
+            onLogoutConfirmTrigger={() => setIsLogoutModalOpen(true)}
           />
         );
       default:
@@ -376,7 +377,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate }
                 <span className="breadcrumb-app">Portal</span>
                 <span className="breadcrumb-divider">/</span>
                 <span className="breadcrumb-current">
-                  {activeTab === "dashboard" ? "Dashboard" : activeTab === "trends" ? "Health Trends" : activeTab === "ai-insights" ? "AI Insights" : activeTab === "profile" ? "Profile" : "Settings"}
+                  {activeTab === "dashboard" ? "Home" : activeTab === "trends" ? "Health Records" : activeTab === "ai-insights" ? "Health Insights" : activeTab === "profile" ? "Profile" : "Settings"}
                 </span>
               </div>
 

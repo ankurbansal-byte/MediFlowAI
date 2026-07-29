@@ -124,16 +124,38 @@ const Sidebar: React.FC<SidebarProps> = ({
             ? (activeTab === "patients" || (activeTab === "dashboard" && userRole === "doctor"))
             : activeTab === tab;
 
+          // For patients, customize the display names and icons as per Design System guidelines
+          let displayLabel = label;
+          let displayIcon = icon;
+          if (userRole === "patient") {
+            if (tab === "dashboard") {
+              displayLabel = "Home";
+              displayIcon = "⊞";
+            } else if (tab === "trends") {
+              displayLabel = "Health Records";
+              displayIcon = "📊";
+            } else if (tab === "ai-insights") {
+              displayLabel = "Health Insights";
+              displayIcon = "✦";
+            } else if (tab === "profile") {
+              displayLabel = "Profile";
+              displayIcon = "👤";
+            } else if (tab === "settings") {
+              displayLabel = "Settings";
+              displayIcon = "⚙";
+            }
+          }
+
           return (
             <button
               className={`sidebar__link${isItemActive ? " sidebar__link--active" : ""}`}
-              key={label}
+              key={tab}
               type="button"
               onClick={() => handleItemClick(tab)}
-              title={isCollapsed ? label : undefined}
+              title={isCollapsed ? displayLabel : undefined}
             >
-              <span className="sidebar__icon" aria-hidden="true">{icon}</span>
-              {!isCollapsed && <span>{label}</span>}
+              <span className="sidebar__icon" aria-hidden="true">{displayIcon}</span>
+              {!isCollapsed && <span>{displayLabel}</span>}
             </button>
           );
         })}
