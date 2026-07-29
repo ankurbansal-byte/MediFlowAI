@@ -67,7 +67,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   const [labObservations, setLabObservations] = useState<any[]>([]);
   const [isLabsLoading, setIsLabsLoading] = useState(false);
   const [hasLabsError, setHasLabsError] = useState(false);
-  const [summaryMode, setSummaryMode] = useState<"summary" | "report">("summary");
+  const [summaryMode, setSummaryMode] = useState<"summary" | "report">("report");
+  const [selectedDrilldownBlock, setSelectedDrilldownBlock] = useState<any | null>(null);
 
   useEffect(() => {
     if (effectivePatientId) {
@@ -473,7 +474,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                   transition: "all 0.15s ease"
                 }}
               >
-                Summary View
+                Summary
               </button>
               <button
                 type="button"
@@ -491,7 +492,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                   transition: "all 0.15s ease"
                 }}
               >
-                Structured Report
+                Health Report
               </button>
             </div>
           </div>
@@ -517,48 +518,59 @@ const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
-              {factualSummaryBlocks.map((block) => (
-                <div
-                  key={block.key}
-                  style={{
-                    background: "var(--color-canvas)",
-                    borderRadius: "var(--radius-md)",
-                    padding: "16px",
-                    border: "1px solid var(--color-border)",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "10px"
-                  }}
-                >
-                  <strong style={{ color: "var(--color-brand-primary)", textTransform: "uppercase", fontSize: "0.72rem", letterSpacing: "0.04em" }}>
-                    {block.label}
-                  </strong>
-                  {block.hasData && block.metrics ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
-                        <span style={{ color: "var(--color-text-secondary)" }}>Latest:</span>
-                        <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{block.metrics.latest}</strong>
+              {factualSummaryBlocks.map((block) => {
+                const isClickable = block.hasData;
+                return (
+                  <div
+                    key={block.key}
+                    onClick={() => {
+                      if (isClickable) {
+                        setSelectedDrilldownBlock(block);
+                      }
+                    }}
+                    className={isClickable ? "clickable-report-card" : ""}
+                    style={{
+                      background: "var(--color-canvas)",
+                      borderRadius: "var(--radius-md)",
+                      padding: "16px",
+                      border: "1px solid var(--color-border)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "10px",
+                      cursor: isClickable ? "pointer" : "default",
+                      transition: "all 0.15s ease"
+                    }}
+                  >
+                    <strong style={{ color: "var(--color-brand-primary)", textTransform: "uppercase", fontSize: "0.72rem", letterSpacing: "0.04em" }}>
+                      {block.label} {isClickable && <span style={{ fontSize: "0.65rem", textTransform: "none", color: "var(--color-text-tertiary)", fontWeight: 400, marginLeft: "4px" }}>(Click to view log)</span>}
+                    </strong>
+                    {block.hasData && block.metrics ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
+                          <span style={{ color: "var(--color-text-secondary)" }}>Latest:</span>
+                          <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{block.metrics.latest}</strong>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
+                          <span style={{ color: "var(--color-text-secondary)" }}>Average:</span>
+                          <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{block.metrics.average}</strong>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
+                          <span style={{ color: "var(--color-text-secondary)" }}>Range:</span>
+                          <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{block.metrics.range}</strong>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
+                          <span style={{ color: "var(--color-text-secondary)" }}>Total Logs:</span>
+                          <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{block.metrics.count}</strong>
+                        </div>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
-                        <span style={{ color: "var(--color-text-secondary)" }}>Average:</span>
-                        <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{block.metrics.average}</strong>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
-                        <span style={{ color: "var(--color-text-secondary)" }}>Range:</span>
-                        <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{block.metrics.range}</strong>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
-                        <span style={{ color: "var(--color-text-secondary)" }}>Total Logs:</span>
-                        <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{block.metrics.count}</strong>
-                      </div>
-                    </div>
-                  ) : (
-                    <p style={{ margin: "4px 0 0 0", color: "var(--color-text-tertiary)", fontStyle: "italic", fontSize: "0.82rem" }}>
-                      No data recorded
-                    </p>
-                  )}
-                </div>
-              ))}
+                    ) : (
+                      <p style={{ margin: "4px 0 0 0", color: "var(--color-text-tertiary)", fontStyle: "italic", fontSize: "0.82rem" }}>
+                        No data recorded
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -695,6 +707,78 @@ const DashboardView: React.FC<DashboardViewProps> = ({
             >
               ✦ AI Clinical Insights
             </button>
+          </div>
+        )}
+
+        {selectedDrilldownBlock && (
+          <div className="modal-backdrop-premium" onClick={() => setSelectedDrilldownBlock(null)} style={{ zIndex: 1000 }}>
+            <div className="modal-content-premium modal-content-premium--drilldown" onClick={e => e.stopPropagation()} style={{ maxWidth: "500px" }}>
+              <div className="modal-header-premium" style={{ borderBottom: "1px solid var(--color-border)", paddingBottom: "14px", marginBottom: "18px", display: "flex", alignItems: "center", gap: "12px" }}>
+                <span className="modal-icon-premium" style={{ color: "var(--color-brand-primary)", fontSize: "1.5rem" }}>✦</span>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <h2 className="modal-title-premium" style={{ margin: 0, fontSize: "1.2rem", fontWeight: 600, color: "var(--color-text-primary)" }}>
+                    {selectedDrilldownBlock.label} Log (30 Days)
+                  </h2>
+                  <p style={{ margin: "2px 0 0 0", color: "var(--color-text-secondary)", fontSize: "0.8rem", fontWeight: 400 }}>
+                    Chronological history of your registered readings
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ maxHeight: "300px", overflowY: "auto", paddingRight: "4px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                {(() => {
+                  const thirtyDaysAgo = new Date();
+                  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                  const matchingRecords = timeline.filter(
+                    r => r.parameter === selectedDrilldownBlock.key && r.recordedAt && new Date(r.recordedAt).getTime() >= thirtyDaysAgo.getTime()
+                  ).sort((a, b) => new Date(b.recordedAt!).getTime() - new Date(a.recordedAt!).getTime());
+
+                  if (matchingRecords.length === 0) {
+                    return <p style={{ fontStyle: "italic", color: "var(--color-text-tertiary)", fontSize: "0.85rem", textAlign: "center", margin: "20px 0" }}>No records found</p>;
+                  }
+
+                  return matchingRecords.map((rec, idx) => (
+                    <div key={idx} style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "10px 14px",
+                      background: "var(--color-canvas)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "var(--radius-md)",
+                      fontSize: "0.88rem"
+                    }}>
+                      <div>
+                        <span style={{ fontSize: "0.72rem", color: "var(--color-text-tertiary)", fontWeight: 500, display: "block" }}>
+                          {rec.timeContext ? rec.timeContext.charAt(0).toUpperCase() + rec.timeContext.slice(1) : ""} · {formatRecordDateTime(rec.recordedAt)}
+                        </span>
+                        {rec.parameter === "blood_sugar" && rec.context && formatGlucoseContext(rec.context) && (
+                          <span style={{ fontSize: "0.75rem", color: "var(--color-brand-primary)", fontWeight: 500 }}>
+                            {formatGlucoseContext(rec.context)}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <strong style={{ fontSize: "1rem", color: "var(--color-text-primary)", fontWeight: 600 }}>
+                          {rec.value} <span style={{ fontSize: "0.75rem", color: "var(--color-text-secondary)", fontWeight: 400 }}>{rec.unit}</span>
+                        </strong>
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+
+              <div className="modal-actions-premium" style={{ marginTop: "20px", paddingTop: "14px", borderTop: "1px solid var(--color-border)", display: "flex", justifyContent: "flex-end" }}>
+                <button
+                  className="btn-premium btn-premium--secondary"
+                  onClick={() => setSelectedDrilldownBlock(null)}
+                  type="button"
+                  style={{ padding: "6px 16px", fontSize: "0.85rem" }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -81,11 +81,11 @@ const HealthSummary = ({
     <section className="health-summary-section" style={{ marginTop: "42px", paddingTop: "34px", borderTop: "1px solid var(--line)" }} aria-labelledby="health-summary-engine-title">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "22px", flexWrap: "wrap", gap: "16px" }}>
         <div>
-          <p className="summary-section__eyebrow" style={{ margin: 0, color: "#238b82", fontSize: "0.75rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>Clinical Metrics</p>
-          <h2 id="health-summary-engine-title" style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 800, letterSpacing: "-0.025em" }}>Health Summary Engine</h2>
+          <p className="summary-section__eyebrow" style={{ margin: 0, color: "#238b82", fontSize: "0.75rem", fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase" }}>Clinical Metrics</p>
+          <h2 id="health-summary-engine-title" style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 600, letterSpacing: "-0.025em" }}>Health Summary Engine</h2>
         </div>
-        <div style={{ fontSize: "0.84rem", color: "var(--muted)", fontWeight: "600" }}>
-          Analyzing: <span style={{ color: "var(--navy)", fontWeight: "700" }}>Last {period} Days</span>
+        <div style={{ fontSize: "0.84rem", color: "var(--muted)", fontWeight: "500" }}>
+          Analyzing: <span style={{ color: "var(--navy)", fontWeight: "600" }}>Last {period} Days</span>
         </div>
       </div>
 
@@ -140,18 +140,18 @@ const HealthSummary = ({
                       {config.icon}
                     </div>
                     <div>
-                      <strong style={{ display: "block", fontSize: "0.88rem", color: "var(--navy)", fontWeight: "750" }}>{config.label}</strong>
+                      <strong style={{ display: "block", fontSize: "0.88rem", color: "var(--navy)", fontWeight: "500" }}>{config.label}</strong>
                       <span style={{ fontSize: "0.74rem", color: "var(--muted)" }}>
                         {stats.count} record{stats.count !== 1 ? "s" : ""}
                       </span>
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <span style={{ display: "block", fontSize: "0.95rem", fontWeight: "800", color: "var(--navy)" }}>
+                    <span style={{ display: "block", fontSize: "0.95rem", fontWeight: "600", color: "var(--navy)" }}>
                       {stats.latest}
                     </span>
                     {stats.latest !== "—" && stats.unit && (
-                      <span style={{ fontSize: "0.68rem", color: "var(--muted)", fontWeight: "600" }}>{stats.unit}</span>
+                      <span style={{ fontSize: "0.68rem", color: "var(--muted)", fontWeight: "500" }}>{stats.unit}</span>
                     )}
                   </div>
                 </button>
@@ -179,7 +179,7 @@ const HealthSummary = ({
                 <div>
                   <span style={{
                     fontSize: "0.72rem",
-                    fontWeight: "800",
+                    fontWeight: "500",
                     color: getTrendColor(activeStats.trendDirection),
                     background: activeStats.trendDirection === "No Data" ? "#f1f5f9" : (activeStats.trendDirection === "Stable" ? "#e7f8f5" : (activeStats.trendDirection === "Rising" ? "#fff0f2" : "#f1eeff")),
                     padding: "3px 8px",
@@ -189,7 +189,7 @@ const HealthSummary = ({
                   }}>
                     {activeStats.trendDirection} Trend
                   </span>
-                  <h3 style={{ margin: "8px 0 2px 0", color: "var(--navy)", fontSize: "1.35rem", fontWeight: "800" }}>
+                  <h3 style={{ margin: "8px 0 2px 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 600 }}>
                     {parameterConfigs[selectedParameter].label} Summary
                   </h3>
                   <p style={{ margin: 0, color: "var(--muted)", fontSize: "0.82rem" }}>
@@ -197,8 +197,8 @@ const HealthSummary = ({
                   </p>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <span style={{ display: "block", fontSize: "0.74rem", fontWeight: "750", color: "#7e8ba1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Last Updated</span>
-                  <span style={{ fontSize: "0.88rem", fontWeight: "700", color: "var(--navy)" }}>{activeStats.lastUpdated}</span>
+                  <span style={{ display: "block", fontSize: "0.74rem", fontWeight: "500", color: "#7e8ba1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Last Updated</span>
+                  <span style={{ fontSize: "0.88rem", fontWeight: "500", color: "var(--navy)" }}>{activeStats.lastUpdated}</span>
                 </div>
               </div>
             </div>
@@ -208,69 +208,69 @@ const HealthSummary = ({
 
               {/* Metric 1: Latest Reading */}
               <div style={{ background: "#f8fafc", border: "1px solid #eef2f6", borderRadius: "10px", padding: "16px" }}>
-                <span style={{ color: "var(--muted)", fontSize: "0.74rem", fontWeight: "750", textTransform: "uppercase", letterSpacing: "0.05em" }}>Latest Reading</span>
+                <span style={{ color: "var(--muted)", fontSize: "0.74rem", fontWeight: "500", textTransform: "uppercase", letterSpacing: "0.05em" }}>Latest Reading</span>
                 <div style={{ marginTop: "6px", display: "flex", alignItems: "baseline", gap: "6px" }}>
-                  <strong style={{ fontSize: "1.75rem", fontWeight: "900", color: "var(--navy)", letterSpacing: "-0.03em" }}>{activeStats.latest}</strong>
+                  <strong style={{ fontSize: "1.35rem", fontWeight: 600, color: "var(--navy)", letterSpacing: "-0.03em" }}>{activeStats.latest}</strong>
                   {activeStats.latest !== "—" && activeStats.unit && (
-                    <span style={{ fontSize: "0.88rem", color: "var(--muted)", fontWeight: "700" }}>{activeStats.unit}</span>
+                    <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontWeight: "500" }}>{activeStats.unit}</span>
                   )}
                 </div>
               </div>
 
               {/* Metric 2: Average */}
               <div style={{ background: "#f8fafc", border: "1px solid #eef2f6", borderRadius: "10px", padding: "16px" }}>
-                <span style={{ color: "var(--muted)", fontSize: "0.74rem", fontWeight: "750", textTransform: "uppercase", letterSpacing: "0.05em" }}>Average Value</span>
+                <span style={{ color: "var(--muted)", fontSize: "0.74rem", fontWeight: "500", textTransform: "uppercase", letterSpacing: "0.05em" }}>Average Value</span>
                 <div style={{ marginTop: "6px", display: "flex", alignItems: "baseline", gap: "6px" }}>
-                  <strong style={{ fontSize: "1.75rem", fontWeight: "900", color: "var(--navy)", letterSpacing: "-0.03em" }}>{activeStats.average}</strong>
+                  <strong style={{ fontSize: "1.35rem", fontWeight: 600, color: "var(--navy)", letterSpacing: "-0.03em" }}>{activeStats.average}</strong>
                   {activeStats.average !== "—" && activeStats.unit && (
-                    <span style={{ fontSize: "0.88rem", color: "var(--muted)", fontWeight: "700" }}>{activeStats.unit}</span>
+                    <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontWeight: "500" }}>{activeStats.unit}</span>
                   )}
                 </div>
               </div>
 
               {/* Metric 3: Highest */}
               <div style={{ background: "#f8fafc", border: "1px solid #eef2f6", borderRadius: "10px", padding: "16px" }}>
-                <span style={{ color: "var(--muted)", fontSize: "0.74rem", fontWeight: "750", textTransform: "uppercase", letterSpacing: "0.05em" }}>Highest Reading</span>
+                <span style={{ color: "var(--muted)", fontSize: "0.74rem", fontWeight: "500", textTransform: "uppercase", letterSpacing: "0.05em" }}>Highest Reading</span>
                 <div style={{ marginTop: "6px", display: "flex", alignItems: "baseline", gap: "6px" }}>
-                  <strong style={{ fontSize: "1.45rem", fontWeight: "850", color: "#c84d64", letterSpacing: "-0.02em" }}>{activeStats.highest}</strong>
+                  <strong style={{ fontSize: "1.25rem", fontWeight: 600, color: "#c84d64", letterSpacing: "-0.02em" }}>{activeStats.highest}</strong>
                   {activeStats.highest !== "—" && activeStats.unit && (
-                    <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontWeight: "700" }}>{activeStats.unit}</span>
+                    <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontWeight: "500" }}>{activeStats.unit}</span>
                   )}
                 </div>
               </div>
 
               {/* Metric 4: Lowest */}
               <div style={{ background: "#f8fafc", border: "1px solid #eef2f6", borderRadius: "10px", padding: "16px" }}>
-                <span style={{ color: "var(--muted)", fontSize: "0.74rem", fontWeight: "750", textTransform: "uppercase", letterSpacing: "0.05em" }}>Lowest Reading</span>
+                <span style={{ color: "var(--muted)", fontSize: "0.74rem", fontWeight: "500", textTransform: "uppercase", letterSpacing: "0.05em" }}>Lowest Reading</span>
                 <div style={{ marginTop: "6px", display: "flex", alignItems: "baseline", gap: "6px" }}>
-                  <strong style={{ fontSize: "1.45rem", fontWeight: "850", color: "#178f80", letterSpacing: "-0.02em" }}>{activeStats.lowest}</strong>
+                  <strong style={{ fontSize: "1.25rem", fontWeight: 600, color: "#178f80", letterSpacing: "-0.02em" }}>{activeStats.lowest}</strong>
                   {activeStats.lowest !== "—" && activeStats.unit && (
-                    <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontWeight: "700" }}>{activeStats.unit}</span>
+                    <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontWeight: "500" }}>{activeStats.unit}</span>
                   )}
                 </div>
               </div>
 
               {/* Metric 5: Total Readings */}
               <div style={{ background: "#f8fafc", border: "1px solid #eef2f6", borderRadius: "10px", padding: "16px" }}>
-                <span style={{ color: "var(--muted)", fontSize: "0.74rem", fontWeight: "750", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Readings</span>
+                <span style={{ color: "var(--muted)", fontSize: "0.74rem", fontWeight: "500", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Readings</span>
                 <div style={{ marginTop: "6px" }}>
-                  <strong style={{ fontSize: "1.45rem", fontWeight: "850", color: "var(--navy)", letterSpacing: "-0.02em" }}>{activeStats.count}</strong>
-                  <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontWeight: "700", marginLeft: "6px" }}>recorded measurements</span>
+                  <strong style={{ fontSize: "1.25rem", fontWeight: 600, color: "var(--navy)", letterSpacing: "-0.02em" }}>{activeStats.count}</strong>
+                  <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontWeight: "500", marginLeft: "6px" }}>recorded measurements</span>
                 </div>
               </div>
 
               {/* Metric 6: Trend Direction */}
               <div style={{ background: "#f8fafc", border: "1px solid #eef2f6", borderRadius: "10px", padding: "16px" }}>
-                <span style={{ color: "var(--muted)", fontSize: "0.74rem", fontWeight: "750", textTransform: "uppercase", letterSpacing: "0.05em" }}>Trend Direction</span>
+                <span style={{ color: "var(--muted)", fontSize: "0.74rem", fontWeight: "500", textTransform: "uppercase", letterSpacing: "0.05em" }}>Trend Direction</span>
                 <div style={{ marginTop: "6px", display: "flex", alignItems: "center", gap: "8px" }}>
                   <span style={{
-                    fontSize: "1.45rem",
-                    fontWeight: "900",
+                    fontSize: "1.25rem",
+                    fontWeight: "600",
                     color: getTrendColor(activeStats.trendDirection),
                   }}>
                     {getTrendIcon(activeStats.trendDirection)}
                   </span>
-                  <strong style={{ fontSize: "1.45rem", fontWeight: "850", color: getTrendColor(activeStats.trendDirection) }}>
+                  <strong style={{ fontSize: "1.25rem", fontWeight: 600, color: getTrendColor(activeStats.trendDirection) }}>
                     {activeStats.trendDirection}
                   </strong>
                 </div>
@@ -288,12 +288,12 @@ const HealthSummary = ({
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <span style={{ color: "var(--navy)", fontSize: "0.88rem", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.03em" }}>Reading Consistency</span>
+                <span style={{ color: "var(--navy)", fontSize: "0.88rem", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.03em" }}>Reading Consistency</span>
                 <span style={{
                   padding: "4px 10px",
                   borderRadius: "999px",
                   fontSize: "0.7rem",
-                  fontWeight: "850",
+                  fontWeight: "600",
                   letterSpacing: "0.05em",
                   color: "#fff",
                   background: consistencyInfo.color,
