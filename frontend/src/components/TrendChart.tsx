@@ -167,10 +167,9 @@ const TrendChart = ({ records, period, onPeriodChange, isLoading, hasError, para
     <section
       className="trend-section"
       style={{
-        marginTop: "32px",
         padding: "24px",
-        background: "#fafbfd", // Subtle analytics Slate/Blue background tint
-        border: "1px solid #e2eaf2", // Cool blue border
+        background: "#f0f5fa", // Premium soft cool blue/slate pastel background
+        border: "1px solid #ccdbe8", // Premium blue/slate border
         borderRadius: "var(--radius-lg)",
         boxShadow: "var(--shadow-sm)"
       }}
