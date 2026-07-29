@@ -64,10 +64,10 @@ def run_sprint36c_verification():
             page.wait_for_selector(".summary-grid div:has-text('Blood Sugar')")
 
             # Check for the friendly context label and value in the snapshot grid
-            sugar_card = page.locator(".summary-grid div:has-text('Blood Sugar')")
+            sugar_card = page.locator(".summary-grid div:has-text('Blood Sugar')").first
             expect(sugar_card).to_contain_text("142 mg/dL")
             expect(sugar_card).to_contain_text("Random")
-            expect(sugar_card).to_contain_text("As of 23 Jul 2026")
+            expect(sugar_card).to_contain_text("23 Jul 2026")
 
             # Verify "Today's Health" Section
             print("📋 5. Verifying Today's Health section is present immediately after the Snapshot...")

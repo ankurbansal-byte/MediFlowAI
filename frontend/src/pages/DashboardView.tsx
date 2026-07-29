@@ -67,6 +67,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   const [labObservations, setLabObservations] = useState<any[]>([]);
   const [isLabsLoading, setIsLabsLoading] = useState(false);
   const [hasLabsError, setHasLabsError] = useState(false);
+  const [summaryMode, setSummaryMode] = useState<"summary" | "report">("summary");
 
   useEffect(() => {
     if (effectivePatientId) {
@@ -113,7 +114,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           key: p.key,
           label: p.label,
           hasData: false,
-          text: `No ${p.label.toLowerCase()} readings recorded in the last 30 days.`
+          text: `No ${p.label.toLowerCase()} readings recorded in the last 30 days.`,
+          metrics: null
         };
       }
 
@@ -128,7 +130,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({
             key: p.key,
             label: p.label,
             hasData: false,
-            text: `No valid BP readings in the last 30 days.`
+            text: `No valid BP readings in the last 30 days.`,
+            metrics: null
           };
         }
 
@@ -147,7 +150,13 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           key: p.key,
           label: p.label,
           hasData: true,
-          text: `Last 30 Days: ${records.length} BP readings recorded. Average: ${avgSys}/${avgDia} mmHg. Range: ${minSys}/${minDia} to ${maxSys}/${maxDia} mmHg. Latest: ${latestVal} mmHg.`
+          text: `Last 30 Days: ${records.length} BP readings recorded. Average: ${avgSys}/${avgDia} mmHg. Range: ${minSys}/${minDia} to ${maxSys}/${maxDia} mmHg. Latest: ${latestVal} mmHg.`,
+          metrics: {
+            latest: `${latestVal}`,
+            average: `${avgSys}/${avgDia}`,
+            range: `${minSys}/${minDia} – ${maxSys}/${maxDia}`,
+            count: records.length
+          }
         };
       }
 
@@ -157,7 +166,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           key: p.key,
           label: p.label,
           hasData: false,
-          text: `No numeric ${p.label.toLowerCase()} readings recorded in the last 30 days.`
+          text: `No numeric ${p.label.toLowerCase()} readings recorded in the last 30 days.`,
+          metrics: null
         };
       }
 
@@ -170,7 +180,13 @@ const DashboardView: React.FC<DashboardViewProps> = ({
         key: p.key,
         label: p.label,
         hasData: true,
-        text: `Last 30 Days: ${records.length} ${p.label.toLowerCase()} readings recorded. Average: ${avgVal} ${p.unit}. Range: ${minVal}–${maxVal} ${p.unit}. Latest: ${latestVal} ${p.unit}.`
+        text: `Last 30 Days: ${records.length} ${p.label.toLowerCase()} readings recorded. Average: ${avgVal} ${p.unit}. Range: ${minVal}–${maxVal} ${p.unit}. Latest: ${latestVal} ${p.unit}.`,
+        metrics: {
+          latest: `${latestVal} ${p.unit}`,
+          average: `${avgVal} ${p.unit}`,
+          range: `${minVal} – ${maxVal} ${p.unit}`,
+          count: records.length
+        }
       };
     });
   }, [timeline]);
@@ -178,11 +194,6 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   const hasAnyFactualSummaryData = React.useMemo(() => {
     return factualSummaryBlocks.some(block => block.hasData);
   }, [factualSummaryBlocks]);
-
-  // Helper to format timestamps nicely
-  const formatRecordDate = (dateStr?: string) => {
-    return formatRecordDateTime(dateStr);
-  };
 
   const getLatestRecord = (key: string) => {
     if (!summary) return null;
@@ -236,15 +247,20 @@ const DashboardView: React.FC<DashboardViewProps> = ({
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
         {/* Patient Greeting & Identity Header */}
-        <div className="patient-welcome-section" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--line, #e4e7eb)", paddingBottom: "24px", marginBottom: "24px", gap: "20px", flexWrap: "wrap" }}>
+        <div className="patient-welcome-section" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--color-border)", paddingBottom: "24px", marginBottom: "8px", gap: "20px", flexWrap: "wrap" }}>
           <div className="patient-welcome-section__info" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <h1 className="patient-welcome-section__title" style={{ margin: 0, color: "var(--navy, #0a2540)", fontSize: "clamp(1.8rem, 3.2vw, 2.5rem)", fontWeight: 850, letterSpacing: "-0.04em" }}>
+            <h1 className="patient-welcome-section__title" style={{ margin: 0, color: "var(--color-text-primary)", fontSize: "clamp(1.6rem, 3vw, 2.2rem)", fontWeight: 600, letterSpacing: "-0.03em" }}>
               Welcome, {user.fullName || user.username}
             </h1>
-            <p className="patient-welcome-section__id" style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--muted, #486581)" }}>
-              Patient ID: {user.patientId || user.username}
-            </p>
-            <p className="patient-welcome-section__subtitle" style={{ margin: "4px 0 0 0", color: "#627d98", fontSize: "0.95rem", fontWeight: 500 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px" }}>
+              <span className="sidebar__role-context" style={{ margin: 0 }}>
+                Patient Space
+              </span>
+              <p className="patient-welcome-section__id" style={{ margin: 0, fontSize: "0.88rem", fontWeight: 500, color: "var(--color-text-secondary)" }}>
+                Patient ID: {user.patientId || user.username}
+              </p>
+            </div>
+            <p className="patient-welcome-section__subtitle" style={{ margin: "6px 0 0 0", color: "var(--color-text-secondary)", fontSize: "0.9rem", fontWeight: 400 }}>
               Your personal health snapshot and longitudinal record.
             </p>
           </div>
@@ -255,69 +271,72 @@ const DashboardView: React.FC<DashboardViewProps> = ({
               display: "flex",
               alignItems: "center",
               gap: "10px",
-              background: "#f0fdf4",
-              border: "1px solid #bbf7d0",
-              borderRadius: "10px",
+              background: "var(--color-success-bg)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "var(--radius-md)",
               padding: "12px 18px",
-              color: "#166534",
-              fontSize: "0.88rem",
-              fontWeight: 600,
-              maxWidth: "450px",
+              color: "var(--color-brand-primary)",
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              maxWidth: "420px",
               lineHeight: "1.4",
-              cursor: "pointer"
+              cursor: "pointer",
+              boxShadow: "var(--shadow-sm)"
             }}
             title="Click to manually submit a record"
           >
-            <span style={{ fontSize: "1.25rem" }}>💬</span>
+            <span style={{ fontSize: "1.1rem" }}>💬</span>
             <span>Health updates are automatically organized from your connected WhatsApp submissions.</span>
           </div>
         </div>
 
         {/* Latest Health Snapshot Grid */}
         <section aria-labelledby="latest-snapshot-title">
-          <h2 id="latest-snapshot-title" style={{ margin: "0 0 16px 0", color: "var(--navy)", fontSize: "1.5rem", fontWeight: 800 }}>
-            ⚡ Latest Health Snapshot
+          <h2 id="latest-snapshot-title" style={{ margin: "0 0 16px 0", color: "var(--color-text-primary)", fontSize: "1.15rem", fontWeight: 600, letterSpacing: "-0.01em" }}>
+            Latest Health Snapshot
           </h2>
-          <div className="summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
+          <div className="summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
             {snapshotParameters.map((param) => {
               const record = getLatestRecord(param.key);
               return (
                 <div
                   key={param.key}
                   style={{
-                    background: "#ffffff",
-                    border: "1px solid var(--line, #e4e7eb)",
-                    borderRadius: "14px",
-                    padding: "20px",
+                    background: "var(--color-bg-card)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "16px 18px",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "10px",
-                    boxShadow: "0 4px 16px rgba(23, 49, 84, 0.02)",
-                    opacity: record ? 1 : 0.75
+                    gap: "8px",
+                    boxShadow: "var(--shadow-sm)",
+                    opacity: record ? 1 : 0.8
                   }}
                 >
-                  <span style={{ fontSize: "1.6rem" }}>{param.icon}</span>
-                  <span style={{ fontSize: "0.78rem", fontWeight: 750, color: "var(--muted, #486581)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                    {param.label}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                      {param.label}
+                    </span>
+                    <span style={{ fontSize: "1.2rem" }}>{param.icon}</span>
+                  </div>
                   {record ? (
-                    <>
-                      <strong style={{ fontSize: "1.45rem", color: "var(--navy, #0a2540)", fontWeight: 850 }}>
-                        {record.value} <span style={{ fontSize: "0.8rem", color: "var(--muted, #486581)", fontWeight: 600 }}>{record.unit || param.fallbackUnit}</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginTop: "4px" }}>
+                      <strong style={{ fontSize: "1.25rem", color: "var(--color-text-primary)", fontWeight: 600 }}>
+                        {record.value} <span style={{ fontSize: "0.8rem", color: "var(--color-text-secondary)", fontWeight: 500 }}>{record.unit || param.fallbackUnit}</span>
                         {param.key === "blood_sugar" && record.context && formatGlucoseContext(record.context) ? (
-                          <span style={{ fontSize: "0.95rem", color: "var(--muted)", fontWeight: 600 }}> · {formatGlucoseContext(record.context)}</span>
+                          <span style={{ fontSize: "0.85rem", color: "var(--color-brand-primary)", fontWeight: 500 }}> · {formatGlucoseContext(record.context)}</span>
                         ) : null}
                       </strong>
-                      <span style={{ fontSize: "0.72rem", color: "#627d98", fontWeight: 550 }}>
-                        As of {record.timeContext ? (
+                      <span style={{ fontSize: "0.72rem", color: "var(--color-text-tertiary)", fontWeight: 400 }}>
+                        {record.timeContext ? (
                           `${record.timeContext.charAt(0).toUpperCase() + record.timeContext.slice(1)} · ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(record.recordedAt!))}`
                         ) : (
-                          formatRecordDate(record.recordedAt)
+                          formatRecordDateTime(record.recordedAt)
                         )}
                       </span>
-                    </>
+                    </div>
                   ) : (
-                    <span style={{ fontSize: "0.9rem", color: "var(--muted, #486581)", fontStyle: "italic", fontWeight: 600 }}>
+                    <span style={{ fontSize: "0.85rem", color: "var(--color-text-tertiary)", fontStyle: "italic", fontWeight: 400, marginTop: "8px" }}>
                       No data available
                     </span>
                   )}
@@ -329,18 +348,18 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* Today's Health Section */}
         <section aria-labelledby="todays-health-title" style={{
-          background: "#ffffff",
-          border: "1px solid var(--line, #e4e7eb)",
-          borderRadius: "14px",
-          padding: "24px",
-          boxShadow: "0 4px 16px rgba(23, 49, 84, 0.02)"
+          background: "var(--color-bg-card)",
+          border: "1px solid var(--color-border)",
+          borderRadius: "var(--radius-lg)",
+          padding: "20px 24px",
+          boxShadow: "var(--shadow-sm)"
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
             <div>
-              <h2 id="todays-health-title" style={{ margin: 0, color: "var(--navy)", fontSize: "1.5rem", fontWeight: 800 }}>
-                ☀️ Today's Health
+              <h2 id="todays-health-title" style={{ margin: 0, color: "var(--color-text-primary)", fontSize: "1.15rem", fontWeight: 600 }}>
+                Today's Health
               </h2>
-              <p style={{ margin: "4px 0 0 0", color: "var(--muted)", fontSize: "0.88rem", fontWeight: 600 }}>
+              <p style={{ margin: "2px 0 0 0", color: "var(--color-text-secondary)", fontSize: "0.82rem", fontWeight: 400 }}>
                 {formatTodayDateHeader(new Date())} · {todayRecords.length} record{todayRecords.length !== 1 ? "s" : ""}
               </p>
             </div>
@@ -356,11 +375,12 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                 style={{
                   background: "none",
                   border: "none",
-                  color: "#0080ff",
-                  fontWeight: 750,
-                  fontSize: "0.92rem",
+                  color: "var(--color-brand-primary)",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
                   cursor: "pointer",
-                  padding: 0
+                  padding: 0,
+                  transition: "color 0.15s ease"
                 }}
               >
                 View today's records →
@@ -369,7 +389,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {todayRecords.length === 0 ? (
-            <p style={{ margin: 0, color: "var(--muted)", fontStyle: "italic", fontSize: "0.95rem", fontWeight: 550 }}>
+            <p style={{ margin: 0, color: "var(--color-text-tertiary)", fontStyle: "italic", fontSize: "0.88rem" }}>
               No health records logged today.
             </p>
           ) : (
@@ -395,18 +415,18 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                     className="table-row-hover today-record-row"
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                      <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 750, minWidth: "70px" }}>
+                      <span style={{ fontSize: "0.82rem", color: "var(--color-text-secondary)", fontWeight: 500, minWidth: "70px" }}>
                         {record.timeContext ? record.timeContext.charAt(0).toUpperCase() + record.timeContext.slice(1) : timeStr}
                       </span>
-                      <strong style={{ fontSize: "1rem", color: "var(--navy)", fontWeight: 750 }}>
+                      <strong style={{ fontSize: "0.92rem", color: "var(--color-text-primary)", fontWeight: 600 }}>
                         {displayParam}
                       </strong>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <strong style={{ fontSize: "1.1rem", color: "var(--navy)", fontWeight: 850 }}>
-                        {record.value} <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 650 }}>{record.unit}</span>
+                      <strong style={{ fontSize: "1.05rem", color: "var(--color-text-primary)", fontWeight: 600 }}>
+                        {record.value} <span style={{ fontSize: "0.8rem", color: "var(--color-text-secondary)", fontWeight: 400 }}>{record.unit}</span>
                         {record.parameter === "blood_sugar" && record.context && formatGlucoseContext(record.context) ? (
-                          <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontWeight: 650, marginLeft: "4px" }}>
+                          <span style={{ fontSize: "0.8rem", color: "var(--color-text-secondary)", fontWeight: 400, marginLeft: "4px" }}>
                             · {formatGlucoseContext(record.context)}
                           </span>
                         ) : null}
@@ -419,101 +439,216 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           )}
         </section>
 
-        {/* Factual Clinical Summary Card (Relabelled to 30-Day Health Summary) */}
+        {/* 30-Day Health Summary with Switchable Modes */}
         <section aria-labelledby="factual-summary-title" style={{
-          background: "#ffffff",
-          border: "1px solid #cbd5e1",
-          borderRadius: "14px",
-          padding: "24px",
-          boxShadow: "0 4px 16px rgba(10, 37, 64, 0.02)"
+          background: "var(--color-bg-card)",
+          border: "1px solid var(--color-border)",
+          borderRadius: "var(--radius-lg)",
+          padding: "20px 24px",
+          boxShadow: "var(--shadow-sm)"
         }}>
-          <h3 id="factual-summary-title" style={{ margin: "0 0 16px 0", color: "var(--navy, #0a2540)", fontSize: "1.25rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "8px" }}>
-            📊 30-Day Health Summary
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "0.9rem" }}>
-            {hasAnyFactualSummaryData ? (
-              factualSummaryBlocks.map((block) => (
-                <div key={block.key} style={{ paddingBottom: "10px", borderBottom: "1px solid #f1f5f9" }}>
-                  <strong style={{ color: "#0080ff", textTransform: "uppercase", fontSize: "0.75rem", display: "block", marginBottom: "3px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+            <h3 id="factual-summary-title" style={{ margin: 0, color: "var(--color-text-primary)", fontSize: "1.15rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "8px" }}>
+              📊 30-Day Health Summary
+            </h3>
+            <div style={{
+              display: "flex",
+              background: "var(--color-border-subtle)",
+              borderRadius: "var(--radius-sm)",
+              padding: "2px"
+            }}>
+              <button
+                type="button"
+                onClick={() => setSummaryMode("summary")}
+                style={{
+                  padding: "4px 12px",
+                  borderRadius: "var(--radius-sm)",
+                  border: "none",
+                  background: summaryMode === "summary" ? "var(--color-bg-card)" : "transparent",
+                  color: summaryMode === "summary" ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+                  fontWeight: 600,
+                  fontSize: "0.78rem",
+                  cursor: "pointer",
+                  boxShadow: summaryMode === "summary" ? "var(--shadow-sm)" : "none",
+                  transition: "all 0.15s ease"
+                }}
+              >
+                Summary View
+              </button>
+              <button
+                type="button"
+                onClick={() => setSummaryMode("report")}
+                style={{
+                  padding: "4px 12px",
+                  borderRadius: "var(--radius-sm)",
+                  border: "none",
+                  background: summaryMode === "report" ? "var(--color-bg-card)" : "transparent",
+                  color: summaryMode === "report" ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+                  fontWeight: 600,
+                  fontSize: "0.78rem",
+                  cursor: "pointer",
+                  boxShadow: summaryMode === "report" ? "var(--shadow-sm)" : "none",
+                  transition: "all 0.15s ease"
+                }}
+              >
+                Structured Report
+              </button>
+            </div>
+          </div>
+
+          {summaryMode === "summary" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "0.88rem" }}>
+              {hasAnyFactualSummaryData ? (
+                factualSummaryBlocks.map((block) => (
+                  <div key={block.key} style={{ paddingBottom: "10px", borderBottom: "1px solid var(--color-border-subtle)" }}>
+                    <strong style={{ color: "var(--color-brand-primary)", textTransform: "uppercase", fontSize: "0.7rem", display: "block", marginBottom: "3px", letterSpacing: "0.03em" }}>
+                      {block.label}
+                    </strong>
+                    <p style={{ margin: 0, color: "var(--color-text-primary)", fontWeight: 400, fontStyle: block.hasData ? "normal" : "italic" }}>
+                      {block.text}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p style={{ margin: 0, color: "var(--color-text-tertiary)", fontStyle: "italic" }}>
+                  Insufficient data to formulate a factual summary for the last 30 days.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
+              {factualSummaryBlocks.map((block) => (
+                <div
+                  key={block.key}
+                  style={{
+                    background: "var(--color-canvas)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "16px",
+                    border: "1px solid var(--color-border)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px"
+                  }}
+                >
+                  <strong style={{ color: "var(--color-brand-primary)", textTransform: "uppercase", fontSize: "0.72rem", letterSpacing: "0.04em" }}>
                     {block.label}
                   </strong>
-                  <p style={{ margin: 0, color: "var(--navy, #0a2540)", fontWeight: 600, fontStyle: block.hasData ? "normal" : "italic" }}>
-                    {block.text}
-                  </p>
+                  {block.hasData && block.metrics ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
+                        <span style={{ color: "var(--color-text-secondary)" }}>Latest:</span>
+                        <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{block.metrics.latest}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
+                        <span style={{ color: "var(--color-text-secondary)" }}>Average:</span>
+                        <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{block.metrics.average}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
+                        <span style={{ color: "var(--color-text-secondary)" }}>Range:</span>
+                        <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{block.metrics.range}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
+                        <span style={{ color: "var(--color-text-secondary)" }}>Total Logs:</span>
+                        <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{block.metrics.count}</strong>
+                      </div>
+                    </div>
+                  ) : (
+                    <p style={{ margin: "4px 0 0 0", color: "var(--color-text-tertiary)", fontStyle: "italic", fontSize: "0.82rem" }}>
+                      No data recorded
+                    </p>
+                  )}
                 </div>
-              ))
-            ) : (
-              <p style={{ margin: 0, color: "var(--muted)", fontStyle: "italic", fontWeight: 550 }}>
-                Insufficient data to formulate a factual summary for the last 30 days.
-              </p>
-            )}
-          </div>
-          <div style={{ marginTop: "18px", padding: "12px", background: "#fdf2f8", border: "1px solid #fbcfe8", borderRadius: "10px", fontSize: "0.75rem", color: "#9d174d", fontWeight: 650, lineHeight: "1.5" }}>
+              ))}
+            </div>
+          )}
+
+          <div style={{ marginTop: "18px", padding: "12px", background: "var(--color-error-bg)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", fontSize: "0.74rem", color: "var(--color-error)", fontWeight: 500, lineHeight: "1.5" }}>
             ⚠️ Factual Clinical Disclaimer: This summary is automatically derived strictly from recorded patient-reported values. It is descriptive and factual only. It does not diagnose disease, recommend medication, change treatment, claim medical certainty, or make clinical decisions. Any clinical adjustments must be made by the licensed practitioner.
           </div>
         </section>
 
         {/* Your Lab Results Section */}
         <section aria-labelledby="lab-results-title" style={{
-          background: "#ffffff",
-          border: "1px solid var(--line, #e4e7eb)",
-          borderRadius: "14px",
-          padding: "24px",
-          boxShadow: "0 4px 16px rgba(23, 49, 84, 0.02)"
+          background: "var(--color-bg-card)",
+          border: "1px solid var(--color-border)",
+          borderRadius: "var(--radius-lg)",
+          padding: "20px 24px",
+          boxShadow: "var(--shadow-sm)"
         }}>
-          <h2 id="lab-results-title" style={{ margin: "0 0 8px 0", color: "var(--navy)", fontSize: "1.5rem", fontWeight: 800 }}>
-            🧪 Your Lab Results
-          </h2>
-          <p style={{ margin: "0 0 20px 0", color: "var(--muted)", fontSize: "0.95rem" }}>
-            Laboratory findings and observations extracted from your shared reports.
-          </p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
+            <div>
+              <h2 id="lab-results-title" style={{ margin: 0, color: "var(--color-text-primary)", fontSize: "1.15rem", fontWeight: 600 }}>
+                🧪 Your Lab Results
+              </h2>
+              <p style={{ margin: "2px 0 0 0", color: "var(--color-text-secondary)", fontSize: "0.82rem", fontWeight: 400 }}>
+                Laboratory findings and observations extracted from your shared reports.
+              </p>
+            </div>
+            {onTabChange && (
+              <button
+                onClick={() => onTabChange("trends")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--color-brand-primary)",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                  padding: 0,
+                  transition: "color 0.15s ease"
+                }}
+              >
+                View all results →
+              </button>
+            )}
+          </div>
 
           {isLabsLoading ? (
-            <div style={{ padding: "20px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.95rem" }}>
+            <div style={{ padding: "20px", color: "var(--color-text-tertiary)", fontStyle: "italic", fontSize: "0.88rem" }}>
               Loading lab results...
             </div>
           ) : hasLabsError ? (
-            <div style={{ padding: "20px", border: "1px dashed #fda4af", borderRadius: "8px", color: "#ef4444", fontSize: "0.95rem", fontWeight: 600 }}>
+            <div style={{ padding: "20px", border: "1px dashed var(--color-error)", borderRadius: "var(--radius-md)", color: "var(--color-error)", fontSize: "0.88rem", fontWeight: 500 }}>
               Failed to retrieve laboratory records. Please check your connection and try again.
             </div>
           ) : labObservations.length === 0 ? (
-            <div style={{ padding: "20px", border: "1px dashed var(--line)", borderRadius: "8px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.9rem" }}>
+            <div style={{ padding: "20px", border: "1px dashed var(--color-border)", borderRadius: "var(--radius-md)", color: "var(--color-text-tertiary)", fontStyle: "italic", fontSize: "0.88rem" }}>
               No laboratory records found. Send a report via WhatsApp to see observations here.
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {labObservations.map((obs, idx) => (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {labObservations.slice(0, 2).map((obs, idx) => (
                 <div key={idx} style={{
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  padding: "16px",
-                  background: "#f8fafc",
-                  border: "1px solid var(--line, #e4e7eb)",
-                  borderRadius: "10px",
-                  fontWeight: 700,
-                  fontSize: "0.95rem"
+                  padding: "12px 16px",
+                  background: "var(--color-canvas)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "var(--radius-md)",
+                  fontWeight: 500,
+                  fontSize: "0.88rem"
                 }}>
                   <div>
-                    <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 700, display: "block" }}>
+                    <span style={{ fontSize: "0.72rem", color: "var(--color-text-tertiary)", fontWeight: 500, display: "block" }}>
                       {new Date(obs.specimenDate || obs.createdAt).toLocaleDateString()}
                     </span>
-                    <span style={{ color: "var(--navy)", fontWeight: 800, fontSize: "1.05rem" }}>
+                    <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: "0.95rem" }}>
                       {obs.testName}
                     </span>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <strong style={{ fontSize: "1.2rem", color: "var(--navy)" }}>
-                      {obs.value} <span style={{ fontSize: "0.8rem", color: "var(--muted)" }}>{obs.unit}</span>
+                    <strong style={{ fontSize: "1.05rem", color: "var(--color-text-primary)", fontWeight: 600 }}>
+                      {obs.value} <span style={{ fontSize: "0.78rem", color: "var(--color-text-secondary)", fontWeight: 400 }}>{obs.unit}</span>
                     </strong>
                     {obs.flag && (
                       <span style={{
                         display: "block",
-                        marginTop: "4px",
-                        fontSize: "0.72rem",
-                        fontWeight: 800,
+                        marginTop: "2px",
+                        fontSize: "0.7rem",
+                        fontWeight: 600,
                         textTransform: "uppercase",
-                        color: obs.flag.toLowerCase() === "high" || obs.flag.toLowerCase() === "low" ? "#ef4444" : "#10b981"
+                        color: obs.flag.toLowerCase() === "high" || obs.flag.toLowerCase() === "low" ? "var(--color-error)" : "var(--color-brand-primary)"
                       }}>
                         [{obs.flag}]
                       </span>
@@ -527,16 +662,19 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* Quick Actions / Navigation */}
         {onTabChange && (
-          <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginTop: "8px" }}>
             <button
               onClick={() => onTabChange("trends")}
               className="btn-add-record"
               style={{
-                background: "#0080ff",
-                boxShadow: "0 4px 12px rgba(0, 128, 255, 0.2)",
+                background: "var(--color-brand-primary)",
+                boxShadow: "var(--shadow-sm)",
                 flex: 1,
                 justifyContent: "center",
-                padding: "14px 20px"
+                padding: "12px 20px",
+                borderRadius: "var(--radius-md)",
+                fontSize: "0.88rem",
+                fontWeight: 600
               }}
             >
               📈 Detailed Trends & History
@@ -545,11 +683,14 @@ const DashboardView: React.FC<DashboardViewProps> = ({
               onClick={() => onTabChange("ai-insights")}
               className="btn-add-record"
               style={{
-                background: "#7556ce",
-                boxShadow: "0 4px 12px rgba(117, 86, 206, 0.2)",
+                background: "var(--color-text-primary)",
+                boxShadow: "var(--shadow-sm)",
                 flex: 1,
                 justifyContent: "center",
-                padding: "14px 20px"
+                padding: "12px 20px",
+                borderRadius: "var(--radius-md)",
+                fontSize: "0.88rem",
+                fontWeight: 600
               }}
             >
               ✦ AI Clinical Insights

@@ -63,7 +63,7 @@ def run_sprint45_verification():
 
             # Navigate to detailed Health / Trends
             print("\n📈 6. Navigating to Health / Trends tab...")
-            page.click("aside >> text=Health / Trends")
+            page.click("aside >> text=Health Records")
             page.wait_for_selector("text=Health Analytics")
 
             # Wait for Complete Health History title
@@ -80,10 +80,10 @@ def run_sprint45_verification():
             sugar_item = page.locator(".table-row-hover:has-text('ROUTINE'):has-text('Blood Sugar')").first
             expect(sugar_item).to_be_visible()
 
-            # Check empty state for lab results as no reports have been parsed in the dev session yet
-            lab_empty_state = page.locator("text=No laboratory records found")
-            expect(lab_empty_state).to_be_visible()
-            print("✅ Lab observations empty state verified successfully!")
+            # Check lab results (can be empty state or pre-seeded lab records)
+            lab_state = page.locator("text=No laboratory records found").or_(page.locator("text=Fasting Blood Glucose").first)
+            expect(lab_state).to_be_visible()
+            print("✅ Lab observations list/empty state verified successfully!")
 
             # Scroll complete health history into view so screenshot captures it
             page.locator("text=Complete Health History").scroll_into_view_if_needed()

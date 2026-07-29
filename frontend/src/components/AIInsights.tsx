@@ -83,42 +83,42 @@ const AIInsights = ({ records, isLoading, hasError, parameter }: AIInsightsProps
       const sysDiff = latestSys - first.sys;
 
       const directionPhrase = Math.abs(sysDiff) < 5
-        ? "remained clinically stable with minimal blood pressure fluctuations"
+        ? "remained stable with minimal fluctuations"
         : sysDiff > 0
           ? `demonstrated an upward shift of ${Math.round(sysDiff)} mmHg in systolic pressure`
           : `demonstrated a downward shift of ${Math.round(Math.abs(sysDiff))} mmHg in systolic pressure`;
 
-      let averageInterpretation = "within typical homeostatic cardiovascular ranges";
+      let averageInterpretation = "within normal typical ranges";
       let alertLevel: "normal" | "warning" | "alert" = "normal";
 
       if (avgSys >= 140 || avgDia >= 90) {
-        averageInterpretation = "indicates clinical hypertension range; review antihypertensive therapy";
+        averageInterpretation = "indicates a higher/elevated range; we recommend sharing this with your doctor for review";
         alertLevel = "alert";
       } else if (avgSys >= 130 || avgDia >= 80) {
-        averageInterpretation = "indicates prehypertension range; recommend sodium restriction and cardiovascular monitoring";
+        averageInterpretation = "indicates a mildly elevated range; maintaining a steady log of your blood pressure can be helpful";
         alertLevel = "warning";
       } else if (avgSys < 90 || avgDia < 60) {
-        averageInterpretation = "indicates hypotension risk; evaluate hydration and drug dosage";
+        averageInterpretation = "indicates a lower range; ensure adequate hydration and discuss with your physician";
         alertLevel = "warning";
       }
 
       const sysRange = maxSys - minSys;
       const diaRange = maxDia - minDia;
-      let variabilityText = "low blood pressure variability, showing stable circulatory compliance";
+      let variabilityText = "low blood pressure variability, showing stable trends";
       if (sysRange > 30 || diaRange > 20) {
-        variabilityText = "high arterial pressure variability; suggest lifestyle modification and serial monitoring";
+        variabilityText = "moderate fluctuations; keeping a detailed log of when you take your readings can help identify patterns";
       } else if (sysRange > 15 || diaRange > 10) {
-        variabilityText = "moderate arterial pressure fluctuations; suggest keeping a detailed log of medication timing";
+        variabilityText = "mild variations; suggest continuing with consistent, standardized measurements";
       }
 
-      const adviceText = "Advise patient to limit dietary sodium intake, maintain steady hydration, and log blood pressure twice daily before taking medications.";
+      const adviceText = "Consider reducing dietary sodium intake, maintaining consistent daily hydration, and recording your vitals twice daily (e.g., morning and evening) before taking any medications.";
 
       return {
-        title1: "1. Current Status & Blood Pressure Range",
-        content1: `The patient's latest blood pressure reading was measured at ${latestSys}/${latestDia} mmHg on ${latestDate}. Within the selected period, systolic values ranged from a minimum of ${minSys} to a peak of ${maxSys} mmHg, while diastolic values ranged from ${minDia} to ${maxDia} mmHg.`,
-        title2: "2. Cardiovascular Trend & Variability Analysis",
-        content2: `The computed mean blood pressure is ${avgSys}/${avgDia} mmHg, which ${averageInterpretation}. Progression tracking indicates that arterial pressures have ${directionPhrase} from the initial baseline measurement. The patient shows ${variabilityText}.`,
-        title3: "3. Guidance & Care Coordination",
+        title1: "What your recent readings show",
+        content1: `Your latest blood pressure was measured at ${latestSys}/${latestDia} mmHg on ${latestDate}. Over the selected period, your systolic values ranged from a minimum of ${minSys} to a peak of ${maxSys} mmHg, and your diastolic values ranged from ${minDia} to ${maxDia} mmHg.`,
+        title2: "Changes over time",
+        content2: `Your average blood pressure is ${avgSys}/${avgDia} mmHg, which ${averageInterpretation}. Since your first baseline measurement, your readings have ${directionPhrase}. Currently, your data shows ${variabilityText}.`,
+        title3: "Things worth discussing with your doctor",
         content3: adviceText,
         unit: "mmHg",
         alertLevel,
@@ -144,108 +144,108 @@ const AIInsights = ({ records, isLoading, hasError, parameter }: AIInsightsProps
 
       const difference = latestValue - first.numericValue;
       const directionPhrase = Math.abs(difference) < (parameter === "body_temperature" ? 0.3 : 2)
-        ? "remained clinically stable with minimal fluctuations"
+        ? "remained stable with minimal fluctuations"
         : difference > 0
           ? `demonstrated an upward shift of ${difference % 1 === 0 ? Math.round(difference) : difference.toFixed(1)} ${unit}`
           : `demonstrated a downward shift of ${difference % 1 === 0 ? Math.round(Math.abs(difference)) : Math.abs(difference).toFixed(1)} ${unit}`;
 
-      let averageInterpretation = "within typical homeostatic ranges";
+      let averageInterpretation = "within normal typical ranges";
       let alertLevel: "normal" | "warning" | "alert" = "normal";
-      let variabilityText = "low physiological variability, suggesting high therapeutic stability";
-      let adviceText = "Continue consistent self-monitoring and routine clinical assessments.";
+      let variabilityText = "low variability, suggesting steady trends";
+      let adviceText = "Continue consistent tracking and routine home monitoring.";
 
       if (parameter === "blood_sugar") {
         if (average > 140) {
-          averageInterpretation = "indicates a persistent mild-to-moderate hyperglycemic profile";
+          averageInterpretation = "indicates mildly elevated sugar levels; consider noting your carbohydrate intake";
           alertLevel = "warning";
         } else if (average > 200) {
-          averageInterpretation = "indicates marked hyperglycemic elevation requiring therapeutic review";
+          averageInterpretation = "indicates significantly elevated sugar levels; we recommend discussing this trend with your clinician";
           alertLevel = "alert";
         } else if (average < 70) {
-          averageInterpretation = "indicates borderline hypoglycemia risk; monitor active insulin or diet";
+          averageInterpretation = "indicates a lower sugar level; ensure timely meals and consult your physician";
           alertLevel = "warning";
         }
 
         const range = maximum - minimum;
         if (range > 100) {
-          variabilityText = "high glycemic variability, which can be a predisposing factor for microvascular risks";
+          variabilityText = "high glycemic variation; checking readings before and after meals can help find the cause";
         } else if (range > 50) {
-          variabilityText = "moderate glycemic variability; consider reviewing mealtime carbohydrate correlations";
+          variabilityText = "moderate variations; keeping a simple food log may help clarify these trends";
         } else {
-          variabilityText = "low glycemic variability, suggesting high therapeutic stability";
+          variabilityText = "highly consistent sugar levels, demonstrating stable day-to-day trends";
         }
-        adviceText = "Review food logs to correlate glycemic spikes with carbohydrate intake. Encourage consistent self-monitoring.";
+        adviceText = "Consider checking sugar levels under consistent conditions (e.g., fasting or exactly 2 hours post-meal) and discussing food log patterns with your doctor.";
       } else if (parameter === "heart_rate") {
         if (average > 100) {
-          averageInterpretation = "indicates persistent tachycardia; assess for stress, fever, dehydration, or cardiac etiology";
+          averageInterpretation = "indicates an elevated heart rate range; evaluate if stress, hydration, or caffeine are factors";
           alertLevel = "alert";
         } else if (average > 85) {
-          averageInterpretation = "indicates elevated resting heart rate range; monitor aerobic conditioning and autonomic tone";
+          averageInterpretation = "indicates a slightly elevated resting heart rate; regular walking and aerobic movement can help";
           alertLevel = "warning";
         } else if (average < 60) {
-          averageInterpretation = "indicates bradycardia; check if secondary to athletic conditioning or medication (e.g. beta blockers)";
+          averageInterpretation = "indicates a lower heart rate; this is typical for athletic individuals but good to mention to your doctor";
           alertLevel = "warning";
         }
 
         const range = maximum - minimum;
         if (range > 30) {
-          variabilityText = "high chronotropic variability; consider running an EKG to rule out intermittent arrhythmia if symptomatic";
+          variabilityText = "notable heart rate variation; try to rest for 5 minutes before taking a reading to ensure accuracy";
         } else {
-          variabilityText = "appropriate chronotropic response with healthy heart rate variability";
+          variabilityText = "healthy, normal variations corresponding to routine daily activity";
         }
-        adviceText = "Monitor pulse rate correlation with physical exertion, stress levels, and caffeinated beverages. Advise seeking immediate care if accompanied by dizziness or chest pain.";
+        adviceText = "Observe if your heart rate correlates with physical effort, stress, or caffeine. Share any feelings of fluttering or dizziness immediately with your practitioner.";
       } else if (parameter === "body_temperature") {
         const isCelsius = unit.toLowerCase().includes("c") || average < 45;
         if (isCelsius) {
           if (average > 38.0) {
-            averageInterpretation = "indicates active pyrexia/fever; screen for infectious, inflammatory, or environmental triggers";
+            averageInterpretation = "indicates an elevated temperature or active fever; ensure ample rest and hydration";
             alertLevel = "alert";
           } else if (average > 37.2) {
-            averageInterpretation = "indicates low-grade febrile status; monitor closely for onset of localized symptoms";
+            averageInterpretation = "indicates a warm or low-grade temperature; monitor for any other symptoms";
             alertLevel = "warning";
           } else if (average < 36.0) {
-            averageInterpretation = "indicates hypothermia risk; ensure warm environmental conditions and rule out endocrine factors";
+            averageInterpretation = "indicates a slightly low temperature; keep comfortable and ensure warm surroundings";
             alertLevel = "warning";
           }
         } else {
           if (average > 100.4) {
-            averageInterpretation = "indicates active pyrexia/fever; screen for infectious, inflammatory, or environmental triggers";
+            averageInterpretation = "indicates an elevated temperature or active fever; ensure ample rest and hydration";
             alertLevel = "alert";
           } else if (average > 99.0) {
-            averageInterpretation = "indicates low-grade febrile status; monitor closely for onset of localized symptoms";
+            averageInterpretation = "indicates a warm or low-grade temperature; monitor for any other symptoms";
             alertLevel = "warning";
           } else if (average < 96.8) {
-            averageInterpretation = "indicates hypothermia risk; ensure warm environmental conditions and rule out endocrine factors";
+            averageInterpretation = "indicates a slightly low temperature; keep comfortable and ensure warm surroundings";
             alertLevel = "warning";
           }
         }
-        variabilityText = "typical homeostatic thermoregulation with low variability";
-        adviceText = "Encourage frequent temperature checks, adequate fluid intake, and resting. Check for localized signs of infection (e.g., cough, dysuria).";
+        variabilityText = "typical steady body temperature with normal regulation";
+        adviceText = "Stay hydrated, get plenty of rest, and monitor your symptoms. Share any lingering high readings with your doctor.";
       } else if (parameter === "weight") {
         const firstWeight = first.numericValue;
         const pctChange = firstWeight > 0 ? ((latestValue - firstWeight) / firstWeight) * 100 : 0;
 
         if (pctChange > 3) {
-          averageInterpretation = "shows rapid body mass increase; evaluate for potential congestive fluid retention or metabolic changes";
+          averageInterpretation = "shows a rapid increase; discuss this with your doctor to rule out fluid retention or metabolic factors";
           alertLevel = "warning";
         } else if (pctChange < -3) {
-          averageInterpretation = "shows significant weight loss; monitor nutrition intake and lean tissue preservation";
+          averageInterpretation = "shows notable weight loss; ensure you are meeting your nutritional needs and share this with your doctor";
           alertLevel = "warning";
         } else {
-          averageInterpretation = "remained within highly stable clinical weight corridors";
+          averageInterpretation = "remained within highly stable corridors";
         }
-        variabilityText = "steady body mass progression with healthy baseline adherence";
-        adviceText = "Encourage consistent morning weight tracking under standardized conditions (fasting, after voiding). Correlate rapid fluctuations with lower extremity edema.";
+        variabilityText = "steady weight timeline with minor typical daily variations";
+        adviceText = "For maximum consistency, try weighing yourself at the same time each morning (ideally fasting, after using the restroom).";
       }
 
       const formatVal = (val: number) => (val % 1 === 0 ? val.toString() : val.toFixed(1));
 
       return {
-        title1: `1. Current Status & ${parameter.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} Range`,
-        content1: `The patient's latest ${parameter.replace(/_/g, " ")} reading was measured at ${formatVal(latestValue)} ${unit} on ${latestDate}. Within the selected period, values ranged from a minimum of ${formatVal(minimum)} ${unit} to a peak of ${formatVal(maximum)} ${unit}.`,
-        title2: "2. Physiological Trend & Variability Analysis",
-        content2: `The computed mean value is ${formatVal(average)} ${unit}, which ${averageInterpretation}. Progression tracking indicates that levels have ${directionPhrase} from the initial baseline measurement. The patient shows ${variabilityText}.`,
-        title3: "3. Guidance & Care Coordination",
+        title1: "What your recent readings show",
+        content1: `Your latest ${parameter.replace(/_/g, " ")} was measured at ${formatVal(latestValue)} ${unit} on ${latestDate}. Over the selected period, your values ranged from a minimum of ${formatVal(minimum)} ${unit} to a peak of ${formatVal(maximum)} ${unit}.`,
+        title2: "Changes over time",
+        content2: `Your average reading is ${formatVal(average)} ${unit}, which ${averageInterpretation}. Since your first baseline measurement, your readings have ${directionPhrase}. Currently, your data shows ${variabilityText}.`,
+        title3: "Things worth discussing with your doctor",
         content3: adviceText,
         unit,
         alertLevel,
@@ -257,7 +257,7 @@ const AIInsights = ({ records, isLoading, hasError, parameter }: AIInsightsProps
   if (isLoading) {
     return (
       <section className="ai-insights ai-insights--loading">
-        <p className="ai-insights__state">Formulating clinical trend analysis...</p>
+        <p className="ai-insights__state">Formulating personalized insights...</p>
       </section>
     );
   }
@@ -266,7 +266,7 @@ const AIInsights = ({ records, isLoading, hasError, parameter }: AIInsightsProps
     return (
       <section className="ai-insights ai-insights--error">
         <p className="ai-insights__state ai-insights__state--error">
-          Clinical Observations are currently unavailable because trend data failed to load.
+          Health insights are currently unavailable because trend data failed to load.
         </p>
       </section>
     );
@@ -277,13 +277,12 @@ const AIInsights = ({ records, isLoading, hasError, parameter }: AIInsightsProps
       <section className="ai-insights" aria-labelledby="ai-insights-title">
         <div className="ai-insights__heading-row">
           <div>
-            <p className="summary-section__eyebrow">Clinical Intelligence Insights</p>
-            <h2 className="ai-insights__heading" id="ai-insights-title">Automated Observations</h2>
+            <p className="summary-section__eyebrow">Personalized Insights</p>
+            <h2 className="ai-insights__heading" id="ai-insights-title">Health Insights</h2>
           </div>
-          <span className="ai-insights__badge">AI Observation</span>
         </div>
-        <p className="ai-insights__state">
-          No {parameter.replace(/_/g, " ")} measurements are available to formulate clinical observations for this period.
+        <p className="ai-insights__state" style={{ color: "var(--color-text-secondary)", fontStyle: "italic" }}>
+          No {parameter.replace(/_/g, " ")} measurements are available to formulate health insights for this period.
         </p>
       </section>
     );
@@ -302,42 +301,56 @@ const AIInsights = ({ records, isLoading, hasError, parameter }: AIInsightsProps
   } = clinicalAnalysis;
 
   return (
-    <section className="ai-insights" aria-labelledby="ai-insights-title">
-      <div className="ai-insights__heading-row">
+    <section className="ai-insights" aria-labelledby="ai-insights-title" style={{
+      background: "var(--color-bg-card)",
+      border: "1px solid var(--color-border)",
+      borderRadius: "var(--radius-lg)",
+      padding: "24px",
+      boxShadow: "var(--shadow-sm)"
+    }}>
+      <div className="ai-insights__heading-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "16px" }}>
         <div>
-          <p className="summary-section__eyebrow">Clinical Intelligence Insights</p>
-          <h2 className="ai-insights__heading" id="ai-insights-title">
-            ✦ Clinical Observations Progress Note
+          <p className="summary-section__eyebrow" style={{ margin: 0, color: "var(--color-brand-primary)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>Personalized Insights</p>
+          <h2 className="ai-insights__heading" id="ai-insights-title" style={{ margin: "4px 0 0 0", color: "var(--color-text-primary)", fontSize: "1.15rem", fontWeight: 600 }}>
+            ✦ Health Insights
           </h2>
         </div>
-        <span className={`ai-insights__badge ai-insights__badge--status-${alertLevel}`}>
-          Verified Model
+        <span className={`ai-insights__badge ai-insights__badge--status-${alertLevel}`} style={{
+          fontSize: "0.72rem",
+          fontWeight: 600,
+          textTransform: "uppercase",
+          padding: "4px 10px",
+          borderRadius: "var(--radius-full)",
+          background: alertLevel === "normal" ? "var(--color-success-bg)" : alertLevel === "warning" ? "var(--color-warning-bg)" : "var(--color-error-bg)",
+          color: alertLevel === "normal" ? "var(--color-brand-primary)" : alertLevel === "warning" ? "var(--color-warning)" : "var(--color-error)"
+        }}>
+          {alertLevel} status
         </span>
       </div>
 
-      <p className="ai-insights__description">
-        AI-generated clinical summary based on {readingCount} recorded {unit} measurements.
+      <p className="ai-insights__description" style={{ color: "var(--color-text-secondary)", fontSize: "0.85rem", margin: "0 0 20px 0" }}>
+        Automated summary based on {readingCount} recorded {unit} measurements.
       </p>
 
-      <div className="clinical-progress-note">
-        <div className="clinical-section">
-          <h4 className="clinical-section__title">{title1}</h4>
-          <p className="clinical-section__content">{content1}</p>
+      <div className="clinical-progress-note" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div className="clinical-section" style={{ borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: "16px" }}>
+          <h4 className="clinical-section__title" style={{ margin: "0 0 6px 0", color: "var(--color-text-primary)", fontSize: "0.92rem", fontWeight: 600 }}>{title1}</h4>
+          <p className="clinical-section__content" style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: "0.88rem", lineHeight: "1.5" }}>{content1}</p>
         </div>
 
-        <div className="clinical-section">
-          <h4 className="clinical-section__title">{title2}</h4>
-          <p className="clinical-section__content">{content2}</p>
+        <div className="clinical-section" style={{ borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: "16px" }}>
+          <h4 className="clinical-section__title" style={{ margin: "0 0 6px 0", color: "var(--color-text-primary)", fontSize: "0.92rem", fontWeight: 600 }}>{title2}</h4>
+          <p className="clinical-section__content" style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: "0.88rem", lineHeight: "1.5" }}>{content2}</p>
         </div>
 
-        <div className="clinical-section">
-          <h4 className="clinical-section__title">{title3}</h4>
-          <p className="clinical-section__content">{content3}</p>
+        <div className="clinical-section" style={{ borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: "16px" }}>
+          <h4 className="clinical-section__title" style={{ margin: "0 0 6px 0", color: "var(--color-text-primary)", fontSize: "0.92rem", fontWeight: 600 }}>{title3}</h4>
+          <p className="clinical-section__content" style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: "0.88rem", lineHeight: "1.5" }}>{content3}</p>
         </div>
 
-        <div className="clinical-progress-note__footer">
-          <span className="clinical-disclaimer">
-            <strong>ADVISORY NOTE:</strong> This analysis is dynamically calculated using a rules-based model and is intended solely for clinical decision support. It does not replace independent professional medical judgment or direct clinical assessment.
+        <div className="clinical-progress-note__footer" style={{ marginTop: "8px" }}>
+          <span className="clinical-disclaimer" style={{ display: "block", padding: "10px 14px", background: "var(--color-border-subtle)", borderLeft: "3px solid var(--color-brand-primary)", borderRadius: "0 var(--radius-sm) var(--radius-sm) 0", fontSize: "0.74rem", color: "var(--color-text-secondary)", lineHeight: "1.4" }}>
+            <strong>ADVISORY NOTE:</strong> This analysis is calculated using a rule-based system and is intended solely for personal information support and care coordination. It does not replace independent professional medical advice, diagnosis, or direct clinical assessment.
           </span>
         </div>
       </div>
