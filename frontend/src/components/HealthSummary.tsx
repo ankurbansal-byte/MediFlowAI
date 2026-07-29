@@ -78,10 +78,21 @@ const HealthSummary = ({
   };
 
   return (
-    <section className="health-summary-section" style={{ marginTop: "42px", paddingTop: "34px", borderTop: "1px solid var(--line)" }} aria-labelledby="health-summary-engine-title">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "22px", flexWrap: "wrap", gap: "16px" }}>
+    <section
+      className="health-summary-section"
+      style={{
+        marginTop: "32px",
+        padding: "24px",
+        background: "#faf9f6", // Subtle warm neutral tint
+        border: "1px solid var(--color-border)",
+        borderRadius: "var(--radius-lg)",
+        boxShadow: "var(--shadow-sm)"
+      }}
+      aria-labelledby="health-summary-engine-title"
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "16px", flexWrap: "wrap", gap: "16px" }}>
         <div>
-          <p className="summary-section__eyebrow" style={{ margin: 0, color: "#238b82", fontSize: "0.75rem", fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase" }}>Clinical Metrics</p>
+          <p className="summary-section__eyebrow" style={{ margin: 0, color: "var(--color-brand-primary)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Clinical Metrics</p>
           <h2 id="health-summary-engine-title" style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 600, letterSpacing: "-0.025em" }}>Health Summary Engine</h2>
         </div>
         <div style={{ fontSize: "0.84rem", color: "var(--muted)", fontWeight: "500" }}>
@@ -89,7 +100,7 @@ const HealthSummary = ({
         </div>
       </div>
 
-      <p style={{ margin: "0 0 24px 0", color: "var(--muted)", fontSize: "0.92rem", lineHeight: "1.5" }}>
+      <p style={{ margin: "0 0 20px 0", color: "var(--muted)", fontSize: "0.88rem", lineHeight: "1.5" }}>
         A detailed summary of physiological parameters, recording frequency, and consistency patterns computed from the patient's active trend data.
       </p>
 

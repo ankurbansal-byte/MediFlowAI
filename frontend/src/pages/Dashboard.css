@@ -2782,11 +2782,13 @@
 
 /* 4. Visually Separate Graph and Calendar */
 .calendar-widget-container {
-  background: #ffffff !important; /* Pure white background card */
+  background: #faf9f6 !important; /* Subtle warm neutral tint */
   border: 1px solid var(--color-border) !important;
   box-shadow: var(--shadow-sm) !important;
   border-radius: var(--radius-lg) !important;
   padding: 24px !important;
+  margin-top: 24px !important;
+  margin-bottom: 24px !important;
 }
 
 /* Calendar Day Buttons Clean Polish */
