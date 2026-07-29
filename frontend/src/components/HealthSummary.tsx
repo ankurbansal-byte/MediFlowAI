@@ -81,10 +81,9 @@ const HealthSummary = ({
     <section
       className="health-summary-section"
       style={{
-        marginTop: "32px",
         padding: "24px",
-        background: "#f2fbf9", // Very light cool aqua/mint surface
-        border: "1px solid #e2f2ee", // Subtle mint border
+        background: "#eafaf6", // Premium soft mint/aqua pastel surface
+        border: "1px solid #b8ebe0", // Premium mint border
         borderRadius: "var(--radius-lg)",
         boxShadow: "var(--shadow-sm)"
       }}

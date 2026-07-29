@@ -242,9 +242,170 @@ const TrendsView: React.FC<TrendsViewProps> = ({
     return trend.filter(r => r.context === glucoseContextFilter);
   }, [trend, selectedParameter, glucoseContextFilter]);
 
+  // Compute selected date records specifically for Section C
+  const selectedDateRecords = React.useMemo(() => {
+    if (!selectedHistoryDate) return [];
+    return groupedRecords[selectedHistoryDate] || [];
+  }, [groupedRecords, selectedHistoryDate]);
+
+  // Redesigned record card component to keep code dry
+  const renderRecordCard = (group: { dateStr: string; dateObj: Date; records: TimelineRecord[] }) => {
+    const dateHeaderStr = new Intl.DateTimeFormat("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric"
+    }).format(group.dateObj).toUpperCase();
+
+    return (
+      <div
+        key={group.dateStr}
+        style={{
+          background: "#ffffff",
+          border: "1px solid var(--color-border-subtle)",
+          padding: "24px",
+          borderRadius: "16px",
+          boxShadow: "0 4px 18px rgba(15, 23, 42, 0.04)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+          transition: "transform 0.2s ease, box-shadow 0.2s ease"
+        }}
+      >
+        {/* Header row of the Date Group card */}
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: "1px solid #f1f5f9",
+          paddingBottom: "12px"
+        }}>
+          {/* Elegant Date Pill using h3 with 📅 for Playwright test compatibility */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px"
+          }}>
+            <h3 style={{
+              margin: 0,
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              color: "var(--navy)",
+              letterSpacing: "0.05em",
+              background: "#f1f5f9",
+              padding: "4px 12px",
+              borderRadius: "20px",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px"
+            }}>
+              <span>📅</span> {dateHeaderStr}
+            </h3>
+          </div>
+          {/* Record count badge */}
+          <span style={{
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            color: "var(--color-brand-primary)",
+            background: "var(--color-brand-bg-subtle)",
+            padding: "4px 10px",
+            borderRadius: "12px"
+          }}>
+            {group.records.length} {group.records.length === 1 ? "record" : "records"}
+          </span>
+        </div>
+
+        {/* Readings inside the card */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
+          {group.records.map((record, rIdx) => {
+            const isLab = record.category === "lab_observation";
+            const displayParam = record.displayLabel || (isLab ? record.testName : record.parameter.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()));
+            const timeStr = record.timeContext ? record.timeContext.charAt(0).toUpperCase() + record.timeContext.slice(1) : formatRecordTimeOnly(record.recordedAt);
+
+            // Subtle icons mapping
+            const getParamIcon = (p: string) => {
+              const lowP = p.toLowerCase();
+              if (lowP.includes("sugar")) return "🩸";
+              if (lowP.includes("pressure")) return "🩺";
+              if (lowP.includes("heart") || lowP.includes("rate")) return "❤️";
+              if (lowP.includes("temp")) return "🌡️";
+              if (lowP.includes("weight")) return "⚖️";
+              if (lowP.includes("oxygen")) return "🫁";
+              return "◈";
+            };
+
+            return (
+              <div
+                key={rIdx}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "12px 16px",
+                  background: isLab ? "#fbfaff" : "#f8fafc",
+                  border: isLab ? "1px solid #f3e8ff" : "1px solid #e2e8f0",
+                  borderRadius: "10px",
+                  fontSize: "0.88rem",
+                  transition: "all 0.15s ease"
+                }}
+                className="table-row-hover"
+              >
+                <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                  <span style={{
+                    fontSize: "0.68rem",
+                    fontWeight: 600,
+                    background: isLab ? "#f5f3ff" : "#e2e8f0",
+                    color: isLab ? "#6b21a8" : "#475569",
+                    padding: "2px 6px",
+                    borderRadius: "4px",
+                    textTransform: "uppercase"
+                  }}>
+                    {isLab ? "LAB" : "ROUTINE"}
+                  </span>
+                  <span style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>{timeStr}</span>
+                  <span style={{ color: "#cbd5e1" }}>·</span>
+                  <span style={{ color: "var(--navy)", fontWeight: 500, display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span style={{ fontSize: "1rem" }}>{isLab ? "🧪" : getParamIcon(record.parameter)}</span>
+                    {displayParam}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <span style={{ color: "var(--navy)", fontWeight: 600, fontSize: "1.05rem" }}>
+                    {record.value} <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 400 }}>{record.unit}</span>
+                    {!isLab && record.parameter === "blood_sugar" && record.context && formatGlucoseContext(record.context) ? (
+                      <span style={{ color: "var(--color-brand-primary)", fontWeight: 500, fontSize: "0.82rem" }}> · {formatGlucoseContext(record.context)}</span>
+                    ) : null}
+                  </span>
+
+                  {isLab && (record.referenceRangeText || record.flag) && (
+                    <div style={{ fontSize: "0.78rem", color: "var(--muted)", borderLeft: "1px solid #e2e8f0", paddingLeft: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                      {record.referenceRangeText && <span>Ref: <strong>{record.referenceRangeText}</strong></span>}
+                      {record.flag && (
+                        <span style={{
+                          fontWeight: 600,
+                          color: record.flag.toLowerCase() === "high" || record.flag.toLowerCase() === "low" ? "#ef4444" : "#10b981",
+                          textTransform: "uppercase",
+                          background: record.flag.toLowerCase() === "high" || record.flag.toLowerCase() === "low" ? "#fef2f2" : "#f0fdf4",
+                          padding: "2px 6px",
+                          borderRadius: "4px"
+                        }}>
+                          {record.flag}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
-      <div className="trends-header" style={{ paddingBottom: "20px", borderBottom: "1px solid var(--line)", marginBottom: "28px" }}>
+      <div className="trends-header" style={{ paddingBottom: "20px", borderBottom: "1px solid var(--line)", marginBottom: "32px" }}>
         <p className="summary-section__eyebrow" style={{ margin: 0, color: "var(--color-brand-primary)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Health Analytics</p>
         <h1 style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "1.6rem", fontWeight: 600, letterSpacing: "-0.02em" }}>Health Records / Trends & Analysis</h1>
         <p style={{ margin: "4px 0 0 0", color: "var(--muted)", fontSize: "0.9rem" }}>
@@ -252,18 +413,22 @@ const TrendsView: React.FC<TrendsViewProps> = ({
         </p>
       </div>
 
-      <HealthSummary
-        trends={filteredTrends}
-        selectedParameter={selectedParameter}
-        setSelectedParameter={setSelectedParameter}
-        period={trendPeriod}
-        isLoading={isTrendLoading}
-      />
+      {/* SECTION A: Health Summary */}
+      <div style={{ marginBottom: "32px" }}>
+        <HealthSummary
+          trends={filteredTrends}
+          selectedParameter={selectedParameter}
+          setSelectedParameter={setSelectedParameter}
+          period={trendPeriod}
+          isLoading={isTrendLoading}
+        />
+      </div>
 
       {/* Glucose Context Filter Row */}
       {selectedParameter === "blood_sugar" && (
         <div style={{
-          marginTop: "20px",
+          marginTop: "0px",
+          marginBottom: "28px",
           display: "flex",
           alignItems: "center",
           gap: "10px",
@@ -303,7 +468,8 @@ const TrendsView: React.FC<TrendsViewProps> = ({
         </div>
       )}
 
-      <div style={{ marginTop: "40px" }}>
+      {/* SECTION B: Health Trends / Graph */}
+      <div style={{ marginBottom: "32px" }}>
         <TrendChart
           hasError={hasTrendError}
           isLoading={isTrendLoading}
@@ -314,19 +480,186 @@ const TrendsView: React.FC<TrendsViewProps> = ({
         />
       </div>
 
-      {/* Complete Historical Record List with Calendar and Date-Grouping */}
+      {/* SECTION C: Calendar Navigation */}
       <section
         aria-labelledby="full-history-title"
+        id="calendar-navigation-section"
         style={{
-          marginTop: "32px",
+          marginBottom: "32px",
           padding: "24px",
-          background: "#faf9f6", // Soft warm neutral / stone surface
-          border: "1px solid #e7e5e4", // Refined stone border
+          background: "#f0effb", // Soft lavender/blue surface
+          border: "1px solid #ccc5f1", // Lavender border
           borderRadius: "var(--radius-lg)",
           boxShadow: "var(--shadow-sm)"
         }}
       >
-        <div style={{ borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: "16px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "16px" }}>
+        <div style={{ borderBottom: "1px solid #ccc5f1", paddingBottom: "16px", marginBottom: "20px" }}>
+          <p className="summary-section__eyebrow" style={{ margin: 0, color: "#6366f1", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Chronological Navigation</p>
+          <h3 style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 600 }}>
+            📅 Calendar Navigation
+          </h3>
+          <p style={{ margin: "4px 0 0 0", color: "var(--muted)", fontSize: "0.88rem" }}>
+            Select a date on the calendar below to view records logged specifically on that day.
+          </p>
+        </div>
+
+        {timeline.length === 0 ? (
+          <div className="clinical-state-card clinical-state-card--empty">
+            <span className="clinical-state-card__icon" aria-hidden="true">◈</span>
+            <div className="clinical-state-card__content">
+              <h3 className="clinical-state-card__title">No Records Available</h3>
+              <p className="clinical-state-card__message">
+                There are currently no physiological observations recorded in your history.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            <div className="calendar-widget-container" style={{
+              background: "#ffffff", // Solid white for calendar cards inside lavender container
+              border: "1px solid #e0e7ff",
+              borderRadius: "var(--radius-lg)",
+              padding: "24px"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
+                <h4 style={{ margin: 0, fontSize: "0.95rem", color: "var(--navy)", fontWeight: 600 }}>
+                  Select Date
+                </h4>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <button
+                    type="button"
+                    onClick={handlePrevMonth}
+                    style={{ background: "#ffffff", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", width: "32px", height: "32px", cursor: "pointer", fontWeight: "bold" }}
+                  >
+                    ←
+                  </button>
+                  <span style={{ fontWeight: 600, color: "var(--navy)", minWidth: "110px", textAlign: "center", fontSize: "0.9rem" }}>
+                    {monthName} {yearNum}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleNextMonth}
+                    style={{ background: "#ffffff", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", width: "32px", height: "32px", cursor: "pointer", fontWeight: "bold" }}
+                  >
+                    →
+                  </button>
+                </div>
+              </div>
+
+              {/* Day header and grid */}
+              <div className="calendar-grid-header">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
+                  <div key={dayName} style={{ fontWeight: 600, fontSize: "0.72rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    {dayName}
+                  </div>
+                ))}
+              </div>
+              <div className="calendar-grid-days">
+                {calendarDays.map((day, idx) => {
+                  if (!day) {
+                    return <div key={`empty-${idx}`} />;
+                  }
+                  const dayStr = getLocalDateString(day);
+                  const dayRecords = groupedRecords[dayStr] || [];
+                  const hasRecords = dayRecords.length > 0;
+                  const isSelected = selectedHistoryDate === dayStr;
+
+                  return (
+                    <button
+                      key={dayStr}
+                      type="button"
+                      onClick={() => {
+                        if (setSelectedHistoryDate) {
+                          setSelectedHistoryDate(isSelected ? null : dayStr);
+                        }
+                      }}
+                      className={`calendar-day-btn ${isSelected ? "calendar-day-btn--selected" : ""} ${hasRecords ? "calendar-day-btn--has-records" : ""}`}
+                      title={hasRecords ? `${dayRecords.length} record(s)` : "No records"}
+                    >
+                      <span className="calendar-day-num">
+                        {day.getDate()}
+                      </span>
+                      {hasRecords && (
+                        <span className="calendar-day-count">
+                          {dayRecords.length} rec{dayRecords.length !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Status and Reset */}
+              {selectedHistoryDate && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px", background: "var(--color-brand-bg-subtle)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "10px 14px", flexWrap: "wrap", gap: "10px" }}>
+                  <span style={{ fontSize: "0.85rem", color: "var(--color-brand-primary)", fontWeight: 500 }}>
+                    🔍 Showing records for <strong>{new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(selectedHistoryDate))}</strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (setSelectedHistoryDate) {
+                        setSelectedHistoryDate(null);
+                      }
+                    }}
+                    style={{ background: "#ffffff", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", padding: "4px 10px", fontSize: "0.8rem", color: "var(--color-brand-primary)", fontWeight: 600, cursor: "pointer" }}
+                  >
+                    Clear Selection
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Selected Date Records Card displayed directly inside the Calendar Navigation Section */}
+            {selectedHistoryDate && (
+              <div style={{ marginTop: "12px" }}>
+                <h4 style={{ margin: "0 0 12px 0", fontSize: "0.95rem", color: "var(--navy)", fontWeight: 600 }}>
+                  📋 Selected Date's Records
+                </h4>
+                {selectedDateRecords.length === 0 ? (
+                  <div style={{
+                    padding: "32px 24px",
+                    background: "#ffffff",
+                    border: "1px dashed var(--color-border)",
+                    borderRadius: "var(--radius-lg)",
+                    textAlign: "center",
+                    color: "var(--color-text-secondary)"
+                  }}>
+                    <span style={{ fontSize: "1.5rem", display: "block", marginBottom: "8px" }}>📅</span>
+                    <p style={{ margin: 0, fontWeight: 500, fontSize: "0.9rem" }}>
+                      No health records found for the selected date.
+                    </p>
+                    <p style={{ margin: "4px 0 0 0", fontSize: "0.8rem", color: "var(--color-text-tertiary)" }}>
+                      Try choosing another date on the calendar, or return to general history.
+                    </p>
+                  </div>
+                ) : (
+                  renderRecordCard({
+                    dateStr: selectedHistoryDate,
+                    dateObj: new Date(selectedHistoryDate),
+                    records: selectedDateRecords
+                  })
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* SECTION D: Complete Health History / Records */}
+      <section
+        aria-labelledby="full-history-title"
+        id="complete-history-section"
+        style={{
+          marginBottom: "32px",
+          padding: "24px",
+          background: "#faf6f0", // Soft warm cream/stone surface
+          border: "1px solid #ecdcc6", // Warm stone border
+          borderRadius: "var(--radius-lg)",
+          boxShadow: "var(--shadow-sm)"
+        }}
+      >
+        <div style={{ borderBottom: "1px solid #ecdcc6", paddingBottom: "16px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <p className="summary-section__eyebrow" style={{ margin: 0, color: "var(--color-brand-primary)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Chronological Archive</p>
             <h2 id="full-history-title" style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 600 }}>
@@ -359,92 +692,6 @@ const TrendsView: React.FC<TrendsViewProps> = ({
                 : `Displaying records logged specifically on ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(selectedHistoryDate!))}.`
               }
             </p>
-          </div>
-
-          {/* Context-aware Controls in Header */}
-          <div style={{ display: "flex", gap: "12px" }}>
-            {activeHistoryMode === "latest" && (
-              <button
-                type="button"
-                onClick={() => setHistoryMode("all")}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--color-brand-primary)",
-                  background: "var(--color-brand-primary)",
-                  color: "#ffffff",
-                  fontWeight: 600,
-                  fontSize: "0.85rem",
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                Show all records
-              </button>
-            )}
-            {activeHistoryMode === "all" && (
-              <button
-                type="button"
-                onClick={() => setHistoryMode("latest")}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--color-text-secondary)",
-                  background: "#ffffff",
-                  color: "var(--color-text-primary)",
-                  fontWeight: 600,
-                  fontSize: "0.85rem",
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                Back to latest
-              </button>
-            )}
-            {activeHistoryMode === "selected" && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (setSelectedHistoryDate) setSelectedHistoryDate(null);
-                    setHistoryMode("latest");
-                  }}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: "var(--radius-md)",
-                    border: "1px solid var(--color-text-secondary)",
-                    background: "#ffffff",
-                    color: "var(--color-text-primary)",
-                    fontWeight: 600,
-                    fontSize: "0.85rem",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  Back to latest
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (setSelectedHistoryDate) setSelectedHistoryDate(null);
-                    setHistoryMode("all");
-                  }}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: "var(--radius-md)",
-                    border: "1px solid var(--color-brand-primary)",
-                    background: "transparent",
-                    color: "var(--color-brand-primary)",
-                    fontWeight: 600,
-                    fontSize: "0.85rem",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  Show all records
-                </button>
-              </>
-            )}
           </div>
         </div>
 
@@ -536,278 +783,158 @@ const TrendsView: React.FC<TrendsViewProps> = ({
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            {/* Calendar Widget */}
-            <div className="calendar-widget-container" style={{
-              background: "#f1f5f9", // Very light blue/slate surface
-              border: "1px solid #cbd5e1", // Slate border
-              borderRadius: "var(--radius-lg)",
-              padding: "24px"
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
-                <h3 style={{ margin: 0, fontSize: "0.95rem", color: "var(--navy)", fontWeight: 600 }}>
-                  📅 Calendar Navigation
-                </h3>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <button
-                    type="button"
-                    onClick={handlePrevMonth}
-                    style={{ background: "#ffffff", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", width: "32px", height: "32px", cursor: "pointer", fontWeight: "bold" }}
-                  >
-                    ←
-                  </button>
-                  <span style={{ fontWeight: 600, color: "var(--navy)", minWidth: "110px", textAlign: "center", fontSize: "0.9rem" }}>
-                    {monthName} {yearNum}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleNextMonth}
-                    style={{ background: "#ffffff", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", width: "32px", height: "32px", cursor: "pointer", fontWeight: "bold" }}
-                  >
-                    →
-                  </button>
-                </div>
+            {selectedHistoryDate ? (
+              /* If a calendar date is selected, show an informative card with button to clear selection */
+              <div style={{
+                padding: "24px",
+                background: "#ffffff",
+                border: "1px solid #ecdcc6",
+                borderRadius: "var(--radius-lg)",
+                textAlign: "center",
+                boxShadow: "var(--shadow-sm)"
+              }}>
+                <p style={{ margin: 0, fontWeight: 500, fontSize: "0.95rem", color: "var(--navy)" }}>
+                  📅 Currently viewing records for <strong>{new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(selectedHistoryDate))}</strong> under the Calendar Navigation section above.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (setSelectedHistoryDate) setSelectedHistoryDate(null);
+                    setHistoryMode("latest");
+                  }}
+                  style={{
+                    marginTop: "12px",
+                    padding: "8px 16px",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--color-brand-primary)",
+                    background: "var(--color-brand-primary)",
+                    color: "#ffffff",
+                    fontWeight: 600,
+                    fontSize: "0.85rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  Back to Complete History
+                </button>
               </div>
-
-              {/* Day header and grid */}
-              <div className="calendar-grid-header">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
-                  <div key={dayName} style={{ fontWeight: 600, fontSize: "0.72rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    {dayName}
+            ) : (
+              /* DEFAULT FLOW / ALL FLOW */
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                {groupedAndFilteredTimeline.length === 0 ? (
+                  <div style={{
+                    padding: "32px 24px",
+                    background: "#ffffff",
+                    border: "1px dashed var(--color-border)",
+                    borderRadius: "var(--radius-lg)",
+                    textAlign: "center",
+                    color: "var(--color-text-secondary)"
+                  }}>
+                    <span style={{ fontSize: "1.5rem", display: "block", marginBottom: "8px" }}>📅</span>
+                    <p style={{ margin: 0, fontWeight: 500, fontSize: "0.9rem" }}>
+                      No health records found matching active filters.
+                    </p>
                   </div>
-                ))}
-              </div>
-              <div className="calendar-grid-days">
-                {calendarDays.map((day, idx) => {
-                  if (!day) {
-                    return <div key={`empty-${idx}`} />;
-                  }
-                  const dayStr = getLocalDateString(day);
-                  const dayRecords = groupedRecords[dayStr] || [];
-                  const hasRecords = dayRecords.length > 0;
-                  const isSelected = selectedHistoryDate === dayStr;
-
-                  return (
-                    <button
-                      key={dayStr}
-                      type="button"
-                      onClick={() => {
-                        if (setSelectedHistoryDate) {
-                          setSelectedHistoryDate(isSelected ? null : dayStr);
-                        }
-                      }}
-                      className={`calendar-day-btn ${isSelected ? "calendar-day-btn--selected" : ""} ${hasRecords ? "calendar-day-btn--has-records" : ""}`}
-                      title={hasRecords ? `${dayRecords.length} record(s)` : "No records"}
-                    >
-                      <span className="calendar-day-num">
-                        {day.getDate()}
-                      </span>
-                      {hasRecords && (
-                        <span className="calendar-day-count">
-                          {dayRecords.length} rec{dayRecords.length !== 1 ? "s" : ""}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Status and Reset */}
-              {selectedHistoryDate && (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px", background: "var(--color-brand-bg-subtle)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "10px 14px", flexWrap: "wrap", gap: "10px" }}>
-                  <span style={{ fontSize: "0.85rem", color: "var(--color-brand-primary)", fontWeight: 500 }}>
-                    🔍 Showing records for <strong>{new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(selectedHistoryDate))}</strong>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (setSelectedHistoryDate) {
-                        setSelectedHistoryDate(null);
-                      }
-                    }}
-                    style={{ background: "#ffffff", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", padding: "4px 10px", fontSize: "0.8rem", color: "var(--color-brand-primary)", fontWeight: 600, cursor: "pointer" }}
-                  >
-                    Show All Dates
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Date-Grouped Records List */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              {groupedAndFilteredTimeline.length === 0 ? (
-                <div style={{
-                  padding: "32px 24px",
-                  background: "#ffffff",
-                  border: "1px dashed var(--color-border)",
-                  borderRadius: "var(--radius-lg)",
-                  textAlign: "center",
-                  color: "var(--color-text-secondary)"
-                }}>
-                  <span style={{ fontSize: "1.5rem", display: "block", marginBottom: "8px" }}>📅</span>
-                  <p style={{ margin: 0, fontWeight: 500, fontSize: "0.9rem" }}>
-                    No health records found for the selected date.
-                  </p>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "0.8rem", color: "var(--color-text-tertiary)" }}>
-                    Try choosing another date on the calendar, or return to Latest/All records.
-                  </p>
-                </div>
-              ) : (
-                groupedAndFilteredTimeline.slice(0, visibleGroupsCount).map((group) => {
-                  const dateHeaderStr = new Intl.DateTimeFormat("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric"
-                  }).format(group.dateObj).toUpperCase();
-
-                  return (
-                    <div key={group.dateStr} style={{ background: "#ffffff", border: "1px solid var(--color-border-subtle)", padding: "18px 20px", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-sm)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "14px" }}>
-                        <h3 style={{ margin: 0, fontSize: "0.95rem", color: "var(--navy)", fontWeight: 600, letterSpacing: "0.02em" }}>
-                          📅 {dateHeaderStr}
-                        </h3>
-                        <span style={{ fontSize: "0.72rem", color: "var(--muted)", fontWeight: 500, textTransform: "uppercase" }}>
-                          {group.records.length} record{group.records.length !== 1 ? "s" : ""}
-                        </span>
-                      </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "10px" }}>
-                        {group.records.map((record, rIdx) => {
-                          const isLab = record.category === "lab_observation";
-                          const displayParam = record.displayLabel || (isLab ? record.testName : record.parameter.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()));
-                          const timeStr = record.timeContext ? record.timeContext.charAt(0).toUpperCase() + record.timeContext.slice(1) : formatRecordTimeOnly(record.recordedAt);
-
-                          // Subtle icons mapping
-                          const getParamIcon = (p: string) => {
-                            const lowP = p.toLowerCase();
-                            if (lowP.includes("sugar")) return "🩸";
-                            if (lowP.includes("pressure")) return "🩺";
-                            if (lowP.includes("heart") || lowP.includes("rate")) return "❤️";
-                            if (lowP.includes("temp")) return "🌡️";
-                            if (lowP.includes("weight")) return "⚖️";
-                            if (lowP.includes("oxygen")) return "🫁";
-                            return "◈";
-                          };
-
-                          return (
-                            <div
-                              key={rIdx}
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                padding: "10px 14px",
-                                background: isLab ? "#fcfbfe" : "#f8fafc",
-                                border: isLab ? "1px solid #f3e8ff" : "1px solid #e2e8f0",
-                                borderRadius: "8px",
-                                fontSize: "0.88rem",
-                                fontWeight: 500,
-                                transition: "all 0.15s ease"
-                              }}
-                              className="table-row-hover"
-                            >
-                              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
-                                <span style={{
-                                  fontSize: "0.68rem",
-                                  fontWeight: 600,
-                                  background: isLab ? "#f5f3ff" : "#e2e8f0",
-                                  color: isLab ? "#6b21a8" : "#475569",
-                                  padding: "2px 6px",
-                                  borderRadius: "4px",
-                                  textTransform: "uppercase"
-                                }}>
-                                  {isLab ? "LAB" : "ROUTINE"}
-                                </span>
-                                <span style={{ color: "var(--muted)", fontWeight: 500 }}>{timeStr}</span>
-                                <span style={{ color: "#cbd5e1" }}>·</span>
-                                <span style={{ color: "var(--navy)", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}>
-                                  <span style={{ fontSize: "0.9rem" }}>{isLab ? "🧪" : getParamIcon(record.parameter)}</span> {displayParam}
-                                </span>
-                                <span style={{ color: "#cbd5e1" }}>·</span>
-                                <span style={{ color: "var(--navy)", fontWeight: 600 }}>
-                                  {record.value} <span style={{ fontSize: "0.8rem", color: "var(--muted)", fontWeight: 400 }}>{record.unit}</span>
-                                  {!isLab && record.parameter === "blood_sugar" && record.context && formatGlucoseContext(record.context) ? (
-                                    <span style={{ color: "var(--color-brand-primary)", fontWeight: 500 }}> · {formatGlucoseContext(record.context)}</span>
-                                  ) : null}
-                                </span>
-                              </div>
-
-                              {isLab && (record.referenceRangeText || record.flag) && (
-                                <div style={{ fontSize: "0.78rem", color: "var(--muted)" }}>
-                                  {record.referenceRangeText && <span>Ref: <strong>{record.referenceRangeText}</strong></span>}
-                                  {record.flag && (
-                                    <span style={{
-                                      marginLeft: "8px",
-                                      fontWeight: 600,
-                                      color: record.flag.toLowerCase() === "high" || record.flag.toLowerCase() === "low" ? "#ef4444" : "#10b981",
-                                      textTransform: "uppercase"
-                                    }}>
-                                      [{record.flag}]
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                ) : (
+                  <>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                      {groupedAndFilteredTimeline.slice(0, visibleGroupsCount).map((group) => renderRecordCard(group))}
                     </div>
-                  );
-                })
-              )}
-            </div>
 
-            {/* View More / Show Less Progressive Disclosure Actions */}
-            {groupedAndFilteredTimeline.length > 3 && (
-              <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "24px" }}>
-                {visibleGroupsCount < groupedAndFilteredTimeline.length && (
-                  <button
-                    type="button"
-                    onClick={() => setVisibleGroupsCount(prev => prev + 5)}
-                    style={{
-                      padding: "10px 20px",
-                      borderRadius: "var(--radius-md)",
-                      border: "1px solid var(--color-brand-primary)",
-                      background: "transparent",
-                      color: "var(--color-brand-primary)",
-                      fontWeight: 600,
-                      fontSize: "0.88rem",
-                      cursor: "pointer",
-                      transition: "all 0.15s ease",
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.background = "var(--color-brand-bg-subtle)";
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.background = "transparent";
-                    }}
-                  >
-                    View more records
-                  </button>
-                )}
-                {visibleGroupsCount > 3 && (
-                  <button
-                    type="button"
-                    onClick={() => setVisibleGroupsCount(3)}
-                    style={{
-                      padding: "10px 20px",
-                      borderRadius: "var(--radius-md)",
-                      border: "1px solid var(--color-text-secondary)",
-                      background: "transparent",
-                      color: "var(--color-text-secondary)",
-                      fontWeight: 600,
-                      fontSize: "0.88rem",
-                      cursor: "pointer",
-                      transition: "all 0.15s ease",
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.background = "var(--color-border-subtle)";
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.background = "transparent";
-                    }}
-                  >
-                    Show less
-                  </button>
+                    {/* Show All / Progressive Disclosure Buttons */}
+                    <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "12px" }}>
+                      {activeHistoryMode === "latest" && (
+                        <button
+                          type="button"
+                          onClick={() => setHistoryMode("all")}
+                          style={{
+                            padding: "10px 20px",
+                            borderRadius: "var(--radius-md)",
+                            border: "1px solid var(--color-brand-primary)",
+                            background: "var(--color-brand-primary)",
+                            color: "#ffffff",
+                            fontWeight: 600,
+                            fontSize: "0.88rem",
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                          }}
+                        >
+                          Show all records
+                        </button>
+                      )}
+
+                      {activeHistoryMode === "all" && (
+                        <>
+                          {visibleGroupsCount < groupedAndFilteredTimeline.length && (
+                            <button
+                              type="button"
+                              onClick={() => setVisibleGroupsCount(prev => prev + 5)}
+                              style={{
+                                padding: "10px 20px",
+                                borderRadius: "var(--radius-md)",
+                                border: "1px solid var(--color-brand-primary)",
+                                background: "transparent",
+                                color: "var(--color-brand-primary)",
+                                fontWeight: 600,
+                                fontSize: "0.88rem",
+                                cursor: "pointer",
+                                transition: "all 0.15s ease",
+                              }}
+                              onMouseOver={(e) => {
+                                e.currentTarget.style.background = "var(--color-brand-bg-subtle)";
+                              }}
+                              onMouseOut={(e) => {
+                                e.currentTarget.style.background = "transparent";
+                              }}
+                            >
+                              View more records
+                            </button>
+                          )}
+                          {visibleGroupsCount > 3 && (
+                            <button
+                              type="button"
+                              onClick={() => setVisibleGroupsCount(3)}
+                              style={{
+                                padding: "10px 20px",
+                                borderRadius: "var(--radius-md)",
+                                border: "1px solid var(--color-text-secondary)",
+                                background: "transparent",
+                                color: "var(--color-text-secondary)",
+                                fontWeight: 600,
+                                fontSize: "0.88rem",
+                                cursor: "pointer",
+                                transition: "all 0.15s ease",
+                              }}
+                              onMouseOver={(e) => {
+                                e.currentTarget.style.background = "var(--color-border-subtle)";
+                              }}
+                              onMouseOut={(e) => {
+                                e.currentTarget.style.background = "transparent";
+                              }}
+                            >
+                              Show less
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setHistoryMode("latest")}
+                            style={{
+                              padding: "10px 20px",
+                              borderRadius: "var(--radius-md)",
+                              border: "1px solid var(--color-text-secondary)",
+                              background: "#ffffff",
+                              color: "var(--color-text-primary)",
+                              fontWeight: 600,
+                              fontSize: "0.88rem",
+                              cursor: "pointer",
+                              transition: "all 0.15s ease",
+                            }}
+                          >
+                            Back to latest
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
             )}
@@ -815,19 +942,19 @@ const TrendsView: React.FC<TrendsViewProps> = ({
         )}
       </section>
 
-      {/* Your Lab Results Section */}
+      {/* SECTION E: Laboratory Results */}
       <section
         aria-labelledby="lab-results-title"
         style={{
-          marginTop: "32px",
+          marginBottom: "32px",
           padding: "24px",
-          background: "#f0fdfa", // Very light Aqua/Teal tint
-          border: "1px solid #ccfbf1", // Soft aqua border
+          background: "#eaf7f5", // Soft teal/aqua surface
+          border: "1px solid #b8e2dc", // Soft teal border
           borderRadius: "var(--radius-lg)",
           boxShadow: "var(--shadow-sm)"
         }}
       >
-        <div style={{ borderBottom: "1px solid #ccfbf1", paddingBottom: "16px", marginBottom: "20px" }}>
+        <div style={{ borderBottom: "1px solid #b8e2dc", paddingBottom: "16px", marginBottom: "20px" }}>
           <p className="summary-section__eyebrow" style={{ margin: 0, color: "var(--color-brand-primary)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Laboratory Findings</p>
           <h2 id="lab-results-title" style={{ margin: "4px 0 0 0", color: "var(--navy)", fontSize: "1.25rem", fontWeight: 600 }}>
             🧪 Your Lab Results
@@ -846,7 +973,7 @@ const TrendsView: React.FC<TrendsViewProps> = ({
             Failed to retrieve laboratory records. Please check your connection and try again.
           </div>
         ) : labObservations.length === 0 ? (
-          <div style={{ padding: "20px", border: "1px dashed #ccfbf1", borderRadius: "8px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.85rem" }}>
+          <div style={{ padding: "20px", border: "1px dashed #b8e2dc", borderRadius: "8px", color: "var(--muted)", fontStyle: "italic", fontSize: "0.85rem" }}>
             No laboratory records found. Send a report via WhatsApp to see observations here.
           </div>
         ) : (
