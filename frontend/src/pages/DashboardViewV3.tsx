@@ -11,6 +11,30 @@ import { type TabType } from "./Dashboard";
 import { formatRecordDateTime, formatGlucoseContext, getLocalDateString } from "../utils/date";
 import "./DashboardV3.css";
 
+const EditorialTransition: React.FC<{ text: string }> = ({ text }) => {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 0", textAlign: "center" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "16px", width: "100%", maxWidth: "480px", marginBottom: "16px" }}>
+        <div style={{ flex: 1, height: "1px", background: "linear-gradient(to right, transparent, var(--v3-border-subtle))" }}></div>
+        <span style={{ color: "var(--v3-brand-orange)", opacity: 0.4, fontSize: "14px" }}>✦</span>
+        <div style={{ flex: 1, height: "1px", background: "linear-gradient(to left, transparent, var(--v3-border-subtle))" }}></div>
+      </div>
+      <p style={{
+        margin: 0,
+        fontFamily: "Georgia, serif",
+        fontStyle: "italic",
+        fontSize: "16px",
+        color: "var(--v3-text-muted)",
+        letterSpacing: "0.01em",
+        lineHeight: "1.4",
+        maxWidth: "520px"
+      }}>
+        {text}
+      </p>
+    </div>
+  );
+};
+
 interface DashboardViewV3Props {
   user: User;
   effectivePatientId: string;
@@ -237,7 +261,7 @@ const DashboardViewV3: React.FC<DashboardViewV3Props> = ({
 
       {/* SECTION 1: HERO SECTION - REIMAGINED VISUAL JOURNEY */}
       <div className="v3-hero">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px", alignItems: "center" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: "32px", alignItems: "center" }}>
 
           {/* Left Side: Welcoming Content */}
           <div className="v3-hero-left">
@@ -261,50 +285,164 @@ const DashboardViewV3: React.FC<DashboardViewV3Props> = ({
             <p className="v3-body" style={{ color: "var(--v3-text-muted)", fontSize: "15px", margin: "0 0 20px 0", maxWidth: "440px" }}>
               Effortlessly track your vital metrics in real-time. Just send a simple text or voice message on WhatsApp, and our medical intelligence parser organizes it for you instantly.
             </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--v3-brand-green)", fontWeight: 600, fontSize: "14px" }}>
+                <span style={{ fontSize: "16px" }}>💬</span>
+                <span>“Just message it. MediFlowAI organizes the rest.”</span>
+              </div>
+            </div>
             <div style={{ fontSize: "12px", color: "var(--v3-brand-orange)", fontWeight: 600, background: "#FFF0E0", padding: "6px 14px", borderRadius: "6px", alignSelf: "flex-start" }}>
               ID: {user.patientId || user.username}
             </div>
           </div>
 
-          {/* Right Side: Flowchart Visual Journey */}
+          {/* Right Side: Spacious Vertical Flowchart Visual Journey */}
           <div className="v3-journey-visual">
 
-            {/* Step 1: WhatsApp Message Card */}
-            <div className="v3-journey-card-v3 whatsapp">
-              <span className="v3-eyebrow" style={{ color: "var(--v3-brand-green)", display: "block", marginBottom: "4px" }}>💬 Patient Message</span>
-              <div className="v3-body" style={{ fontWeight: 600, fontStyle: "italic", fontSize: "13px" }}>"Mera sugar 110 aur BP 120/80 hai"</div>
+            {/* Step 1: WhatsApp Message Experience Card */}
+            <div className="v3-journey-card-v3 whatsapp" style={{ padding: "16px", borderRadius: "12px", border: "1.5px solid var(--v3-border-subtle)", background: "var(--v3-bg-white)", borderLeft: "4px solid var(--v3-brand-green)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                <span style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "var(--v3-brand-green-light)",
+                  color: "var(--v3-brand-green)"
+                }}>
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12.011 2c-5.502 0-9.989 4.487-9.989 9.989 0 1.761.458 3.473 1.332 4.98L2 22l5.187-1.359c1.464.799 3.11 1.22 4.814 1.22 5.504 0 9.991-4.487 9.991-9.989A9.99 9.99 0 0012.011 2zm6.208 14.154c-.255.718-1.5 1.318-2.059 1.404-.499.077-1.154.144-3.328-.756-2.78-1.15-4.57-3.988-4.71-4.174-.139-.186-1.139-1.514-1.139-2.89 0-1.376.719-2.053.974-2.333.255-.279.558-.349.743-.349H9.3c.186 0 .442-.07.697.54.256.61.872 2.129.948 2.284.075.155.126.335.021.543-.103.208-.155.335-.308.513-.153.178-.322.396-.46.531-.155.15-.318.314-.136.626.182.312.809 1.331 1.734 2.157.925.826 1.707 1.08 2.025 1.213.318.133.504.111.693-.106.189-.217.809-.942 1.025-1.264.217-.322.433-.269.73-.159.297.109 1.886.889 2.213 1.053.328.164.546.244.626.382.081.138.081.802-.174 1.52z"/>
+                  </svg>
+                </span>
+                <span className="v3-eyebrow" style={{ color: "var(--v3-brand-green)", fontWeight: 600 }}>WhatsApp Message</span>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div style={{
+                  background: "#DCF8C6",
+                  color: "#1E1C1A",
+                  padding: "10px 14px",
+                  borderRadius: "12px 12px 12px 0",
+                  fontSize: "13px",
+                  lineHeight: "1.4",
+                  alignSelf: "flex-start",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                  position: "relative",
+                  maxWidth: "95%"
+                }}>
+                  <div style={{ fontWeight: 500, fontStyle: "italic" }}>
+                    "Mera sugar level fasting me 110 aur BP 120/80 hai"
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "4px", marginTop: "4px", fontSize: "10px", color: "#6B645D" }}>
+                    <span>08:15 AM</span>
+                    <span style={{ color: "#34B7F1", display: "inline-flex" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M0.41 13.417l2.83-2.83 5.66 5.66L20.17 5L23 7.83l-14.1 14.1z" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Connecting Chevron */}
-            <div className="v3-journey-connector-v3">
-              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
+            {/* Vertical Connector 1 */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: "-6px 0", zIndex: 10 }}>
+              <div style={{ width: "2px", height: "18px", background: "linear-gradient(to bottom, var(--v3-brand-green), var(--v3-brand-purple))" }}></div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "16px", height: "16px", borderRadius: "50%", background: "var(--v3-bg-cream)", border: "1.5px solid var(--v3-brand-purple)", color: "var(--v3-brand-purple)", fontSize: "10px", fontWeight: "bold", lineHeight: 1 }}>↓</div>
             </div>
 
             {/* Step 2: AI Parser node */}
-            <div className="v3-journey-card-v3 ai">
-              <span className="v3-eyebrow" style={{ color: "var(--v3-brand-purple)", display: "block", marginBottom: "4px" }}>✦ Clinical AI</span>
-              <div className="v3-body" style={{ fontWeight: 600, fontSize: "13px" }}>Structuring observations & ranges...</div>
+            <div className="v3-journey-card-v3 ai" style={{ padding: "16px", borderRadius: "12px", border: "1.5px solid var(--v3-border-subtle)", background: "var(--v3-bg-white)", borderLeft: "4px solid var(--v3-brand-purple)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                <span style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "var(--v3-brand-purple-light)",
+                  color: "var(--v3-brand-purple)"
+                }}>
+                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 21m0-12V3m0 6h-6m6 0h6m-3 6a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </span>
+                <span className="v3-eyebrow" style={{ color: "var(--v3-brand-purple)", fontWeight: 600 }}>MediFlowAI Processing</span>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", background: "rgba(124, 58, 237, 0.03)", padding: "10px 14px", borderRadius: "8px", border: "1px dashed rgba(124, 58, 237, 0.2)" }}>
+                <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                  <span style={{ position: "relative", display: "flex", width: "10px", height: "10px" }}>
+                    <span style={{ position: "absolute", height: "100%", width: "100%", borderRadius: "50%", backgroundColor: "var(--v3-brand-purple)", opacity: 0.75, transform: "scale(1.5)" }}></span>
+                    <span style={{ position: "relative", borderRadius: "50%", height: "10px", width: "10px", backgroundColor: "var(--v3-brand-purple)" }}></span>
+                  </span>
+                  <svg width="16" height="16" fill="currentColor" style={{ color: "var(--v3-brand-purple)" }} viewBox="0 0 24 24">
+                    <path d="M12 2l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5z" />
+                  </svg>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--v3-text-dark)" }}>Multilingual Clinical Extraction</span>
+                  <span style={{ fontSize: "11px", color: "var(--v3-text-muted)" }}>Parsing context: `fasting` • Normalizing units...</span>
+                </div>
+              </div>
             </div>
 
-            {/* Connecting Chevron */}
-            <div className="v3-journey-connector-v3">
-              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
+            {/* Vertical Connector 2 */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: "-6px 0", zIndex: 10 }}>
+              <div style={{ width: "2px", height: "18px", background: "linear-gradient(to bottom, var(--v3-brand-purple), var(--v3-brand-orange))" }}></div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "16px", height: "16px", borderRadius: "50%", background: "var(--v3-bg-cream)", border: "1.5px solid var(--v3-brand-orange)", color: "var(--v3-brand-orange)", fontSize: "10px", fontWeight: "bold", lineHeight: 1 }}>↓</div>
             </div>
 
             {/* Step 3: Record Card */}
-            <div className="v3-journey-card-v3 record">
-              <span className="v3-eyebrow" style={{ color: "var(--v3-brand-orange)", display: "block", marginBottom: "4px" }}>📊 Digital Record</span>
-              <div className="v3-body" style={{ fontWeight: 600, fontSize: "13px" }}>Sugar: 110 mg/dL • BP: 120/80 logged</div>
+            <div className="v3-journey-card-v3 record" style={{ padding: "16px", borderRadius: "12px", border: "1.5px solid var(--v3-border-subtle)", background: "var(--v3-bg-white)", borderLeft: "4px solid var(--v3-brand-orange)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                <span style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "#FFF0E0",
+                  color: "var(--v3-brand-orange)"
+                }}>
+                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </span>
+                <span className="v3-eyebrow" style={{ color: "var(--v3-brand-orange)", fontWeight: 600 }}>Structured Health Record</span>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <div style={{ background: "#FFF9F2", border: "1px solid #FFE5CC", padding: "8px 12px", borderRadius: "8px" }}>
+                  <div style={{ fontSize: "10px", color: "var(--v3-brand-orange)", fontWeight: 600, textTransform: "uppercase" }}>Blood Sugar</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
+                    <strong style={{ fontSize: "16px", color: "var(--v3-text-dark)" }}>110</strong>
+                    <span style={{ fontSize: "10px", color: "var(--v3-text-muted)" }}>mg/dL</span>
+                  </div>
+                  <span style={{ fontSize: "9px", background: "rgba(255,122,0,0.1)", color: "var(--v3-brand-orange)", padding: "1px 4px", borderRadius: "3px", fontWeight: 600 }}>Fasting</span>
+                </div>
+
+                <div style={{ background: "#F0F9FF", border: "1px solid #B0E0E6", padding: "8px 12px", borderRadius: "8px" }}>
+                  <div style={{ fontSize: "10px", color: "var(--v3-brand-aqua)", fontWeight: 600, textTransform: "uppercase" }}>Blood Pressure</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
+                    <strong style={{ fontSize: "16px", color: "var(--v3-text-dark)" }}>120/80</strong>
+                    <span style={{ fontSize: "10px", color: "var(--v3-text-muted)" }}>mmHg</span>
+                  </div>
+                  <span style={{ fontSize: "9px", background: "rgba(14,165,233,0.1)", color: "var(--v3-brand-aqua)", padding: "1px 4px", borderRadius: "3px", fontWeight: 600 }}>Normal</span>
+                </div>
+              </div>
             </div>
 
           </div>
 
         </div>
       </div>
+
+      <EditorialTransition text="“One simple message today can become meaningful health history tomorrow.”" />
 
       {/* SECTION 2: LATEST HEALTH SNAPSHOT */}
       <section aria-labelledby="v3-snapshot-heading">
@@ -317,23 +455,42 @@ const DashboardViewV3: React.FC<DashboardViewV3Props> = ({
 
         <div className="v3-snapshot-grid">
           {[
-            { key: "blood_sugar", label: "Blood Sugar", icon: "🩸", fallbackUnit: "mg/dL", class: "blood_sugar" },
-            { key: "blood_pressure", label: "Blood Pressure", icon: "🩺", fallbackUnit: "mmHg", class: "blood_pressure" },
-            { key: "heart_rate", label: "Heart Rate", icon: "❤️", fallbackUnit: "bpm", class: "heart_rate" },
-            { key: "body_temperature", label: "Temperature", icon: "🌡️", fallbackUnit: "°C", class: "body_temperature" },
-            { key: "weight", label: "Weight", icon: "⚖️", fallbackUnit: "kg", class: "weight" }
+            { key: "blood_sugar", label: "Blood Sugar", icon: "🩸", fallbackUnit: "mg/dL", class: "blood_sugar", iconBg: "#FFF0E0", iconBorder: "#FFE5CC", tint: "#FFFBF7" },
+            { key: "blood_pressure", label: "Blood Pressure", icon: "🩺", fallbackUnit: "mmHg", class: "blood_pressure", iconBg: "#E0F2FE", iconBorder: "#BAE6FD", tint: "#F0F9FF" },
+            { key: "heart_rate", label: "Heart Rate", icon: "❤️", fallbackUnit: "bpm", class: "heart_rate", iconBg: "#FFE4E6", iconBorder: "#FECDD3", tint: "#FFF5F5" },
+            { key: "body_temperature", label: "Temperature", icon: "🌡️", fallbackUnit: "°C", class: "body_temperature", iconBg: "#FEF9C3", iconBorder: "#FEF08A", tint: "#FFFDF0" },
+            { key: "weight", label: "Weight", icon: "⚖️", fallbackUnit: "kg", class: "weight", iconBg: "#F3E8FF", iconBorder: "#E9D5FF", tint: "#FAF5FF" }
           ].map((param) => {
             const record = getLatestRecord(param.key);
 
             return (
-              <div key={param.key} className={`v3-metric-card ${param.class}`}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <div key={param.key} className={`v3-metric-card ${param.class}`} style={{ background: param.tint, position: "relative", overflow: "hidden" }}>
+
+                {/* Low-opacity large emoji background motif */}
+                <div style={{ position: "absolute", bottom: "-10px", right: "-10px", fontSize: "72px", opacity: 0.05, pointerEvents: "none", userSelect: "none", zIndex: 0 }}>
+                  {param.icon}
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", position: "relative", zIndex: 1 }}>
                   <span className="v3-eyebrow">{param.label}</span>
-                  <span style={{ fontSize: "18px" }}>{param.icon}</span>
+                  {/* Refined Circle Icon Container */}
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "50%",
+                    background: param.iconBg,
+                    border: `1.5px solid ${param.iconBorder}`,
+                    fontSize: "18px"
+                  }}>
+                    {param.icon}
+                  </div>
                 </div>
 
                 {record ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", position: "relative", zIndex: 1 }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
                       <span className="v3-metric-number">{record.value}</span>
                       <span className="v3-metadata" style={{ fontWeight: 600 }}>{record.unit || param.fallbackUnit}</span>
@@ -363,7 +520,7 @@ const DashboardViewV3: React.FC<DashboardViewV3Props> = ({
                     </div>
                   </div>
                 ) : (
-                  <span style={{ fontSize: "13px", color: "var(--v3-text-muted)", fontStyle: "italic" }}>
+                  <span style={{ fontSize: "13px", color: "var(--v3-text-muted)", fontStyle: "italic", position: "relative", zIndex: 1 }}>
                     No readings logged yet
                   </span>
                 )}
@@ -373,13 +530,15 @@ const DashboardViewV3: React.FC<DashboardViewV3Props> = ({
         </div>
       </section>
 
+      <EditorialTransition text="“Small daily updates build a clearer picture of your health.”" />
+
       {/* SECTION 3: TODAY'S HEALTH */}
       <section className="v3-today-box" aria-labelledby="v3-today-heading">
         <div className="v3-today-split">
 
           {/* Left panel: Timeline Activity */}
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "20px" }}>
               <div>
                 <h2 id="v3-today-heading" className="v3-section-heading" style={{ margin: 0 }}>
                   🕒 Today's Health
@@ -388,31 +547,40 @@ const DashboardViewV3: React.FC<DashboardViewV3Props> = ({
                   {formatTodayDateHeader(new Date())} · {todayRecords.length} observation{todayRecords.length !== 1 ? "s" : ""} registered
                 </p>
               </div>
+
+              {/* Secondary manual record action */}
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="whatsapp-info-hint"
+                style={{
+                  background: "none",
+                  border: "1.5px solid var(--v3-border-subtle)",
+                  color: "var(--v3-text-muted)",
+                  padding: "6px 14px",
+                  borderRadius: "8px",
+                  fontWeight: 600,
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = "var(--v3-brand-orange)";
+                  e.currentTarget.style.color = "var(--v3-brand-orange)";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = "var(--v3-border-subtle)";
+                  e.currentTarget.style.color = "var(--v3-text-muted)";
+                }}
+              >
+                + Manual Entry
+              </button>
             </div>
 
             {todayRecords.length === 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <p className="v3-body" style={{ color: "var(--v3-text-muted)" }}>
-                  You haven't recorded any observations today. Simply update us through WhatsApp, or add a record manually.
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", background: "rgba(16, 185, 129, 0.02)", padding: "20px", borderRadius: "12px", border: "1px dashed var(--v3-border-subtle)" }}>
+                <p className="v3-body" style={{ color: "var(--v3-text-muted)", margin: 0, fontStyle: "italic" }}>
+                  No observations logged yet today. Update your vitals instantly by sending a message on WhatsApp!
                 </p>
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="whatsapp-info-hint"
-                  style={{
-                    alignSelf: "flex-start",
-                    background: "var(--v3-brand-orange)",
-                    color: "#FFFFFF",
-                    border: "none",
-                    padding: "10px 18px",
-                    borderRadius: "8px",
-                    fontWeight: 600,
-                    fontSize: "13px",
-                    cursor: "pointer",
-                    boxShadow: "0 2px 6px rgba(255, 122, 0, 0.15)"
-                  }}
-                >
-                  📥 Submit Manual Record
-                </button>
               </div>
             ) : (
               <div className="v3-today-timeline">
@@ -468,41 +636,84 @@ const DashboardViewV3: React.FC<DashboardViewV3Props> = ({
             )}
           </div>
 
-          {/* Right panel: WhatsApp Mock bubble (Green cue used carefully) */}
+          {/* Right panel: High-Fidelity WhatsApp Smartphone Interface Mock */}
           <div style={{
-            background: "var(--v3-bg-cream)",
+            background: "#E5DDD5",
+            backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')",
+            backgroundSize: "contain",
             border: "1.5px solid var(--v3-border-subtle)",
             borderRadius: "16px",
-            padding: "20px"
+            boxShadow: "var(--v3-shadow-md)",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column"
           }}>
-            <span className="v3-eyebrow" style={{ color: "var(--v3-brand-green)", display: "block", marginBottom: "12px" }}>
-              🟢 WhatsApp Integration
-            </span>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {/* WhatsApp App header bar */}
+            <div style={{
+              background: "#075E54",
+              color: "#FFFFFF",
+              padding: "10px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px"
+            }}>
               <div style={{
-                background: "var(--v3-brand-green)",
-                color: "#FFFFFF",
-                padding: "10px 14px",
-                borderRadius: "12px 12px 0 12px",
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                background: "#128C7E",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "16px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.15)"
+              }}>
+                💬
+              </div>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <span style={{ fontSize: "13px", fontWeight: 600, color: "#FFFFFF" }}>MediFlowAI Assistant</span>
+                <span style={{ fontSize: "10px", color: "#25D366", fontWeight: 600 }}>Online</span>
+              </div>
+            </div>
+
+            {/* Smartphone conversation screen area */}
+            <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px", minHeight: "180px" }}>
+              {/* User green bubble */}
+              <div style={{
+                background: "#DCF8C6",
+                color: "var(--v3-text-dark)",
+                padding: "8px 12px",
+                borderRadius: "8px 8px 0 8px",
                 fontSize: "13px",
                 alignSelf: "flex-end",
                 maxWidth: "85%",
-                fontWeight: 500
+                boxShadow: "0 1px 1px rgba(0,0,0,0.1)",
+                position: "relative"
               }}>
-                Mera sugar level fasting me 110 hai aur BP 120/80 hai
+                <div>Mera sugar level fasting me 110 hai aur BP 120/80 hai</div>
+                <div style={{ textAlign: "right", fontSize: "9px", color: "rgba(0,0,0,0.4)", marginTop: "3px", display: "flex", gap: "2px", justifyContent: "flex-end", alignItems: "center" }}>
+                  <span>08:15 AM</span>
+                  <span style={{ color: "#34B7F1", display: "inline-flex" }}>✓✓</span>
+                </div>
               </div>
+
+              {/* AI structured white bubble */}
               <div style={{
                 background: "#FFFFFF",
                 color: "var(--v3-text-dark)",
                 padding: "10px 14px",
-                borderRadius: "12px 12px 12px 0",
+                borderRadius: "8px 8px 8px 0",
                 fontSize: "13px",
                 alignSelf: "flex-start",
                 maxWidth: "85%",
-                border: "1px solid var(--v3-border-subtle)",
-                fontWeight: 500
+                boxShadow: "0 1px 1px rgba(0,0,0,0.1)",
+                border: "1px solid rgba(0,0,0,0.05)"
               }}>
-                Fasting Blood Sugar of 110 mg/dL and Blood Pressure of 120/80 mmHg logged successfully! 🩺🩸
+                <div style={{ fontWeight: 600, color: "var(--v3-brand-green)", marginBottom: "4px", fontSize: "11px", textTransform: "uppercase" }}>MediFlowAI</div>
+                <div>Fasting Blood Sugar of <strong>110 mg/dL</strong> and Blood Pressure of <strong>120/80 mmHg</strong> logged successfully! 🩺🩸</div>
+                <div style={{ fontSize: "9px", color: "rgba(0,0,0,0.4)", marginTop: "4px" }}>
+                  08:15 AM
+                </div>
               </div>
             </div>
           </div>
@@ -561,103 +772,115 @@ const DashboardViewV3: React.FC<DashboardViewV3Props> = ({
           </div>
         </div>
 
-        {summaryMode === "summary" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {hasAnyFactualSummaryData ? (
-              factualSummaryBlocks.map((block) => {
-                const borderColors: Record<string, string> = {
-                  blood_sugar: "var(--v3-brand-orange)",
-                  blood_pressure: "var(--v3-brand-aqua)",
-                  heart_rate: "var(--v3-brand-coral)",
-                  body_temperature: "var(--v3-brand-amber)",
-                  weight: "var(--v3-brand-purple)"
-                };
-                const col = borderColors[block.key] || "var(--v3-brand-orange)";
+        {(() => {
+          const paramStyles: Record<string, { tint: string, border: string, text: string, leftBorder: string }> = {
+            blood_sugar: { tint: "#FFFBF7", border: "#FEEADB", text: "var(--v3-brand-orange)", leftBorder: "var(--v3-brand-orange)" },
+            blood_pressure: { tint: "#F0F9FF", border: "#E0F2FE", text: "var(--v3-brand-aqua)", leftBorder: "var(--v3-brand-aqua)" },
+            heart_rate: { tint: "#FFF5F5", border: "#FFE4E6", text: "var(--v3-brand-coral)", leftBorder: "var(--v3-brand-coral)" },
+            body_temperature: { tint: "#FFFDF0", border: "#FEF9C3", text: "var(--v3-brand-amber)", leftBorder: "var(--v3-brand-amber)" },
+            weight: { tint: "#FAF5FF", border: "#F3E8FF", text: "var(--v3-brand-purple)", leftBorder: "var(--v3-brand-purple)" }
+          };
+
+          return summaryMode === "summary" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {hasAnyFactualSummaryData ? (
+                factualSummaryBlocks.map((block) => {
+                  const styleConfig = paramStyles[block.key] || { tint: "#FFFFFF", border: "var(--v3-border-subtle)", text: "var(--v3-text-dark)", leftBorder: "var(--v3-brand-orange)" };
+
+                  return (
+                    <div
+                      key={block.key}
+                      style={{
+                        background: styleConfig.tint,
+                        borderLeft: `4px solid ${styleConfig.leftBorder}`,
+                        padding: "16px 20px",
+                        borderRadius: "12px",
+                        borderTop: `1.5px solid ${styleConfig.border}`,
+                        borderRight: `1.5px solid ${styleConfig.border}`,
+                        borderBottom: `1.5px solid ${styleConfig.border}`,
+                        boxShadow: "var(--v3-shadow-sm)"
+                      }}
+                    >
+                      <strong style={{ color: styleConfig.text, display: "block", marginBottom: "4px" }} className="v3-eyebrow">
+                        {block.label}
+                      </strong>
+                      <p style={{ margin: 0, color: "var(--v3-text-dark)", fontSize: "14px", fontStyle: block.hasData ? "normal" : "italic" }}>
+                        {block.text}
+                      </p>
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{ padding: "32px", textAlign: "center", background: "#FFFFFF", borderRadius: "12px", border: "1px dashed var(--v3-border-subtle)" }}>
+                  <span style={{ color: "var(--v3-text-muted)", fontStyle: "italic" }}>No parameters logged in the last 30 days.</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="v3-summary-grid">
+              {factualSummaryBlocks.map((block) => {
+                const isClickable = block.hasData;
+                const styleConfig = paramStyles[block.key] || { tint: "#FFFFFF", border: "var(--v3-border-subtle)", text: "var(--v3-text-dark)", leftBorder: "var(--v3-brand-orange)" };
 
                 return (
                   <div
                     key={block.key}
+                    onClick={() => isClickable && setSelectedDrilldownBlock(block)}
+                    className={`v3-summary-card ${block.key} ${isClickable ? "clickable" : ""}`}
                     style={{
-                      background: "#FFFFFF",
-                      borderLeft: `4px solid ${col}`,
-                      padding: "16px 20px",
-                      borderRadius: "12px",
-                      borderTop: "1px solid var(--v3-border-subtle)",
-                      borderRight: "1px solid var(--v3-border-subtle)",
-                      borderBottom: "1px solid var(--v3-border-subtle)",
-                      boxShadow: "var(--v3-shadow-sm)"
+                      background: styleConfig.tint,
+                      border: `1.5px solid ${styleConfig.border}`,
+                      borderLeft: `4px solid ${styleConfig.leftBorder}`,
+                      cursor: isClickable ? "pointer" : "default"
                     }}
                   >
-                    <strong style={{ color: col, display: "block", marginBottom: "4px" }} className="v3-eyebrow">
-                      {block.label}
-                    </strong>
-                    <p style={{ margin: 0, color: "var(--v3-text-dark)", fontSize: "14px", fontStyle: block.hasData ? "normal" : "italic" }}>
-                      {block.text}
-                    </p>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                      <strong className="v3-eyebrow" style={{ color: styleConfig.text }}>{block.label}</strong>
+                      {isClickable && <span className="v3-action-text" style={{ fontSize: "11px", color: "var(--v3-brand-orange)" }}>See trend →</span>}
+                    </div>
+
+                    {block.hasData && block.metrics ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", borderBottom: `1px solid ${styleConfig.border}`, paddingBottom: "4px" }}>
+                          <span style={{ color: "var(--v3-text-muted)" }}>Latest:</span>
+                          <strong style={{ color: "var(--v3-text-dark)" }}>{block.metrics.latest}</strong>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", borderBottom: `1px solid ${styleConfig.border}`, paddingBottom: "4px" }}>
+                          <span style={{ color: "var(--v3-text-muted)" }}>Average:</span>
+                          <strong style={{ color: "var(--v3-text-dark)" }}>{block.metrics.average}</strong>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+                          <span style={{ color: "var(--v3-text-muted)" }}>Total Logs:</span>
+                          <strong style={{ color: "var(--v3-text-dark)" }}>{block.metrics.count} readings</strong>
+                        </div>
+                      </div>
+                    ) : (
+                      <span style={{ color: "var(--v3-text-muted)", fontSize: "13px", fontStyle: "italic" }}>
+                        No logs registered
+                      </span>
+                    )}
                   </div>
                 );
-              })
-            ) : (
-              <div style={{ padding: "32px", textAlign: "center", background: "#FFFFFF", borderRadius: "12px", border: "1px dashed var(--v3-border-subtle)" }}>
-                <span style={{ color: "var(--v3-text-muted)", fontStyle: "italic" }}>No parameters logged in the last 30 days.</span>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="v3-summary-grid">
-            {factualSummaryBlocks.map((block) => {
-              const isClickable = block.hasData;
-
-              return (
-                <div
-                  key={block.key}
-                  onClick={() => isClickable && setSelectedDrilldownBlock(block)}
-                  className={`v3-summary-card ${block.key} ${isClickable ? "clickable" : ""}`}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <strong className="v3-eyebrow">{block.label}</strong>
-                    {isClickable && <span className="v3-action-text" style={{ fontSize: "11px" }}>See trend →</span>}
-                  </div>
-
-                  {block.hasData && block.metrics ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", borderBottom: "1px solid var(--v3-border-subtle)", paddingBottom: "4px" }}>
-                        <span style={{ color: "var(--v3-text-muted)" }}>Latest:</span>
-                        <strong style={{ color: "var(--v3-text-dark)" }}>{block.metrics.latest}</strong>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", borderBottom: "1px solid var(--v3-border-subtle)", paddingBottom: "4px" }}>
-                        <span style={{ color: "var(--v3-text-muted)" }}>Average:</span>
-                        <strong style={{ color: "var(--v3-text-dark)" }}>{block.metrics.average}</strong>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-                        <span style={{ color: "var(--v3-text-muted)" }}>Total Logs:</span>
-                        <strong style={{ color: "var(--v3-text-dark)" }}>{block.metrics.count} readings</strong>
-                      </div>
-                    </div>
-                  ) : (
-                    <span style={{ color: "var(--v3-text-muted)", fontSize: "13px", fontStyle: "italic" }}>
-                      No logs registered
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+              })}
+            </div>
+          );
+        })()}
 
         <div style={{
           marginTop: "24px",
-          padding: "16px 20px",
-          background: "#FFFDF5",
-          border: "1px solid #FFE58F",
+          padding: "12px 16px",
+          background: "rgba(107, 100, 93, 0.03)",
+          border: "1px solid var(--v3-border-subtle)",
           borderRadius: "8px",
-          fontSize: "12px",
-          color: "#8C6D15",
-          lineHeight: "1.5"
+          fontSize: "11px",
+          color: "var(--v3-text-muted)",
+          lineHeight: "1.4"
         }}>
-          ⚠️ <strong>Factual Clinical Disclaimer:</strong> This summary is automatically computed strictly from recorded patient-reported measurements. It does not diagnose, recommend medication, change treatments, or claim absolute medical certainty.
+          ⚠️ <strong>Clinical Disclaimer:</strong> Automatically computed strictly from patient-reported measurements. This is for reference only and does not constitute formal medical diagnosis, advice, or treatment changes.
         </div>
       </section>
+
+      <EditorialTransition text="“Your numbers matter more when you can see how they change.”" />
 
       {/* SECTION 5: LAB RESULTS */}
       <section className="v3-lab-box" aria-labelledby="v3-labs-heading">
@@ -722,27 +945,52 @@ const DashboardViewV3: React.FC<DashboardViewV3Props> = ({
             <span style={{ color: "var(--v3-text-muted)", fontStyle: "italic" }}>No laboratory records found</span>
           </div>
         ) : (
-          <div style={{ border: "1px solid var(--v3-border-subtle)", borderRadius: "12px", overflow: "hidden" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {labObservations.slice(0, 3).map((obs, idx) => {
               const isAbnormal = obs.flag && (obs.flag.toLowerCase() === "high" || obs.flag.toLowerCase() === "low");
 
               return (
-                <div key={idx} className="v3-lab-item-row">
+                <div key={idx} className="v3-lab-item-row" style={{
+                  background: "#FFFDF6",
+                  border: "1.5px solid #F9EBC8",
+                  borderLeft: "5px solid var(--v3-brand-amber)",
+                  borderRadius: "10px",
+                  padding: "16px 20px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  boxShadow: "var(--v3-shadow-sm)",
+                  transition: "all 0.2s"
+                }}>
                   <div>
-                    <span className="v3-metadata" style={{ fontSize: "11px", display: "block" }}>
-                      {new Date(obs.specimenDate || obs.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                    </span>
-                    <strong style={{ fontSize: "15px", color: "var(--v3-text-dark)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                      <span className="v3-metadata" style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", background: "#FEF3C7", color: "#B45309", padding: "2px 6px", borderRadius: "4px" }}>
+                        Specimen
+                      </span>
+                      <span className="v3-metadata" style={{ fontSize: "11px" }}>
+                        {new Date(obs.specimenDate || obs.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                    </div>
+                    <strong style={{ fontSize: "15px", color: "var(--v3-text-dark)", fontWeight: 600 }}>
                       {obs.testName}
                     </strong>
                   </div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                    <strong style={{ fontSize: "16px", color: "var(--v3-text-dark)" }}>
-                      {obs.value} <span style={{ fontSize: "12px", opacity: 0.6, fontWeight: 400 }}>{obs.unit}</span>
-                    </strong>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                      <strong style={{ fontSize: "18px", color: "var(--v3-text-dark)", fontWeight: 600 }}>
+                        {obs.value} <span style={{ fontSize: "12px", opacity: 0.6, fontWeight: 400 }}>{obs.unit}</span>
+                      </strong>
+                    </div>
                     {obs.flag && (
-                      <span className={`v3-lab-flag-badge ${isAbnormal ? "high" : "normal"}`}>
+                      <span className={`v3-lab-flag-badge ${isAbnormal ? "high" : "normal"}`} style={{
+                        padding: "4px 10px",
+                        borderRadius: "6px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        border: isAbnormal ? "1px solid #FCA5A5" : "1px solid #86EFAC"
+                      }}>
                         {obs.flag}
                       </span>
                     )}

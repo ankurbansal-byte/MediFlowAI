@@ -156,15 +156,12 @@
 .dashboard--v3 .sidebar .sidebar__role-context,
 .dashboard-wrapper.dashboard--v3 .dashboard--patient .sidebar .sidebar__role-context {
   background: transparent !important;
-  color: var(--v3-brand-orange) !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
-  padding: 2px 0 !important;
-  margin-top: 4px !important;
-  display: block !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin-top: 6px !important;
   border: none !important;
+  padding: 0 !important;
 }
 
 .dashboard--v3 .sidebar .sidebar__link,
@@ -284,8 +281,9 @@
 /* Visual journey infographics right side */
 .v3-journey-visual {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   position: relative;
   width: 100%;
 }
@@ -293,8 +291,8 @@
 @media (max-width: 968px) {
   .v3-journey-visual {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 24px;
+    align-items: stretch;
+    gap: 10px;
   }
   .v3-journey-connector-v3 {
     display: none;
@@ -401,8 +399,8 @@
 
 /* TODAY'S HEALTH V3 */
 .v3-today-box {
-  background: var(--v3-bg-white) !important;
-  border: 1.5px solid var(--v3-border-subtle) !important;
+  background: #F0FDF4 !important; /* Soft Green Whisper Backdrop */
+  border: 1.5px solid #DCFCE7 !important;
   border-radius: var(--v3-radius-xl) !important;
   padding: 32px !important;
   box-shadow: var(--v3-shadow-sm) !important;
@@ -447,8 +445,8 @@
 
 /* 30-DAY HEALTH SUMMARY (AS REBRANDED "YOUR HEALTH AT A GLANCE - LAST 30 DAYS") */
 .v3-summary-box {
-  background: var(--v3-bg-white) !important;
-  border: 1.5px solid var(--v3-border-subtle) !important;
+  background: #FFFBF7 !important; /* Soft Mango Orange Backdrop */
+  border: 1.5px solid #FEEADB !important;
   border-radius: var(--v3-radius-xl) !important;
   padding: 32px !important;
   box-shadow: var(--v3-shadow-sm) !important;
@@ -514,8 +512,8 @@
 
 /* LAB RESULTS V3 */
 .v3-lab-box {
-  background: var(--v3-bg-white) !important;
-  border: 1.5px solid var(--v3-border-subtle) !important;
+  background: #FFFDF5 !important; /* Soft Amber Specimen Backdrop */
+  border: 1.5px solid #FEF3C7 !important;
   border-radius: var(--v3-radius-xl) !important;
   padding: 32px !important;
   box-shadow: var(--v3-shadow-sm) !important;
@@ -595,11 +593,15 @@
 }
 
 .v3-cta-card.trends {
-  border-left: 5px solid var(--v3-brand-orange);
+  background-color: #FFFBF7 !important; /* Soft Mango Tint */
+  border: 1.5px solid #FEEADB !important;
+  border-left: 5px solid var(--v3-brand-orange) !important;
 }
 
 .v3-cta-card.insights {
-  border-left: 5px solid var(--v3-brand-purple);
+  background-color: #FAF5FF !important; /* Soft Purple Tint */
+  border: 1.5px solid #F3E8FF !important;
+  border-left: 5px solid var(--v3-brand-purple) !important;
 }
 
 .v3-cta-btn {
