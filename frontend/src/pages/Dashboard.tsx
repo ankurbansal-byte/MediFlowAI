@@ -25,6 +25,8 @@ import { type User } from "../App";
 import "./Dashboard.css";
 
 import ProfileView from "./ProfileView";
+import ProfileViewV5 from "./ProfileViewV5";
+import SettingsViewV5 from "./SettingsViewV5";
 import HospitalView from "./HospitalView";
 import PatientsView from "./PatientsView";
 import DoctorsView from "./DoctorsView";
@@ -46,17 +48,21 @@ interface DashboardProps {
   isV5?: boolean;
   isRecordsV5?: boolean;
   isInsightsV5?: boolean;
+  isProfileV5?: boolean;
+  isSettingsV5?: boolean;
 }
 
 export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "settings" | "hospital" | "patients" | "doctors" | "visits-admin" | "doctor-visits" | "today-patients" | "my-patients";
 
-const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, isV2 = false, isV3 = false, isV4 = false, isV5 = false, isRecordsV5 = false, isInsightsV5 = false }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, isV2 = false, isV3 = false, isV4 = false, isV5 = false, isRecordsV5 = false, isInsightsV5 = false, isProfileV5 = false, isSettingsV5 = false }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     if (isInsightsV5) return "ai-insights";
     if (isRecordsV5) return "trends";
+    if (isProfileV5) return "profile";
+    if (isSettingsV5) return "settings";
     if (user.role === "admin") return "dashboard";
     if (user.role === "doctor") return "dashboard";
     return "dashboard";
@@ -411,14 +417,25 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
           />
         );
       case "profile":
-        return (
+        return (isV5 || isRecordsV5 || isInsightsV5 || isProfileV5 || isSettingsV5) ? (
+          <ProfileViewV5
+            user={user}
+            onProfileUpdate={onProfileUpdate}
+          />
+        ) : (
           <ProfileView
             user={user}
             onProfileUpdate={onProfileUpdate}
           />
         );
       case "settings":
-        return (
+        return (isV5 || isRecordsV5 || isInsightsV5 || isProfileV5 || isSettingsV5) ? (
+          <SettingsViewV5
+            user={user}
+            onLogout={onLogout}
+            onLogoutConfirmTrigger={() => setIsLogoutModalOpen(true)}
+          />
+        ) : (
           <SettingsView
             user={user}
             onLogout={onLogout}
@@ -433,7 +450,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
   const hasPatientPanel = user.role === "doctor" && activeTab === "doctor-visits";
 
   return (
-    <div className={`dashboard-wrapper ${isSidebarCollapsed ? "sidebar-collapsed" : ""} ${(isV5 || isRecordsV5 || isInsightsV5) ? "dashboard--v5" : isV4 ? "dashboard--v4" : isV3 ? "dashboard--v3" : isV2 ? "dashboard--v2" : ""}`}>
+    <div className={`dashboard-wrapper ${isSidebarCollapsed ? "sidebar-collapsed" : ""} ${(isV5 || isRecordsV5 || isInsightsV5 || isProfileV5 || isSettingsV5) ? "dashboard--v5" : isV4 ? "dashboard--v4" : isV3 ? "dashboard--v3" : isV2 ? "dashboard--v2" : ""}`}>
       {/* Mobile Nav Top Bar Header */}
       <div className="mobile-top-bar">
         <button
@@ -481,7 +498,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
             >
               ✕
             </button>
-            {(isV5 || isRecordsV5 || isInsightsV5) ? (
+            {(isV5 || isRecordsV5 || isInsightsV5 || isProfileV5 || isSettingsV5) ? (
               <SidebarV5
                 onLogout={onLogout}
                 onLogoutConfirmTrigger={() => setIsLogoutModalOpen(true)}

@@ -715,3 +715,22 @@
   transform: translateY(-2px) !important;
   box-shadow: var(--v5-shadow-md) !important;
 }
+
+/* V5 PROFILE & EDIT EXPERIENCE EXTRAS */
+.v5-profile-edit-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1.5px solid var(--v5-border-subtle);
+  background: var(--v5-bg-cream);
+  font-size: 14px;
+  color: var(--v5-text-dark);
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.v5-profile-edit-input:focus {
+  border-color: var(--v5-brand-orange);
+  box-shadow: 0 0 0 3px rgba(255, 122, 0, 0.15);
+}
