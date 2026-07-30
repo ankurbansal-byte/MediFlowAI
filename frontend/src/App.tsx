@@ -135,7 +135,10 @@ function App() {
     const isV2 = window.location.pathname === "/design-preview/home" ||
                  window.location.pathname === "/patient/home-v2" ||
                  new URLSearchParams(window.location.search).get("view") === "design-preview-home";
-    return <Dashboard user={user} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} isV2={isV2} />;
+    const isV3 = window.location.pathname === "/design-preview/home-v3" ||
+                 window.location.pathname === "/patient/home-v3" ||
+                 new URLSearchParams(window.location.search).get("view") === "design-preview-home-v3";
+    return <Dashboard user={user} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} isV2={isV2} isV3={isV3} />;
   }
 
   // Guest Routing
