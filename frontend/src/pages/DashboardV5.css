@@ -1,0 +1,687 @@
+/* MediFlowAI Home V5 Design System Stylesheet - Direct Evolution of V3 */
+
+:root {
+  /* V5 Core Brand Colors */
+  --v5-brand-orange: #FF7A00;       /* Saffron Orange / Mango */
+  --v5-brand-orange-light: #FFA34D; /* Light Saffron */
+  --v5-brand-amber: #FFC72C;        /* Sun Yellow */
+  --v5-brand-green: #10B981;        /* WhatsApp Green */
+  --v5-brand-green-light: #D1FAE5;  /* Soft green background */
+  --v5-brand-aqua: #0EA5E9;         /* Health Aqua */
+  --v5-brand-purple: #7C3AED;       /* AI Purple */
+  --v5-brand-purple-light: #EDE9FE; /* Soft purple background */
+  --v5-brand-coral: #F43F5E;        /* Heart Rate Coral */
+
+  /* Neutral Surface Colors (Warm Cream/Ivory Theme exactly like screenshots) */
+  --v5-bg-ivory: #FFFDF9;           /* Pure Warm Ivory */
+  --v5-bg-cream: #FAF6F0;           /* Soft Warm Cream Page Surfaces */
+  --v5-bg-cream-dark: #F3ECE2;      /* Elegant plaster cream */
+  --v5-bg-white: #FFFFFF;
+  --v5-border-subtle: #EAE3D5;      /* Delicate plaster border */
+
+  /* Readability-first Dark Charcoal Typography */
+  --v5-text-dark: #1E1C1A;          /* Espresso/Charcoal Primary Text */
+  --v5-text-muted: #6B645D;         /* Warm grey for Secondary Text */
+
+  /* Radius & Shadows */
+  --v5-radius-lg: 16px;
+  --v5-radius-xl: 24px;
+  --v5-shadow-sm: 0 2px 8px rgba(107, 100, 93, 0.04);
+  --v5-shadow-md: 0 4px 16px rgba(107, 100, 93, 0.08);
+  --v5-shadow-lg: 0 10px 30px rgba(107, 100, 93, 0.12);
+}
+
+/* Base structural wrapper for V5 - Apply Cream Ivory Background to the workspace */
+.dashboard-wrapper.dashboard--v5 {
+  background-color: var(--v5-bg-cream) !important;
+}
+
+.dashboard-wrapper.dashboard--v5 .dashboard {
+  background-color: var(--v5-bg-cream) !important;
+}
+
+.dashboard-wrapper.dashboard--v5 .dashboard__content {
+  background-color: var(--v5-bg-cream) !important;
+}
+
+.dashboard--v5 {
+  background-color: var(--v5-bg-cream) !important;
+  color: var(--v5-text-dark);
+  font-family: 'Inter', -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+/* Unified Subtle Brand Motif Pattern Overlay - Opacity dramatically reduced to barely visible subtle texture */
+.v5-mediflow-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='%23FF7A00' fill-opacity='0.006' stroke-opacity='0.03'%3E%3C!-- plus --%3E%3Cpath d='M20 20h4v4h-4zM22 22h-4v-4h4z'/%3E%3C!-- bubble --%3E%3Crect x='80' y='30' width='10' height='8' rx='2'/%3E%3C!-- pulse --%3E%3Cpath d='M10 80h10l2-6 2 12 2-9 1 3h10' fill='none' stroke='%23FF7A00' stroke-width='1.2' stroke-linecap='round'/%3E%3C!-- sparkle --%3E%3Cpath d='M95 95l2 2-2 2-2-2z'/%3E%3C/g%3E%3C/svg%3E") !important;
+}
+
+/* TYPOGRAPHY SYSTEM */
+.v5-display {
+  font-size: 38px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--v5-text-dark);
+}
+
+.v5-section-heading {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--v5-text-dark);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.v5-card-heading {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--v5-text-dark);
+}
+
+.v5-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--v5-text-muted);
+}
+
+.v5-metric-number {
+  font-size: 44px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.v5-body {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--v5-text-dark);
+}
+
+.v5-metadata {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--v5-text-muted);
+}
+
+.v5-action-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--v5-brand-orange);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: transform 0.2s ease;
+}
+
+/* SIDEBAR V5 DESIGN - Refined to match V5 cream theme with warm white background, subtle shadows, and premium polish */
+.dashboard-wrapper.dashboard--v5 .sidebar {
+  background: var(--v5-bg-ivory) !important;
+  border-right: 1.5px solid var(--v5-border-subtle) !important;
+  color: var(--v5-text-muted) !important;
+  box-shadow: 4px 0 24px rgba(107, 100, 93, 0.03) !important;
+}
+
+.dashboard-wrapper.dashboard--v5 .sidebar .sidebar__brand-container {
+  border-bottom: 1px solid var(--v5-border-subtle) !important;
+  padding: 24px 20px 20px 20px !important;
+}
+
+.dashboard-wrapper.dashboard--v5 .sidebar .sidebar__brand-name {
+  color: var(--v5-text-dark) !important;
+  font-weight: 600 !important;
+  font-size: 21px !important;
+  letter-spacing: -0.02em !important;
+}
+
+.dashboard-wrapper.dashboard--v5 .sidebar .sidebar__brand-mark {
+  background: var(--v5-brand-orange) !important;
+  color: var(--v5-bg-ivory) !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  font-size: 18px !important;
+  box-shadow: 0 2px 8px rgba(255, 122, 0, 0.15) !important;
+}
+
+.dashboard-wrapper.dashboard--v5 .sidebar .sidebar__role-context {
+  background: transparent !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin-top: 6px !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.dashboard-wrapper.dashboard--v5 .sidebar .sidebar__link {
+  color: var(--v5-text-muted) !important;
+  border-radius: 8px !important;
+  margin: 4px 12px !important;
+  padding: 10px 14px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  background: transparent !important;
+  border-left: none !important;
+  box-shadow: none !important;
+}
+
+.dashboard-wrapper.dashboard--v5 .sidebar .sidebar__link .sidebar__icon {
+  width: 20px !important;
+  height: 20px !important;
+  stroke: var(--v5-text-muted) !important;
+  stroke-width: 1.8 !important;
+  fill: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.dashboard-wrapper.dashboard--v5 .sidebar .sidebar__link:hover {
+  background: var(--v5-bg-cream) !important;
+  color: var(--v5-text-dark) !important;
+}
+
+.dashboard-wrapper.dashboard--v5 .sidebar .sidebar__link:hover .sidebar__icon {
+  stroke: var(--v5-text-dark) !important;
+}
+
+.dashboard-wrapper.dashboard--v5 .sidebar .sidebar__link--active {
+  background: #FFF0E0 !important; /* Soft Mango Tint */
+  color: var(--v5-brand-orange) !important;
+  font-weight: 600 !important;
+  border-left: 3px solid var(--v5-brand-orange) !important;
+  border-radius: 0 8px 8px 0 !important;
+  margin-left: 0 !important;
+  box-shadow: none !important;
+}
+
+.dashboard-wrapper.dashboard--v5 .sidebar .sidebar__link--active .sidebar__icon {
+  stroke: var(--v5-brand-orange) !important;
+}
+
+/* Sign Out Button */
+.dashboard-wrapper.dashboard--v5 .sidebar .sidebar__signout-btn {
+  background: transparent !important;
+  border: 1px solid var(--v5-border-subtle) !important;
+  border-radius: 8px !important;
+  padding: 10px !important;
+  font-weight: 600 !important;
+  color: var(--v5-text-dark) !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+}
+
+.dashboard-wrapper.dashboard--v5 .sidebar .sidebar__signout-btn:hover {
+  background: #FFF0E0 !important;
+  border-color: var(--v5-brand-orange) !important;
+  color: var(--v5-brand-orange) !important;
+}
+
+/* Compact Integrated Support Area in Sidebar */
+.sidebar--v5-support-card {
+  background: var(--v5-bg-cream) !important;
+  border: 1px solid var(--v5-border-subtle) !important;
+  border-radius: 12px !important;
+  padding: 12px !important;
+  margin: 16px 12px !important;
+}
+
+.sidebar--v5-support-card .title {
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  color: var(--v5-text-dark) !important;
+}
+
+.sidebar--v5-support-card .email {
+  font-size: 11px !important;
+  color: var(--v5-text-muted) !important;
+}
+
+/* HERO SECTION V5 - Soft warm background surface behind the hero */
+.v5-hero-wrapper {
+  background: #FAF3E8; /* Soft Warm Backdrop Plaster Surface */
+  padding: 12px;
+  border-radius: calc(var(--v5-radius-xl) + 8px);
+  border: 1.5px solid #F0E4D2;
+}
+
+.v5-hero {
+  background-color: var(--v5-bg-ivory) !important;
+  border: 1.5px solid var(--v5-border-subtle) !important;
+  border-radius: var(--v5-radius-xl) !important;
+  padding: 40px !important;
+  box-shadow: var(--v5-shadow-md) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.v5-hero-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Visual journey infographics right side */
+.v5-journey-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  position: relative;
+  width: 100%;
+}
+
+.v5-journey-card-v5 {
+  background: var(--v5-bg-white);
+  border: 1.5px solid var(--v5-border-subtle);
+  border-radius: var(--v5-radius-lg);
+  padding: 16px;
+  flex: 1;
+  width: 100%;
+  box-shadow: var(--v5-shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.v5-journey-card-v5:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--v5-shadow-md);
+}
+
+.v5-journey-card-v5.whatsapp {
+  border-top: 4px solid var(--v5-brand-green);
+}
+
+.v5-journey-card-v5.ai {
+  border-top: 4px solid var(--v5-brand-purple);
+}
+
+.v5-journey-card-v5.record {
+  border-top: 4px solid var(--v5-brand-orange);
+}
+
+/* REDESIGNED MOTIVATIONAL QUOTES PRESENTATION */
+.v5-editorial-transition {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 0;
+  text-align: center;
+}
+
+.v5-editorial-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  maxWidth: 580px;
+  marginBottom: 20px;
+}
+
+.v5-editorial-line {
+  flex: 1;
+  height: 1.5px;
+  background: linear-gradient(to right, transparent, var(--v5-border-subtle), transparent);
+}
+
+.v5-editorial-icon {
+  color: var(--v5-brand-orange);
+  opacity: 0.6;
+  fontSize: 16px;
+}
+
+.v5-editorial-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--v5-brand-orange);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background: #FFF0E0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid #FFE5CC;
+}
+
+.v5-editorial-text {
+  margin: 0;
+  font-family: 'Georgia', serif;
+  font-style: italic;
+  font-size: 18px;
+  color: #4A443E;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+  max-width: 580px;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.8);
+}
+
+/* ASYMMETRIC MOSAIC SNAPSHOT GRID */
+.v5-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr) !important;
+  gap: 20px !important;
+  margin-bottom: 32px !important;
+}
+
+.v5-metric-card {
+  background: var(--v5-bg-white) !important;
+  border: 1.5px solid var(--v5-border-subtle) !important;
+  border-radius: var(--v5-radius-lg) !important;
+  padding: 24px !important;
+  box-shadow: var(--v5-shadow-sm) !important;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  height: 100% !important;
+}
+
+/* Hover state reinforces clickability */
+.v5-metric-card.clickable-record-card:hover {
+  transform: translateY(-5px) !important;
+  box-shadow: var(--v5-shadow-lg) !important;
+  border-color: var(--v5-brand-orange) !important;
+  cursor: pointer;
+}
+
+.v5-card-pill-btn {
+  background-color: var(--v5-bg-cream-dark);
+  border: 1px solid var(--v5-border-subtle);
+  border-radius: 999px;
+  color: var(--v5-text-dark);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.v5-metric-card:hover .v5-card-pill-btn {
+  background-color: var(--v5-brand-orange);
+  color: var(--v5-bg-white);
+  border-color: var(--v5-brand-orange);
+}
+
+/* Parameter color signatures */
+.v5-metric-card.blood_sugar {
+  border-top: 5px solid var(--v5-brand-orange) !important;
+  grid-column: span 6 !important;
+}
+
+.v5-metric-card.blood_pressure {
+  border-top: 5px solid var(--v5-brand-aqua) !important;
+  grid-column: span 6 !important;
+}
+
+.v5-metric-card.heart_rate {
+  border-top: 5px solid var(--v5-brand-coral) !important;
+  grid-column: span 4 !important;
+}
+
+.v5-metric-card.body_temperature {
+  border-top: 5px solid var(--v5-brand-amber) !important;
+  grid-column: span 4 !important;
+}
+
+.v5-metric-card.weight {
+  border-top: 5px solid var(--v5-brand-purple) !important;
+  grid-column: span 4 !important;
+}
+
+@media (max-width: 968px) {
+  .v5-metric-card.blood_sugar, .v5-metric-card.blood_pressure {
+    grid-column: span 12 !important;
+  }
+  .v5-metric-card.heart_rate, .v5-metric-card.body_temperature, .v5-metric-card.weight {
+    grid-column: span 12 !important;
+  }
+}
+
+/* TODAY'S HEALTH V5 - Premium soft mint backdrop with warmer styling */
+.v5-today-box {
+  background: #E8F5E9 !important; /* Soft mint backdrop */
+  border: 1.5px solid #C8E6C9 !important;
+  border-radius: var(--v5-radius-xl) !important;
+  padding: 32px !important;
+  box-shadow: var(--v5-shadow-sm) !important;
+}
+
+.v5-today-split {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 32px;
+  align-items: center;
+}
+
+@media (max-width: 968px) {
+  .v5-today-split {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+.v5-today-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.v5-today-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--v5-bg-white) !important; /* Warm clean white list cards */
+  border: 1px solid var(--v5-border-subtle);
+  border-radius: var(--v5-radius-lg);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  box-shadow: var(--v5-shadow-sm);
+}
+
+.v5-today-item:hover {
+  transform: translateX(4px);
+  border-color: var(--v5-brand-orange);
+  box-shadow: var(--v5-shadow-md);
+}
+
+/* 30-DAY HEALTH SUMMARY (AS REBRANDED "YOUR HEALTH AT A GLANCE") */
+.v5-summary-box {
+  background: #FFF5E6 !important; /* Soft Mango Orange Backdrop */
+  border: 1.5px solid #FFE0B2 !important;
+  border-radius: var(--v5-radius-xl) !important;
+  padding: 32px !important;
+  box-shadow: var(--v5-shadow-sm) !important;
+}
+
+.v5-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+}
+
+.v5-summary-card {
+  background: var(--v5-bg-cream);
+  border: 1px solid var(--v5-border-subtle);
+  border-radius: var(--v5-radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.v5-summary-card.clickable:hover {
+  transform: translateY(-3px);
+  border-color: var(--v5-brand-orange);
+  background: var(--v5-bg-white);
+  box-shadow: var(--v5-shadow-md);
+}
+
+.v5-summary-card.blood_sugar {
+  grid-column: span 6;
+  border-left: 4px solid var(--v5-brand-orange);
+}
+
+.v5-summary-card.blood_pressure {
+  grid-column: span 6;
+  border-left: 4px solid var(--v5-brand-aqua);
+}
+
+.v5-summary-card.heart_rate {
+  grid-column: span 4;
+  border-left: 4px solid var(--v5-brand-coral);
+}
+
+.v5-summary-card.body_temperature {
+  grid-column: span 4;
+  border-left: 4px solid var(--v5-brand-amber);
+}
+
+.v5-summary-card.weight {
+  grid-column: span 4;
+  border-left: 4px solid var(--v5-brand-purple);
+}
+
+@media (max-width: 968px) {
+  .v5-summary-card.blood_sugar, .v5-summary-card.blood_pressure {
+    grid-column: span 12;
+  }
+  .v5-summary-card.heart_rate, .v5-summary-card.body_temperature, .v5-summary-card.weight {
+    grid-column: span 12;
+  }
+}
+
+/* LAB RESULTS V5 - Premium warm background & improved visual hierarchy */
+.v5-lab-box {
+  background: #FFFDF0 !important; /* Soft warm specimen background */
+  border: 1.5px solid #F9EBC8 !important;
+  border-radius: var(--v5-radius-xl) !important;
+  padding: 32px !important;
+  box-shadow: var(--v5-shadow-sm) !important;
+  border-top: 5px solid var(--v5-brand-amber) !important;
+}
+
+.v5-lab-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--v5-border-subtle);
+  transition: background 0.2s ease;
+}
+
+.v5-lab-item-row:last-child {
+  border-bottom: none;
+}
+
+.v5-lab-item-row:hover {
+  background: var(--v5-bg-cream);
+}
+
+.v5-lab-flag-badge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.v5-lab-flag-badge.high, .v5-lab-flag-badge.low {
+  background: #FFE4E6;
+  color: var(--v5-brand-coral);
+  border: 1px solid #FDA4AF;
+}
+
+.v5-lab-flag-badge.normal {
+  background: #D1FAE5;
+  color: #065F46;
+  border: 1px solid #6EE7B7;
+}
+
+/* CTA GATEWAYS V5 - Soft colored backdrops matching purpose (Avoid plain white cards) */
+.v5-cta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 768px) {
+  .v5-cta-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.v5-cta-card {
+  border: 1.5px solid var(--v5-border-subtle);
+  border-radius: var(--v5-radius-xl);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 220px;
+  box-shadow: var(--v5-shadow-sm);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.v5-cta-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--v5-shadow-md);
+  border-color: var(--v5-brand-orange);
+}
+
+.v5-cta-card.trends {
+  background-color: #FFFBF7 !important; /* Soft Mango Tint */
+  border: 1.5px solid #FEEADB !important;
+  border-left: 5px solid var(--v5-brand-orange) !important;
+}
+
+.v5-cta-card.insights {
+  background-color: #FAF5FF !important; /* Soft Purple Tint */
+  border: 1.5px solid #F3E8FF !important;
+  border-left: 5px solid var(--v5-brand-purple) !important;
+}
+
+.v5-cta-btn {
+  background: var(--v5-brand-orange);
+  color: var(--v5-bg-white);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.v5-cta-btn:hover {
+  background: #E56E00;
+  transform: translateY(-1px);
+}
+
+.v5-cta-card.insights .v5-cta-btn {
+  background: var(--v5-brand-purple);
+}
+
+.v5-cta-card.insights .v5-cta-btn:hover {
+  background: #6D28D9;
+}
