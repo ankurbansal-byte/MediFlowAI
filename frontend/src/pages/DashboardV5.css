@@ -705,3 +705,13 @@
   box-shadow: 0 3px 10px rgba(107, 100, 93, 0.05);
   border-color: var(--v5-brand-orange) !important;
 }
+
+/* V5 HEALTH INSIGHTS INTERACTIONS */
+.v5-insight-metric-btn {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.v5-insight-metric-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--v5-shadow-md) !important;
+}
