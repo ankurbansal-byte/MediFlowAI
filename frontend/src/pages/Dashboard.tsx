@@ -13,6 +13,7 @@ import DashboardViewV3 from "./DashboardViewV3";
 import DashboardViewV4 from "./DashboardViewV4";
 import DashboardViewV5 from "./DashboardViewV5";
 import TrendsView from "./TrendsView";
+import TrendsViewV5 from "./TrendsViewV5";
 import AIInsightsView from "./AIInsightsView";
 import SettingsView from "./SettingsView";
 import { usePatients } from "../hooks/usePatients";
@@ -42,15 +43,17 @@ interface DashboardProps {
   isV3?: boolean;
   isV4?: boolean;
   isV5?: boolean;
+  isRecordsV5?: boolean;
 }
 
 export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "settings" | "hospital" | "patients" | "doctors" | "visits-admin" | "doctor-visits" | "today-patients" | "my-patients";
 
-const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, isV2 = false, isV3 = false, isV4 = false, isV5 = false }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, isV2 = false, isV3 = false, isV4 = false, isV5 = false, isRecordsV5 = false }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(() => {
+    if (isRecordsV5) return "trends";
     if (user.role === "admin") return "dashboard";
     if (user.role === "doctor") return "dashboard";
     return "dashboard";
@@ -323,7 +326,22 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
           />
         );
       case "trends":
-        return (
+        return (isV5 || isRecordsV5) ? (
+          <TrendsViewV5
+            patientId={effectivePatientId}
+            trends={trends}
+            selectedParameter={selectedParameter}
+            setSelectedParameter={setSelectedParameter}
+            trendPeriod={trendPeriod}
+            setTrendPeriod={setTrendPeriod}
+            isTrendLoading={isTrendLoading}
+            hasTrendError={hasTrendError}
+            trend={trend}
+            timeline={timeline}
+            selectedHistoryDate={selectedHistoryDate}
+            setSelectedHistoryDate={setSelectedHistoryDate}
+          />
+        ) : (
           <TrendsView
             patientId={effectivePatientId}
             trends={trends}
@@ -403,7 +421,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
   const hasPatientPanel = user.role === "doctor" && activeTab === "doctor-visits";
 
   return (
-    <div className={`dashboard-wrapper ${isSidebarCollapsed ? "sidebar-collapsed" : ""} ${isV5 ? "dashboard--v5" : isV4 ? "dashboard--v4" : isV3 ? "dashboard--v3" : isV2 ? "dashboard--v2" : ""}`}>
+    <div className={`dashboard-wrapper ${isSidebarCollapsed ? "sidebar-collapsed" : ""} ${(isV5 || isRecordsV5) ? "dashboard--v5" : isV4 ? "dashboard--v4" : isV3 ? "dashboard--v3" : isV2 ? "dashboard--v2" : ""}`}>
       {/* Mobile Nav Top Bar Header */}
       <div className="mobile-top-bar">
         <button
@@ -451,12 +469,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
             >
               ✕
             </button>
-            {isV5 ? (
+            {(isV5 || isRecordsV5) ? (
               <SidebarV5
                 onLogout={onLogout}
                 onLogoutConfirmTrigger={() => setIsLogoutModalOpen(true)}
                 userRole={user.role}
-                activeTab={activeTab}
+                activeTab={activeTab === "dashboard" && isRecordsV5 ? "trends" as TabType : activeTab}
                 onTabChange={handleTabChange}
                 isCollapsed={isSidebarCollapsed}
                 onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}

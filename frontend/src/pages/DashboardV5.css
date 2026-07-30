@@ -685,3 +685,23 @@
 .v5-cta-card.insights .v5-cta-btn:hover {
   background: #6D28D9;
 }
+
+/* V5 HEALTH RECORDS EXPANSION & INTERACTION */
+.v5-history-group-card {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+}
+
+.v5-history-group-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--v5-shadow-md);
+}
+
+.v5-history-item-row {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.v5-history-item-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(107, 100, 93, 0.05);
+  border-color: var(--v5-brand-orange) !important;
+}
