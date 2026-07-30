@@ -85,21 +85,21 @@ const SidebarV2: React.FC<SidebarV2Props> = ({
   };
 
   const getRoleLabel = () => {
-    if (userRole === "patient") return "Patient Space V2";
-    if (userRole === "doctor") return "Clinical Space V2";
-    if (userRole === "admin") return "Admin Space V2";
+    if (userRole === "patient") return "Patient Workspace";
+    if (userRole === "doctor") return "Clinical Portal";
+    if (userRole === "admin") return "Admin Suite";
     return "";
   };
 
   return (
     <aside className={`sidebar sidebar--v2 ${isCollapsed ? "sidebar--collapsed" : ""}`} aria-label="Primary navigation">
       {/* Brand & Context */}
-      <div className="sidebar__brand-container" style={{ padding: "24px 20px" }}>
+      <div className="sidebar__brand-container" style={{ padding: "24px 20px 16px 20px" }}>
         <div className="sidebar__brand">
-          <span className="sidebar__brand-mark" aria-hidden="true" style={{ background: "var(--v2-electric-blue)" }}>+</span>
-          {!isCollapsed && <span className="sidebar__brand-name" style={{ color: "#FFFFFF", fontWeight: 800 }}>MediFlowAI</span>}
+          <span className="sidebar__brand-mark" aria-hidden="true">+</span>
+          {!isCollapsed && <span className="sidebar__brand-name" style={{ fontWeight: 800 }}>MediFlowAI</span>}
         </div>
-        {!isCollapsed && (
+        {!isCollapsed && getRoleLabel() && (
           <span className="sidebar__role-context">
             {getRoleLabel()}
           </span>
@@ -112,7 +112,7 @@ const SidebarV2: React.FC<SidebarV2Props> = ({
           className="sidebar__collapse-toggle"
           type="button"
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          style={{ margin: "0 20px 16px 20px", background: "rgba(255,255,255,0.04)", border: "none", color: "#cbd5e1" }}
+          style={{ margin: "0 20px 16px 20px", border: "none" }}
         >
           {isCollapsed ? "»" : "« Collapse"}
         </button>
@@ -230,11 +230,11 @@ const SidebarV2: React.FC<SidebarV2Props> = ({
         )}
 
         {!isCollapsed && (
-          <div className="sidebar__assistance" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="sidebar__assistance">
             <span className="sidebar__assistance-icon" aria-hidden="true">?</span>
             <div className="sidebar__assistance-text">
-              <span style={{ color: "#cbd5e1" }}>Need assistance?</span>
-              <small style={{ color: "#94a3b8" }}>Contact support</small>
+              <span className="sidebar__assistance-title">Need assistance?</span>
+              <small className="sidebar__assistance-sub">Contact support</small>
             </div>
           </div>
         )}
