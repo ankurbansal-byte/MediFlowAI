@@ -132,7 +132,10 @@ function App() {
         />
       );
     }
-    return <Dashboard user={user} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} />;
+    const isV2 = window.location.pathname === "/design-preview/home" ||
+                 window.location.pathname === "/patient/home-v2" ||
+                 new URLSearchParams(window.location.search).get("view") === "design-preview-home";
+    return <Dashboard user={user} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} isV2={isV2} />;
   }
 
   // Guest Routing
