@@ -5,11 +5,13 @@ import Sidebar from "../components/Sidebar";
 import SidebarV2 from "../components/SidebarV2";
 import SidebarV3 from "../components/SidebarV3";
 import SidebarV4 from "../components/SidebarV4";
+import SidebarV5 from "../components/SidebarV5";
 import RecordSubmissionModal from "../components/RecordSubmissionModal";
 import DashboardView from "./DashboardView";
 import DashboardViewV2 from "./DashboardViewV2";
 import DashboardViewV3 from "./DashboardViewV3";
 import DashboardViewV4 from "./DashboardViewV4";
+import DashboardViewV5 from "./DashboardViewV5";
 import TrendsView from "./TrendsView";
 import AIInsightsView from "./AIInsightsView";
 import SettingsView from "./SettingsView";
@@ -39,11 +41,12 @@ interface DashboardProps {
   isV2?: boolean;
   isV3?: boolean;
   isV4?: boolean;
+  isV5?: boolean;
 }
 
 export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "settings" | "hospital" | "patients" | "doctors" | "visits-admin" | "doctor-visits" | "today-patients" | "my-patients";
 
-const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, isV2 = false, isV3 = false, isV4 = false }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, isV2 = false, isV3 = false, isV4 = false, isV5 = false }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -173,7 +176,32 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
             />
           );
         }
-        return isV4 ? (
+        return isV5 ? (
+          <DashboardViewV5
+            user={user}
+            effectivePatientId={effectivePatientId}
+            selectedPatientOption={selectedPatientOption}
+            summary={summary}
+            timeline={timeline}
+            timelineFilter={timelineFilter}
+            setTimelineFilter={setTimelineFilter}
+            isTimelineLoading={isTimelineLoading}
+            isPatientsLoading={isPatientsLoading}
+            hasSummaryError={hasSummaryError}
+            hasTimelineError={hasTimelineError}
+            bloodSugarStats={bloodSugarStats}
+            bloodPressureStats={bloodPressureStats}
+            heartRateStats={heartRateStats}
+            temperatureStats={temperatureStats}
+            weightStats={weightStats}
+            selectedParameter={selectedParameter}
+            setSelectedParameter={setSelectedParameter}
+            visibleTimeline={visibleTimeline}
+            setIsModalOpen={setIsModalOpen}
+            onTabChange={handleTabChange}
+            setSelectedHistoryDate={setSelectedHistoryDate}
+          />
+        ) : isV4 ? (
           <DashboardViewV4
             user={user}
             effectivePatientId={effectivePatientId}
@@ -375,7 +403,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
   const hasPatientPanel = user.role === "doctor" && activeTab === "doctor-visits";
 
   return (
-    <div className={`dashboard-wrapper ${isSidebarCollapsed ? "sidebar-collapsed" : ""} ${isV4 ? "dashboard--v4" : isV3 ? "dashboard--v3" : isV2 ? "dashboard--v2" : ""}`}>
+    <div className={`dashboard-wrapper ${isSidebarCollapsed ? "sidebar-collapsed" : ""} ${isV5 ? "dashboard--v5" : isV4 ? "dashboard--v4" : isV3 ? "dashboard--v3" : isV2 ? "dashboard--v2" : ""}`}>
       {/* Mobile Nav Top Bar Header */}
       <div className="mobile-top-bar">
         <button
@@ -423,7 +451,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
             >
               ✕
             </button>
-            {isV4 ? (
+            {isV5 ? (
+              <SidebarV5
+                onLogout={onLogout}
+                onLogoutConfirmTrigger={() => setIsLogoutModalOpen(true)}
+                userRole={user.role}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+                isCollapsed={isSidebarCollapsed}
+                onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              />
+            ) : isV4 ? (
               <SidebarV4
                 onLogout={onLogout}
                 onLogoutConfirmTrigger={() => setIsLogoutModalOpen(true)}
