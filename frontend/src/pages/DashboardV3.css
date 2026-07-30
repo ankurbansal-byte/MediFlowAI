@@ -1,0 +1,676 @@
+/* MediFlowAI Home V3 Design System Stylesheet - Unified Elegant Warm Ivory & Saffron Mango Theme */
+
+:root {
+  /* V3 Core Brand Colors */
+  --v3-brand-orange: #FF7A00;       /* Saffron Orange / Mango */
+  --v3-brand-orange-light: #FFA34D; /* Light Saffron */
+  --v3-brand-amber: #FFC72C;        /* Sun Yellow */
+  --v3-brand-green: #10B981;        /* WhatsApp Green */
+  --v3-brand-green-light: #D1FAE5;  /* Soft green background */
+  --v3-brand-aqua: #0EA5E9;         /* Health Aqua */
+  --v3-brand-purple: #7C3AED;       /* AI Purple */
+  --v3-brand-purple-light: #EDE9FE; /* Soft purple background */
+  --v3-brand-coral: #F43F5E;        /* Heart Rate Coral */
+
+  /* Neutral Surface Colors (Warm Cream/Ivory Breathing Space) */
+  --v3-bg-ivory: #FFFDF9;           /* Pure Warm Ivory */
+  --v3-bg-cream: #FAF6F0;           /* Soft Warm Cream Page Surfaces */
+  --v3-bg-cream-dark: #F3ECE2;      /* Elegant plaster cream */
+  --v3-bg-white: #FFFFFF;
+  --v3-border-subtle: #EAE3D5;      /* Delicate plaster border */
+
+  /* Readability-first Dark Charcoal Typography */
+  --v3-text-dark: #1E1C1A;          /* Espresso/Charcoal Primary Text */
+  --v3-text-muted: #6B645D;         /* Warm grey for Secondary Text */
+
+  /* Radius & Shadows */
+  --v3-radius-lg: 16px;
+  --v3-radius-xl: 24px;
+  --v3-shadow-sm: 0 2px 8px rgba(107, 100, 93, 0.04);
+  --v3-shadow-md: 0 4px 16px rgba(107, 100, 93, 0.08);
+  --v3-shadow-lg: 0 10px 30px rgba(107, 100, 93, 0.12);
+}
+
+/* Base structural wrapper for V3 */
+.dashboard--v3 {
+  background-color: var(--v3-bg-cream) !important;
+  color: var(--v3-text-dark);
+  font-family: 'Inter', -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+/* Unified Subtle Brand Motif Pattern Overlay */
+.v3-mediflow-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='%23FF7A00' fill-opacity='0.03'%3E%3C!-- plus --%3E%3Cpath d='M20 20h4v4h-4zM22 22h-4v-4h4z'/%3E%3C!-- bubble --%3E%3Crect x='80' y='30' width='10' height='8' rx='2'/%3E%3C!-- pulse --%3E%3Cpath d='M10 80h10l2-6 2 12 2-9 1 3h10' fill='none' stroke='%23FF7A00' stroke-width='1.2' stroke-linecap='round'/%3E%3C!-- sparkle --%3E%3Cpath d='M95 95l2 2-2 2-2-2z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* TYPOGRAPHY SYSTEM */
+.v3-display {
+  font-size: 38px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--v3-text-dark);
+}
+
+.v3-section-heading {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--v3-text-dark);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.v3-card-heading {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--v3-text-dark);
+}
+
+.v3-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--v3-text-muted);
+}
+
+.v3-metric-number {
+  font-size: 44px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.v3-body {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--v3-text-dark);
+}
+
+.v3-metadata {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--v3-text-muted);
+}
+
+.v3-action-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--v3-brand-orange);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: transform 0.2s ease;
+}
+
+.v3-action-text:hover {
+  transform: translateX(3px);
+}
+
+/* SIDEBAR V3 DESIGN - HIGH SPECIFICITY OVERRIDES */
+.dashboard--v3 .sidebar,
+.dashboard-wrapper.dashboard--v3 .dashboard--patient .sidebar {
+  background: var(--v3-bg-ivory) !important;
+  border-right: 1px solid var(--v3-border-subtle) !important;
+  color: var(--v3-text-muted) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.dashboard--v3 .sidebar .sidebar__brand-container,
+.dashboard-wrapper.dashboard--v3 .dashboard--patient .sidebar .sidebar__brand-container {
+  border-bottom: 1px solid var(--v3-border-subtle) !important;
+  padding: 24px 20px 20px 20px !important;
+}
+
+.dashboard--v3 .sidebar .sidebar__brand-name,
+.dashboard-wrapper.dashboard--v3 .dashboard--patient .sidebar .sidebar__brand-name {
+  color: var(--v3-text-dark) !important;
+  font-weight: 600 !important;
+  font-size: 21px !important;
+  letter-spacing: -0.02em !important;
+}
+
+.dashboard--v3 .sidebar .sidebar__brand-mark,
+.dashboard-wrapper.dashboard--v3 .dashboard--patient .sidebar .sidebar__brand-mark {
+  background: var(--v3-brand-orange) !important;
+  color: var(--v3-bg-ivory) !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  font-size: 18px !important;
+  box-shadow: 0 2px 8px rgba(255, 122, 0, 0.2) !important;
+}
+
+.dashboard--v3 .sidebar .sidebar__role-context,
+.dashboard-wrapper.dashboard--v3 .dashboard--patient .sidebar .sidebar__role-context {
+  background: transparent !important;
+  color: var(--v3-brand-orange) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 2px 0 !important;
+  margin-top: 4px !important;
+  display: block !important;
+  border: none !important;
+}
+
+.dashboard--v3 .sidebar .sidebar__link,
+.dashboard-wrapper.dashboard--v3 .dashboard--patient .sidebar .sidebar__link {
+  color: var(--v3-text-muted) !important;
+  border-radius: 8px !important;
+  margin: 4px 12px !important;
+  padding: 10px 14px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  background: transparent !important;
+  border-left: none !important;
+  box-shadow: none !important;
+}
+
+.dashboard--v3 .sidebar .sidebar__link .sidebar__icon,
+.dashboard-wrapper.dashboard--v3 .dashboard--patient .sidebar .sidebar__link .sidebar__icon {
+  width: 20px !important;
+  height: 20px !important;
+  stroke: var(--v3-text-muted) !important;
+  stroke-width: 1.8 !important;
+  fill: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.dashboard--v3 .sidebar .sidebar__link:hover,
+.dashboard-wrapper.dashboard--v3 .dashboard--patient .sidebar .sidebar__link:hover {
+  background: var(--v3-bg-cream) !important;
+  color: var(--v3-text-dark) !important;
+}
+
+.dashboard--v3 .sidebar .sidebar__link:hover .sidebar__icon,
+.dashboard-wrapper.dashboard--v3 .dashboard--patient .sidebar .sidebar__link:hover .sidebar__icon {
+  stroke: var(--v3-text-dark) !important;
+}
+
+/* Unified V3 Saffron Active Navigation Link Style (No blue/purple gradients!) */
+.dashboard--v3 .sidebar .sidebar__link--active,
+.dashboard-wrapper.dashboard--v3 .dashboard--patient .sidebar .sidebar__link--active {
+  background: #FFF0E0 !important; /* Soft Mango Tint */
+  color: var(--v3-brand-orange) !important;
+  font-weight: 600 !important;
+  border-left: 3px solid var(--v3-brand-orange) !important;
+  border-radius: 0 8px 8px 0 !important;
+  margin-left: 0 !important;
+  box-shadow: none !important;
+}
+
+.dashboard--v3 .sidebar .sidebar__link--active .sidebar__icon,
+.dashboard-wrapper.dashboard--v3 .dashboard--patient .sidebar .sidebar__link--active .sidebar__icon {
+  stroke: var(--v3-brand-orange) !important;
+}
+
+/* Sign Out Button */
+.dashboard--v3 .sidebar .sidebar__signout-btn,
+.dashboard-wrapper.dashboard--v3 .dashboard--patient .sidebar .sidebar__signout-btn {
+  background: transparent !important;
+  border: 1px solid var(--v3-border-subtle) !important;
+  border-radius: 8px !important;
+  padding: 10px !important;
+  font-weight: 600 !important;
+  color: var(--v3-text-dark) !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+}
+
+.dashboard--v3 .sidebar .sidebar__signout-btn:hover,
+.dashboard-wrapper.dashboard--v3 .dashboard--patient .sidebar .sidebar__signout-btn:hover {
+  background: #FFF0E0 !important;
+  border-color: var(--v3-brand-orange) !important;
+  color: var(--v3-brand-orange) !important;
+}
+
+/* Compact Integrated Support Area in Sidebar */
+.sidebar--v3-support-card {
+  background: var(--v3-bg-cream) !important;
+  border: 1px solid var(--v3-border-subtle) !important;
+  border-radius: 12px !important;
+  padding: 12px !important;
+  margin: 16px 12px !important;
+}
+
+.sidebar--v3-support-card .title {
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  color: var(--v3-text-dark) !important;
+}
+
+.sidebar--v3-support-card .email {
+  font-size: 11px !important;
+  color: var(--v3-text-muted) !important;
+}
+
+/* HERO SECTION V3 */
+.v3-hero {
+  background-color: var(--v3-bg-ivory) !important;
+  border: 1px solid var(--v3-border-subtle) !important;
+  border-radius: var(--v3-radius-xl) !important;
+  padding: 40px !important;
+  box-shadow: var(--v3-shadow-md) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.v3-hero-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Visual journey infographics right side */
+.v3-journey-visual {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  width: 100%;
+}
+
+@media (max-width: 968px) {
+  .v3-journey-visual {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  .v3-journey-connector-v3 {
+    display: none;
+  }
+}
+
+.v3-journey-card-v3 {
+  background: var(--v3-bg-white);
+  border: 1.5px solid var(--v3-border-subtle);
+  border-radius: var(--v3-radius-lg);
+  padding: 16px;
+  flex: 1;
+  width: 100%;
+  box-shadow: var(--v3-shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.v3-journey-card-v3:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--v3-shadow-md);
+}
+
+.v3-journey-card-v3.whatsapp {
+  border-top: 4px solid var(--v3-brand-green);
+}
+
+.v3-journey-card-v3.ai {
+  border-top: 4px solid var(--v3-brand-purple);
+}
+
+.v3-journey-card-v3.record {
+  border-top: 4px solid var(--v3-brand-orange);
+}
+
+.v3-journey-connector-v3 {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--v3-text-muted);
+}
+
+/* ASYMMETRIC MOSAIC SNAPSHOT GRID */
+.v3-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr) !important;
+  gap: 20px !important;
+  margin-bottom: 32px !important;
+}
+
+.v3-metric-card {
+  background: var(--v3-bg-white) !important;
+  border: 1.5px solid var(--v3-border-subtle) !important;
+  border-radius: var(--v3-radius-lg) !important;
+  padding: 24px !important;
+  box-shadow: var(--v3-shadow-sm) !important;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  height: 100% !important;
+}
+
+.v3-metric-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: var(--v3-shadow-md) !important;
+}
+
+/* Parameter color signatures (subtle borders / indicators) */
+.v3-metric-card.blood_sugar {
+  border-top: 5px solid var(--v3-brand-orange) !important;
+  grid-column: span 6 !important;
+}
+
+.v3-metric-card.blood_pressure {
+  border-top: 5px solid var(--v3-brand-aqua) !important;
+  grid-column: span 6 !important;
+}
+
+.v3-metric-card.heart_rate {
+  border-top: 5px solid var(--v3-brand-coral) !important;
+  grid-column: span 4 !important;
+}
+
+.v3-metric-card.body_temperature {
+  border-top: 5px solid var(--v3-brand-amber) !important;
+  grid-column: span 4 !important;
+}
+
+.v3-metric-card.weight {
+  border-top: 5px solid var(--v3-brand-purple) !important;
+  grid-column: span 4 !important;
+}
+
+@media (max-width: 968px) {
+  .v3-metric-card.blood_sugar, .v3-metric-card.blood_pressure {
+    grid-column: span 12 !important;
+  }
+  .v3-metric-card.heart_rate, .v3-metric-card.body_temperature, .v3-metric-card.weight {
+    grid-column: span 12 !important;
+  }
+}
+
+/* TODAY'S HEALTH V3 */
+.v3-today-box {
+  background: var(--v3-bg-white) !important;
+  border: 1.5px solid var(--v3-border-subtle) !important;
+  border-radius: var(--v3-radius-xl) !important;
+  padding: 32px !important;
+  box-shadow: var(--v3-shadow-sm) !important;
+}
+
+.v3-today-split {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 32px;
+  align-items: center;
+}
+
+@media (max-width: 968px) {
+  .v3-today-split {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+.v3-today-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.v3-today-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--v3-bg-cream);
+  border: 1px solid var(--v3-border-subtle);
+  border-radius: var(--v3-radius-lg);
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.v3-today-item:hover {
+  transform: translateX(4px);
+  border-color: var(--v3-brand-orange);
+}
+
+/* 30-DAY HEALTH SUMMARY (AS REBRANDED "YOUR HEALTH AT A GLANCE - LAST 30 DAYS") */
+.v3-summary-box {
+  background: var(--v3-bg-white) !important;
+  border: 1.5px solid var(--v3-border-subtle) !important;
+  border-radius: var(--v3-radius-xl) !important;
+  padding: 32px !important;
+  box-shadow: var(--v3-shadow-sm) !important;
+}
+
+.v3-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+}
+
+.v3-summary-card {
+  background: var(--v3-bg-cream);
+  border: 1px solid var(--v3-border-subtle);
+  border-radius: var(--v3-radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.v3-summary-card.clickable:hover {
+  transform: translateY(-3px);
+  border-color: var(--v3-brand-orange);
+  background: var(--v3-bg-white); /* No contrast white-out issue */
+  box-shadow: var(--v3-shadow-md);
+}
+
+.v3-summary-card.blood_sugar {
+  grid-column: span 6;
+  border-left: 4px solid var(--v3-brand-orange);
+}
+
+.v3-summary-card.blood_pressure {
+  grid-column: span 6;
+  border-left: 4px solid var(--v3-brand-aqua);
+}
+
+.v3-summary-card.heart_rate {
+  grid-column: span 4;
+  border-left: 4px solid var(--v3-brand-coral);
+}
+
+.v3-summary-card.body_temperature {
+  grid-column: span 4;
+  border-left: 4px solid var(--v3-brand-amber);
+}
+
+.v3-summary-card.weight {
+  grid-column: span 4;
+  border-left: 4px solid var(--v3-brand-purple);
+}
+
+@media (max-width: 968px) {
+  .v3-summary-card.blood_sugar, .v3-summary-card.blood_pressure {
+    grid-column: span 12;
+  }
+  .v3-summary-card.heart_rate, .v3-summary-card.body_temperature, .v3-summary-card.weight {
+    grid-column: span 12;
+  }
+}
+
+/* LAB RESULTS V3 */
+.v3-lab-box {
+  background: var(--v3-bg-white) !important;
+  border: 1.5px solid var(--v3-border-subtle) !important;
+  border-radius: var(--v3-radius-xl) !important;
+  padding: 32px !important;
+  box-shadow: var(--v3-shadow-sm) !important;
+  border-top: 5px solid var(--v3-brand-amber) !important;
+}
+
+.v3-lab-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--v3-border-subtle);
+  transition: background 0.2s ease;
+}
+
+.v3-lab-item-row:last-child {
+  border-bottom: none;
+}
+
+.v3-lab-item-row:hover {
+  background: var(--v3-bg-cream);
+}
+
+.v3-lab-flag-badge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.v3-lab-flag-badge.high, .v3-lab-flag-badge.low {
+  background: #FFE4E6;
+  color: var(--v3-brand-coral);
+  border: 1px solid #FDA4AF;
+}
+
+.v3-lab-flag-badge.normal {
+  background: #D1FAE5;
+  color: #065F46;
+  border: 1px solid #6EE7B7;
+}
+
+/* CTA GATEWAYS V3 (SIBLINGS) */
+.v3-cta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 768px) {
+  .v3-cta-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.v3-cta-card {
+  background-color: var(--v3-bg-white);
+  border: 1.5px solid var(--v3-border-subtle);
+  border-radius: var(--v3-radius-xl);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 220px;
+  box-shadow: var(--v3-shadow-sm);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.v3-cta-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--v3-shadow-md);
+  border-color: var(--v3-brand-orange);
+}
+
+.v3-cta-card.trends {
+  border-left: 5px solid var(--v3-brand-orange);
+}
+
+.v3-cta-card.insights {
+  border-left: 5px solid var(--v3-brand-purple);
+}
+
+.v3-cta-btn {
+  background: var(--v3-brand-orange);
+  color: var(--v3-bg-white);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.v3-cta-btn:hover {
+  background: #E56E00;
+  transform: translateY(-1px);
+}
+
+.v3-cta-card.insights .v3-cta-btn {
+  background: var(--v3-brand-purple);
+}
+
+.v3-cta-card.insights .v3-cta-btn:hover {
+  background: #6D28D9;
+}
+
+/* ACCOUNT DROPDOWN STYLING OVERRIDE FOR V3 */
+.dashboard--v3 .account-dropdown-trigger {
+  border: 1.5px solid var(--v3-border-subtle) !important;
+  background: var(--v3-bg-white) !important;
+  box-shadow: var(--v3-shadow-sm) !important;
+  color: var(--v3-text-dark) !important;
+  border-radius: 8px !important;
+}
+
+.dashboard--v3 .account-avatar {
+  background: var(--v3-brand-orange) !important;
+  color: var(--v3-bg-white) !important;
+  font-weight: 600 !important;
+}
+
+.dashboard--v3 .account-dropdown-menu {
+  background: var(--v3-bg-white) !important;
+  border: 1.5px solid var(--v3-border-subtle) !important;
+  box-shadow: var(--v3-shadow-lg) !important;
+}
+
+.dashboard--v3 .account-dropdown-item:hover {
+  background: var(--v3-bg-cream) !important;
+  color: var(--v3-text-dark) !important;
+}
+
+/* MOBILE BARS STYLING OVERRIDE */
+.dashboard--v3 .mobile-top-bar {
+  background: var(--v3-bg-ivory) !important;
+  border-bottom: 1px solid var(--v3-border-subtle) !important;
+  color: var(--v3-text-dark) !important;
+}
+
+.dashboard--v3 .mobile-top-bar__hamburger {
+  color: var(--v3-text-dark) !important;
+}
+
+.dashboard--v3 .mobile-top-bar__brand {
+  color: var(--v3-text-dark) !important;
+  font-weight: 600 !important;
+}
+
+.dashboard--v3 .mobile-top-bar__logo-mark {
+  background: var(--v3-brand-orange) !important;
+  color: var(--v3-bg-white) !important;
+}
