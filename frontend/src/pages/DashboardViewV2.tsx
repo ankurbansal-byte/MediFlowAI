@@ -239,51 +239,46 @@ const DashboardViewV2: React.FC<DashboardViewV2Props> = ({
       <div className="v2-hero mediflow-pattern">
         <div className="v2-hero__content">
           <div className="v2-hero__left">
-            <span className="v2-hero__badge">⚡ MediFlowAI Home V2</span>
-            <h1 className="v2-hero-title">
+            <span className="v2-hero__badge">⚡ Realtime Health Intelligence</span>
+            <h1 className="v2-hero-title" style={{ marginTop: "12px", marginBottom: "8px" }}>
               Hello, {user.fullName || user.username}
             </h1>
-            <p className="v2-supporting-copy" style={{ color: "rgba(255, 255, 255, 0.9)", fontSize: "16px", margin: "4px 0" }}>
+            <p className="v2-supporting-copy" style={{ color: "var(--v2-text-muted)", fontSize: "16px", margin: "8px 0 16px 0", maxWidth: "480px" }}>
               Securely synchronized with your WhatsApp, bringing clinician-grade precision to your daily wellness tracking.
             </p>
-            <div className="v2-micro-label" style={{ color: "var(--v2-sky-blue)", fontWeight: 700, marginTop: "8px" }}>
+            <div className="v2-micro-label" style={{ color: "var(--v2-brand-orange)", fontWeight: 800, background: "rgba(255,107,0,0.08)", padding: "6px 14px", borderRadius: "8px", alignSelf: "flex-start" }}>
               Patient ID: {user.patientId || user.username}
             </div>
           </div>
 
           <div className="v2-hero__right">
-            <div className="v2-flowchart">
-              <span className="v2-micro-label" style={{ color: "#FFFFFF", opacity: 0.6, alignSelf: "center", marginBottom: "4px" }}>
-                WhatsApp Connection Flow
-              </span>
+            <div className="v2-journey-container">
 
-              <div className="v2-flowchart__step">
-                <div className="v2-flowchart__icon-wrapper v2-flowchart__icon-whatsapp">💬</div>
-                <div className="v2-flowchart__text">
-                  <span className="v2-flowchart__title">Send Message</span>
-                  <span className="v2-flowchart__desc">"Mera BP 120/80 hai"</span>
+              <div className="v2-journey-step">
+                <div className="v2-journey-card v2-journey-card--whatsapp">
+                  <span className="v2-journey-label">💬 Step 1: Send WhatsApp Message</span>
+                  <div className="v2-journey-val">"Mera BP 120/80 hai"</div>
                 </div>
               </div>
 
-              <div className="v2-flowchart__arrow">↓</div>
+              <div className="v2-journey-connector"></div>
 
-              <div className="v2-flowchart__step">
-                <div className="v2-flowchart__icon-wrapper v2-flowchart__icon-ai">✦</div>
-                <div className="v2-flowchart__text">
-                  <span className="v2-flowchart__title">AI Extraction</span>
-                  <span className="v2-flowchart__desc">Extracts & parses measurements</span>
+              <div className="v2-journey-step">
+                <div className="v2-journey-card v2-journey-card--ai">
+                  <span className="v2-journey-label">✦ Step 2: AI Clinical Parsing</span>
+                  <div className="v2-journey-val">Extracting Blood Pressure...</div>
                 </div>
               </div>
 
-              <div className="v2-flowchart__arrow">↓</div>
+              <div className="v2-journey-connector-2"></div>
 
-              <div className="v2-flowchart__step">
-                <div className="v2-flowchart__icon-wrapper v2-flowchart__icon-record">📊</div>
-                <div className="v2-flowchart__text">
-                  <span className="v2-flowchart__title">Structured Record</span>
-                  <span className="v2-flowchart__desc">Instantly cataloged securely</span>
+              <div className="v2-journey-step">
+                <div className="v2-journey-card v2-journey-card--record">
+                  <span className="v2-journey-label">📊 Step 3: Structured Catalog</span>
+                  <div className="v2-journey-val">BP: 120/80 mmHg logged safely</div>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -474,10 +469,10 @@ const DashboardViewV2: React.FC<DashboardViewV2Props> = ({
       <section className="v2-intel-section" aria-labelledby="v2-intel-heading">
         <div className="v2-intel-header">
           <div>
-            <h2 id="v2-intel-heading" className="v2-intel-title" style={{ fontSize: "24px", fontWeight: 700 }}>
+            <h2 id="v2-intel-heading" className="v2-intel-title">
               🧠 30-Day Factual Health Summary
             </h2>
-            <p className="v2-supporting-copy" style={{ color: "#cbd5e1", marginTop: "4px" }}>
+            <p className="v2-supporting-copy" style={{ color: "var(--v2-text-muted)", marginTop: "4px" }}>
               Descriptive longitudinal overview computed directly from your logged parameters.
             </p>
           </div>
@@ -505,38 +500,40 @@ const DashboardViewV2: React.FC<DashboardViewV2Props> = ({
             {hasAnyFactualSummaryData ? (
               factualSummaryBlocks.map((block) => {
                 const colorsMap: Record<string, string> = {
-                  blood_sugar: "var(--v2-vivid-orange)",
-                  blood_pressure: "var(--v2-electric-blue)",
-                  heart_rate: "var(--v2-coral-rose)",
-                  body_temperature: "var(--v2-warm-yellow)",
-                  weight: "var(--v2-royal-purple)"
+                  blood_sugar: "var(--v2-brand-orange)",
+                  blood_pressure: "var(--v2-brand-sky)",
+                  heart_rate: "var(--v2-brand-pink)",
+                  body_temperature: "var(--v2-brand-amber)",
+                  weight: "var(--v2-brand-purple)"
                 };
-                const col = colorsMap[block.key] || "var(--v2-electric-blue)";
+                const col = colorsMap[block.key] || "var(--v2-brand-orange)";
 
                 return (
                   <div
                     key={block.key}
                     style={{
-                      background: "rgba(255, 255, 255, 0.05)",
-                      borderLeft: `4px solid ${col}`,
-                      padding: "20px 24px",
-                      borderRadius: "12px",
-                      border: "1px solid rgba(255, 255, 255, 0.05)",
-                      borderLeftWidth: "4px"
+                      background: "#FFFFFF",
+                      borderLeft: `5px solid ${col}`,
+                      padding: "22px 26px",
+                      borderRadius: "16px",
+                      borderTop: "1px solid #EAE5D9",
+                      borderRight: "1px solid #EAE5D9",
+                      borderBottom: "1px solid #EAE5D9",
+                      boxShadow: "var(--shadow-sm)"
                     }}
                   >
                     <strong style={{ color: col, display: "block", marginBottom: "6px" }} className="v2-micro-label">
                       {block.label}
                     </strong>
-                    <p style={{ margin: 0, color: "#f8fafc", fontSize: "14px", lineHeight: "1.5", fontStyle: block.hasData ? "normal" : "italic" }}>
+                    <p style={{ margin: 0, color: "var(--v2-text-dark)", fontSize: "14px", lineHeight: "1.6", fontStyle: block.hasData ? "normal" : "italic", fontWeight: 500 }}>
                       {block.text}
                     </p>
                   </div>
                 );
               })
             ) : (
-              <div style={{ padding: "32px", textAlign: "center", background: "rgba(255,255,255,0.02)", borderRadius: "12px", border: "1px dashed rgba(255,255,255,0.1)" }}>
-                <span style={{ color: "#94a3b8", fontStyle: "italic" }}>No parameters logged in the last 30 days.</span>
+              <div style={{ padding: "32px", textAlign: "center", background: "#FFFFFF", borderRadius: "16px", border: "1px dashed #EAE5D9" }}>
+                <span style={{ color: "var(--v2-text-muted)", fontStyle: "italic" }}>No parameters logged in the last 30 days.</span>
               </div>
             )}
           </div>
@@ -545,27 +542,36 @@ const DashboardViewV2: React.FC<DashboardViewV2Props> = ({
             {factualSummaryBlocks.map((block) => {
               const isClickable = block.hasData;
               const colorsMap: Record<string, string> = {
-                blood_sugar: "var(--v2-vivid-orange)",
-                blood_pressure: "var(--v2-electric-blue)",
-                heart_rate: "var(--v2-coral-rose)",
-                body_temperature: "var(--v2-warm-yellow)",
-                weight: "var(--v2-royal-purple)"
+                blood_sugar: "var(--v2-brand-orange)",
+                blood_pressure: "var(--v2-brand-sky)",
+                heart_rate: "var(--v2-brand-pink)",
+                body_temperature: "var(--v2-brand-amber)",
+                weight: "var(--v2-brand-purple)"
               };
-              const col = colorsMap[block.key] || "var(--v2-electric-blue)";
+              const col = colorsMap[block.key] || "var(--v2-brand-orange)";
+
+              const layoutClassesMap: Record<string, string> = {
+                blood_sugar: "v2-intel-card--sugar",
+                blood_pressure: "v2-intel-card--bp",
+                heart_rate: "v2-intel-card--heart",
+                body_temperature: "v2-intel-card--temp",
+                weight: "v2-intel-card--weight"
+              };
+              const layoutClass = layoutClassesMap[block.key] || "";
 
               return (
                 <div
                   key={block.key}
                   onClick={() => isClickable && setSelectedDrilldownBlock(block)}
-                  className={`v2-intel-card ${isClickable ? "clickable-report-card" : ""}`}
+                  className={`v2-intel-card ${layoutClass} ${isClickable ? "clickable-report-card" : ""}`}
                   style={{
-                    borderLeft: `4px solid ${col}`,
+                    borderLeft: `5px solid ${col}`,
                     cursor: isClickable ? "pointer" : "default"
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                     <strong className="v2-micro-label" style={{ color: col }}>{block.label}</strong>
-                    {isClickable && <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)" }}>(Log View)</span>}
+                    {isClickable && <span style={{ fontSize: "11px", color: "var(--v2-text-muted)", fontWeight: 600 }}>(Log View)</span>}
                   </div>
 
                   {block.hasData && block.metrics ? (
@@ -588,7 +594,7 @@ const DashboardViewV2: React.FC<DashboardViewV2Props> = ({
                       </div>
                     </div>
                   ) : (
-                    <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "13px", fontStyle: "italic", marginTop: "12px" }}>
+                    <span style={{ color: "var(--v2-text-muted)", fontSize: "13px", fontStyle: "italic", marginTop: "12px" }}>
                       No logs registered
                     </span>
                   )}
@@ -598,30 +604,21 @@ const DashboardViewV2: React.FC<DashboardViewV2Props> = ({
           </div>
         )}
 
-        <div style={{
-          marginTop: "32px",
-          padding: "20px",
-          background: "rgba(255, 255, 255, 0.05)",
-          borderRadius: "12px",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
-          fontSize: "12px",
-          color: "#cbd5e1",
-          lineHeight: "1.5"
-        }}>
-          ⚠️ <strong style={{ color: "#fca5a5" }}>Factual Clinical Disclaimer:</strong> This summary is automatically derived strictly from recorded patient-reported values. It is descriptive and factual only. It does not diagnose disease, recommend medication, change treatment, claim medical certainty, or make clinical decisions. Any clinical adjustments must be made by the licensed practitioner.
+        <div className="v2-disclaimer-strip">
+          ⚠️ <strong style={{ color: "#9A3412" }}>Factual Clinical Disclaimer:</strong> This summary is automatically derived strictly from recorded patient-reported values. It is descriptive and factual only. It does not diagnose disease, recommend medication, change treatment, claim medical certainty, or make clinical decisions. Any clinical adjustments must be made by the licensed practitioner.
         </div>
       </section>
 
       {/* SECTION 5: LAB RESULTS */}
       <section className="v2-labs" aria-labelledby="v2-labs-heading">
-        <span className="v2-labs__badge-band">🧪 SPECIMEN FINDINGS LAB V2</span>
+        <span className="v2-labs__badge-band">🔬 OFFICIAL CLINICAL SPECIMEN FINDINGS</span>
 
         <div className="v2-labs-header">
           <div>
             <h2 id="v2-labs-heading" className="v2-section-heading" style={{ margin: 0 }}>
               Your Lab Results
             </h2>
-            <p className="v2-supporting-copy" style={{ color: "var(--v2-deep-navy)", opacity: 0.6, marginTop: "4px" }}>
+            <p className="v2-supporting-copy" style={{ color: "var(--v2-text-muted)", opacity: 0.8, marginTop: "4px" }}>
               Laboratory parameters securely parsed from physical test documents.
             </p>
           </div>
@@ -630,18 +627,24 @@ const DashboardViewV2: React.FC<DashboardViewV2Props> = ({
             <button
               onClick={() => onTabChange("trends")}
               style={{
-                background: "rgba(109, 40, 217, 0.08)",
-                color: "var(--v2-royal-purple)",
-                border: "none",
+                background: "rgba(139, 92, 246, 0.08)",
+                color: "var(--v2-brand-purple)",
+                border: "1.5px solid var(--v2-brand-purple)",
                 padding: "10px 20px",
                 borderRadius: "10px",
                 fontWeight: 700,
                 fontSize: "13px",
                 cursor: "pointer",
-                transition: "background 0.2s ease"
+                transition: "all 0.2s ease"
               }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(109, 40, 217, 0.15)"}
-              onMouseLeave={e => e.currentTarget.style.background = "rgba(109, 40, 217, 0.08)"}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "var(--v2-brand-purple)";
+                e.currentTarget.style.color = "#FFFFFF";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "rgba(139, 92, 246, 0.08)";
+                e.currentTarget.style.color = "var(--v2-brand-purple)";
+              }}
             >
               View All Observations →
             </button>
@@ -649,16 +652,16 @@ const DashboardViewV2: React.FC<DashboardViewV2Props> = ({
         </div>
 
         {isLabsLoading ? (
-          <div style={{ padding: "24px", textAlign: "center", color: "var(--v2-deep-navy)", opacity: 0.5, fontStyle: "italic" }}>
+          <div style={{ padding: "24px", textAlign: "center", color: "var(--v2-text-muted)", opacity: 0.5, fontStyle: "italic" }}>
             Loading lab findings...
           </div>
         ) : hasLabsError ? (
-          <div style={{ padding: "24px", textAlign: "center", color: "var(--v2-coral-rose)", fontWeight: 600 }}>
+          <div style={{ padding: "24px", textAlign: "center", color: "var(--v2-brand-pink)", fontWeight: 600 }}>
             Failed to retrieve laboratory records.
           </div>
         ) : labObservations.length === 0 ? (
-          <div style={{ padding: "32px", textAlign: "center", border: "1px dashed rgba(16,27,54,0.1)", borderRadius: "12px" }}>
-            <span style={{ color: "var(--v2-deep-navy)", opacity: 0.4, fontStyle: "italic" }}>No laboratory results parsed yet.</span>
+          <div style={{ padding: "32px", textAlign: "center", border: "1px dashed #EAE5D9", borderRadius: "16px" }}>
+            <span style={{ color: "var(--v2-text-muted)", opacity: 0.6, fontStyle: "italic" }}>No laboratory results parsed yet.</span>
           </div>
         ) : (
           <div className="v2-labs-container">
@@ -668,28 +671,20 @@ const DashboardViewV2: React.FC<DashboardViewV2Props> = ({
               return (
                 <div key={idx} className="v2-lab-item">
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <span className="v2-micro-label" style={{ opacity: 0.5 }}>
+                    <span className="v2-micro-label" style={{ opacity: 0.5, color: "var(--v2-text-muted)" }}>
                       Date: {new Date(obs.specimenDate || obs.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                     </span>
-                    <strong style={{ fontSize: "18px", color: "var(--v2-deep-navy)", fontWeight: 700 }}>
+                    <strong style={{ fontSize: "18px", color: "var(--v2-text-dark)", fontWeight: 700 }}>
                       {obs.testName}
                     </strong>
                   </div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                    <strong style={{ fontSize: "20px", color: "var(--v2-deep-navy)", fontWeight: 800 }}>
+                    <strong style={{ fontSize: "20px", color: "var(--v2-text-dark)", fontWeight: 800 }}>
                       {obs.value} <span style={{ fontSize: "14px", opacity: 0.6, fontWeight: 500 }}>{obs.unit}</span>
                     </strong>
                     {obs.flag && (
-                      <span className={isAbnormal ? "v2-lab-item__badge-abnormal" : ""} style={{
-                        padding: "4px 10px",
-                        borderRadius: "4px",
-                        background: isAbnormal ? "rgba(244, 63, 94, 0.1)" : "rgba(37,99,235,0.08)",
-                        color: isAbnormal ? "var(--v2-coral-rose)" : "var(--v2-electric-blue)",
-                        fontWeight: 700,
-                        fontSize: "12px",
-                        textTransform: "uppercase"
-                      }}>
+                      <span className={isAbnormal ? "v2-lab-item__badge-abnormal" : "v2-lab-item__badge-normal"}>
                         {obs.flag}
                       </span>
                     )}
