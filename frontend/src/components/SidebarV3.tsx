@@ -109,9 +109,12 @@ const SidebarV3: React.FC<SidebarV3Props> = ({
           {!isCollapsed && <span className="sidebar__brand-name">MediFlowAI</span>}
         </div>
         {!isCollapsed && (
-          <span className="sidebar__role-context">
-            AI Health • WhatsApp Connected
-          </span>
+          <div className="sidebar__role-context" style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px", border: "none", background: "transparent", padding: 0 }}>
+            <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: "var(--v3-brand-green)" }}></span>
+            <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.05em", color: "var(--v3-text-muted)", textTransform: "uppercase" }}>AI Health</span>
+            <span style={{ color: "var(--v3-border-subtle)", fontSize: "10px" }}>•</span>
+            <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.05em", color: "var(--v3-brand-green)", textTransform: "uppercase" }}>WhatsApp Connected</span>
+          </div>
         )}
       </div>
 
