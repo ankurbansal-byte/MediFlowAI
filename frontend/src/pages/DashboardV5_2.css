@@ -1,0 +1,167 @@
+@import "./DashboardV5.css";
+
+/* V5.2 OVERRIDES */
+:root {
+  --v52-header-bg: #FF8A00;
+  --v52-header-text: #FFFFFF;
+  --v52-avatar-bg: #FFFFFF;
+  --v52-avatar-text: #FF8A00;
+}
+
+/* Page Background overrides matching V5 cream/ivory theme */
+.dashboard-wrapper.dashboard--v5_2 {
+  background: var(--v5-bg-cream) !important;
+  background-color: var(--v5-bg-cream) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .dashboard {
+  background: var(--v5-bg-cream) !important;
+  background-color: var(--v5-bg-cream) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .dashboard__content {
+  background: var(--v5-bg-cream) !important;
+  background-color: var(--v5-bg-cream) !important;
+}
+
+/* Sidebar V5.2 overrides to inherit Sidebar V5 clean look */
+.dashboard-wrapper.dashboard--v5_2 .sidebar {
+  background: var(--v5-bg-ivory) !important;
+  border-right: 1.5px solid var(--v5-border-subtle) !important;
+  color: var(--v5-text-muted) !important;
+  box-shadow: 4px 0 24px rgba(107, 100, 93, 0.03) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .sidebar .sidebar__brand-container {
+  border-bottom: 1px solid var(--v5-border-subtle) !important;
+  padding: 24px 20px 20px 20px !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .sidebar .sidebar__brand-name {
+  color: var(--v5-text-dark) !important;
+  font-weight: 600 !important;
+  font-size: 21px !important;
+  letter-spacing: -0.02em !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .sidebar .sidebar__brand-mark {
+  background: var(--v5-brand-orange) !important;
+  color: var(--v5-bg-ivory) !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  font-size: 18px !important;
+  box-shadow: 0 2px 8px rgba(255, 122, 0, 0.15) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .sidebar .sidebar__link {
+  color: var(--v5-text-muted) !important;
+  border-radius: 8px !important;
+  margin: 4px 12px !important;
+  padding: 10px 14px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  background: transparent !important;
+  border-left: none !important;
+  box-shadow: none !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .sidebar .sidebar__link .sidebar__icon,
+.dashboard-wrapper.dashboard--v5_2 .sidebar .sidebar__icon {
+  stroke: var(--v5-text-muted) !important;
+  color: var(--v5-text-muted) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .sidebar .sidebar__link:hover {
+  background: var(--v5-bg-cream) !important;
+  color: var(--v5-text-dark) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .sidebar .sidebar__link:hover .sidebar__icon {
+  stroke: var(--v5-text-dark) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .sidebar .sidebar__link--active {
+  background: #FFF0E0 !important;
+  color: var(--v5-brand-orange) !important;
+  font-weight: 600 !important;
+  border-left: 3px solid var(--v5-brand-orange) !important;
+  border-radius: 0 8px 8px 0 !important;
+  margin-left: 0 !important;
+  box-shadow: none !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .sidebar .sidebar__link--active .sidebar__icon {
+  stroke: var(--v5-brand-orange) !important;
+}
+
+/* Compact top header visual refinement (Padding reduced and Orange Background applied) */
+.dashboard-wrapper.dashboard--v5_2 .patient-top-header {
+  background: var(--v52-header-bg) !important;
+  background-color: var(--v52-header-bg) !important;
+  border: none !important;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.1) !important;
+  margin-bottom: 24px !important;
+  padding: 8px 24px !important; /* Reduced height/padding exactly as marked */
+  border-radius: 12px !important; /* Premium rounded bar look */
+  color: var(--v52-header-text) !important;
+  box-shadow: var(--v5-shadow-md) !important;
+}
+
+/* Make sure header text elements are high-contrast white */
+.dashboard-wrapper.dashboard--v5_2 .breadcrumb-current {
+  color: var(--v52-header-text) !important;
+  font-weight: 600 !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .patient-top-header__support-link {
+  color: var(--v52-header-text) !important;
+  font-weight: 600 !important;
+  opacity: 0.9 !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .patient-top-header__support-link:hover {
+  opacity: 1 !important;
+  text-decoration: underline !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .account-trigger-name {
+  color: var(--v52-header-text) !important;
+  font-weight: 600 !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .account-trigger-chevron {
+  color: var(--v52-header-text) !important;
+}
+
+/* Custom dropdown trigger and avatar styled beautifully to match orange header theme */
+.dashboard-wrapper.dashboard--v5_2 .account-dropdown-trigger {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+  padding: 4px 10px !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .account-dropdown-trigger:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_2 .account-avatar {
+  background-color: var(--v52-avatar-bg) !important;
+  color: var(--v52-avatar-text) !important;
+  border-radius: 6px !important; /* rounded square avatar matching theme */
+  width: 28px !important;
+  height: 28px !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  display: grid !important;
+  place-items: center !important;
+}
