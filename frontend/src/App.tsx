@@ -141,6 +141,9 @@ function App() {
     const isV4 = window.location.pathname === "/design-preview/home-v4" ||
                  window.location.pathname === "/patient/home-v4" ||
                  new URLSearchParams(window.location.search).get("view") === "design-preview-home-v4";
+    const isV5_1 = window.location.pathname === "/design-preview/home-v5.1" ||
+                   window.location.pathname === "/patient/home-v5.1" ||
+                   new URLSearchParams(window.location.search).get("view") === "design-preview-home-v5.1";
     const isV5 = window.location.pathname === "/design-preview/home-v5" ||
                  window.location.pathname === "/patient/home-v5" ||
                  new URLSearchParams(window.location.search).get("view") === "design-preview-home-v5";
@@ -156,7 +159,7 @@ function App() {
     const isSettingsV5 = window.location.pathname === "/design-preview/settings-v5" ||
                          window.location.pathname === "/patient/settings-v5" ||
                          new URLSearchParams(window.location.search).get("view") === "design-preview-settings-v5";
-    return <Dashboard user={user} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} isV2={isV2} isV3={isV3} isV4={isV4} isV5={isV5} isRecordsV5={isRecordsV5} isInsightsV5={isInsightsV5} isProfileV5={isProfileV5} isSettingsV5={isSettingsV5} />;
+    return <Dashboard user={user} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} isV2={isV2} isV3={isV3} isV4={isV4} isV5={isV5} isV5_1={isV5_1} isRecordsV5={isRecordsV5} isInsightsV5={isInsightsV5} isProfileV5={isProfileV5} isSettingsV5={isSettingsV5} />;
   }
 
   // Guest Routing
