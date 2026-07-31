@@ -323,6 +323,10 @@ const AIInsightsViewV5_2: React.FC<AIInsightsViewV5_2Props> = ({
             <p className="v52-hero-body">
               Understand your physiological trends, review changes over time, and prepare structured talking points for your doctor. Just keep logging your vitals on WhatsApp to enrich your medical assessment.
             </p>
+            <div className="v52-hero-whatsapp-indicator" style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
+              <span className="v52-whatsapp-dot" style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "var(--v5-brand-green)", boxShadow: "0 0 8px var(--v5-brand-green)" }}></span>
+              <span className="v52-whatsapp-text" style={{ fontSize: "14px", fontWeight: 600, color: "var(--v5-brand-green)" }}>WhatsApp AI Insights Channel Active</span>
+            </div>
             <div className="v52-hero-id-badge">
               Clinical Integrity Audited
             </div>
@@ -341,8 +345,6 @@ const AIInsightsViewV5_2: React.FC<AIInsightsViewV5_2Props> = ({
         </div>
       </section>
 
-      <EditorialTransition text="“Your data is not just numbers; it is the physical testimony of your daily choices.”" />
-
       {/* SECTION 2: METRIC SELECTOR */}
       <section className="v52-section-panel v52-bg-summary-panel" aria-labelledby="v52-selector-heading">
         <h2 id="v52-selector-heading" className="v52-panel-heading" style={{ margin: 0 }}>
@@ -352,7 +354,7 @@ const AIInsightsViewV5_2: React.FC<AIInsightsViewV5_2Props> = ({
           Choose a vital parameter below to analyze its complete longitudinal timeline and retrieve clinical insights.
         </p>
 
-        <div className="v52-metric-buttons-container" style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+        <div className="v52-metric-buttons-container">
           {(Object.keys(parameterConfigs) as HealthParameter[]).map((key) => {
             const config = parameterConfigs[key];
             const isSelected = selectedParameter === key;
@@ -364,43 +366,12 @@ const AIInsightsViewV5_2: React.FC<AIInsightsViewV5_2Props> = ({
                 onClick={() => setSelectedParameter(key)}
                 type="button"
                 className={`v52-param-tab-btn ${isSelected ? "v52-param-tab-btn--active" : ""}`}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  padding: "12px 20px",
-                  borderRadius: "24px",
-                  border: isSelected ? "2.5px solid var(--v52-orange)" : "1.5px solid var(--v5-border-subtle)",
-                  background: isSelected ? "#FFF0E0" : "var(--v5-bg-white)",
-                  color: isSelected ? "var(--v52-orange)" : "var(--v5-text-dark)",
-                  fontWeight: 700,
-                  fontSize: "13px",
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                  outline: "none"
-                }}
               >
-                <span style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  background: config.iconBg,
-                  fontSize: "14px"
-                }}>
+                <span className="v52-param-tab-icon" style={{ background: config.iconBg }}>
                   {config.icon}
                 </span>
                 <span>{config.label}</span>
-                <span style={{
-                  fontSize: "11px",
-                  background: isSelected ? "var(--v52-orange)" : "var(--v5-text-muted)",
-                  color: "white",
-                  padding: "2px 8px",
-                  borderRadius: "10px",
-                  fontWeight: 700
-                }}>
+                <span className="v52-param-tab-badge">
                   {count}
                 </span>
               </button>
@@ -447,34 +418,22 @@ const AIInsightsViewV5_2: React.FC<AIInsightsViewV5_2Props> = ({
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
 
             {/* Main Insights Panel */}
-            <div style={{
-              background: "var(--v5-bg-white)",
-              border: "1.5px solid var(--v5-border-subtle)",
-              borderRadius: "16px",
-              padding: "32px",
-              boxShadow: "var(--v5-shadow-md)",
+            <div className="v52-insights-panel-inner" style={{
               borderTop: `6px solid ${parameterConfigs[selectedParameter].text}`
             }}>
 
               {/* Header with status */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: "12px", borderBottom: "1.5px solid var(--v5-bg-cream)", paddingBottom: "16px", marginBottom: "24px" }}>
+              <div className="v52-insights-header">
                 <div>
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: parameterConfigs[selectedParameter].text, textTransform: "uppercase", letterSpacing: "0.08em" }}>Personalized Guidance</span>
-                  <h3 style={{ margin: "4px 0 0 0", fontSize: "20px", fontWeight: 600, color: "var(--v5-text-dark)" }}>
+                  <span className="v52-insights-eyebrow-text" style={{ color: parameterConfigs[selectedParameter].text }}>
+                    Personalized Guidance
+                  </span>
+                  <h3 className="v52-insights-title">
                     ✦ {parameterConfigs[selectedParameter].label} Summary
                   </h3>
                 </div>
 
-                <span style={{
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  padding: "6px 14px",
-                  borderRadius: "20px",
-                  background: clinicalAnalysis.alertLevel === "normal" ? "#D1FAE5" : clinicalAnalysis.alertLevel === "warning" ? "#FFF0E0" : "#FFE4E6",
-                  color: clinicalAnalysis.alertLevel === "normal" ? "#065F46" : clinicalAnalysis.alertLevel === "warning" ? "var(--v52-orange)" : "var(--v52-rose)",
-                  border: `1px solid ${clinicalAnalysis.alertLevel === "normal" ? "#A7F3D0" : clinicalAnalysis.alertLevel === "warning" ? "#FFE5CC" : "#FECDD3"}`
-                }}>
+                <span className={`v52-insights-status-badge ${clinicalAnalysis.alertLevel}`}>
                   {clinicalAnalysis.alertLevel} status
                 </span>
               </div>
@@ -488,37 +447,22 @@ const AIInsightsViewV5_2: React.FC<AIInsightsViewV5_2Props> = ({
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                     {clinicalAnalysis.metrics.map((m, idx) => (
-                      <div key={idx} style={{
-                        background: "var(--v5-bg-cream)",
-                        border: "1.5px solid var(--v5-border-subtle)",
-                        borderRadius: "12px",
-                        padding: "16px",
-                        boxShadow: "var(--v5-shadow-sm)"
-                      }}>
-                        <span style={{ fontSize: "11px", color: "var(--v5-text-muted)", display: "block", marginBottom: "4px", fontWeight: 600 }}>
+                      <div key={idx} className="v52-insights-fact-card">
+                        <span className="v52-insights-fact-label">
                           {m.label}
                         </span>
-                        <strong style={{ fontSize: "16px", color: "var(--v5-text-dark)", fontWeight: 700 }}>
+                        <strong className="v52-insights-fact-value">
                           {m.value}
                         </strong>
                       </div>
                     ))}
                   </div>
 
-                  <div style={{
-                    background: "rgba(16, 185, 129, 0.02)",
-                    border: "1.5px dashed var(--v5-border-subtle)",
-                    borderRadius: "12px",
-                    padding: "16px",
-                    marginTop: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px"
-                  }}>
+                  <div className="v52-insights-sampled-container">
                     <span style={{ fontSize: "20px" }}>📈</span>
                     <div style={{ display: "flex", flexDirection: "column" }}>
-                      <span style={{ fontSize: "11px", color: "var(--v5-text-muted)", fontWeight: 600 }}>Total Records Sampled</span>
-                      <strong style={{ fontSize: "14px", color: "var(--v5-text-dark)" }}>{clinicalAnalysis.readingCount} entries</strong>
+                      <span className="v52-insights-sampled-label">Total Records Sampled</span>
+                      <strong className="v52-insights-sampled-value">{clinicalAnalysis.readingCount} entries</strong>
                     </div>
                   </div>
                 </div>
@@ -526,12 +470,10 @@ const AIInsightsViewV5_2: React.FC<AIInsightsViewV5_2Props> = ({
                 {/* Right Side: Narrative Sections */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
-                  <div style={{
+                  <div className="v52-insights-narrative-primary" style={{
                     background: parameterConfigs[selectedParameter].tint,
                     border: `1.5px solid ${parameterConfigs[selectedParameter].border}`,
                     borderLeft: `5px solid ${parameterConfigs[selectedParameter].text}`,
-                    borderRadius: "12px",
-                    padding: "16px 20px"
                   }}>
                     <h5 style={{ margin: "0 0 6px 0", fontSize: "14px", fontWeight: 600, color: "var(--v5-text-dark)" }}>
                       {clinicalAnalysis.title1}
@@ -541,13 +483,7 @@ const AIInsightsViewV5_2: React.FC<AIInsightsViewV5_2Props> = ({
                     </p>
                   </div>
 
-                  <div style={{
-                    background: "var(--v5-bg-cream)",
-                    border: "1.5px solid var(--v5-border-subtle)",
-                    borderLeft: `5px solid var(--v5-text-muted)`,
-                    borderRadius: "12px",
-                    padding: "16px 20px"
-                  }}>
+                  <div className="v52-insights-narrative-secondary">
                     <h5 style={{ margin: "0 0 6px 0", fontSize: "14px", fontWeight: 600, color: "var(--v5-text-dark)" }}>
                       {clinicalAnalysis.title2}
                     </h5>
@@ -566,8 +502,6 @@ const AIInsightsViewV5_2: React.FC<AIInsightsViewV5_2Props> = ({
         )}
       </section>
 
-      <EditorialTransition text="“Clinical dialogue is the core of precision medicine. Prepare structured logs to partner with your physician.”" />
-
       {/* SECTION 4: DOCTOR TALKING POINTS (SOFT GREEN PANEL) */}
       <section className="v52-section-panel v52-bg-labs-panel" aria-labelledby="v52-talking-heading">
         <div className="v52-labs-layout-grid">
@@ -584,20 +518,10 @@ const AIInsightsViewV5_2: React.FC<AIInsightsViewV5_2Props> = ({
             </p>
 
             {clinicalAnalysis ? (
-              <div style={{
-                background: "var(--v5-bg-white)",
-                border: "1.5px solid var(--v5-border-subtle)",
-                borderRadius: "16px",
-                padding: "24px 32px",
-                boxShadow: "var(--v5-shadow-sm)",
-                borderLeft: "6px solid var(--v52-teal)",
-                display: "flex",
-                gap: "16px",
-                alignItems: "flex-start"
-              }}>
+              <div className="v52-insights-doctor-panel">
                 <span style={{ fontSize: "24px", marginTop: "2px" }}>🩺</span>
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <p style={{ margin: 0, fontSize: "13.5px", lineHeight: "1.5", color: "var(--v5-text-dark)", fontWeight: 500 }}>
+                  <p className="v52-insights-doctor-text">
                     {clinicalAnalysis.content3}
                   </p>
                 </div>
@@ -619,16 +543,7 @@ const AIInsightsViewV5_2: React.FC<AIInsightsViewV5_2Props> = ({
       </section>
 
       {/* Advisory Note Footer */}
-      <div style={{
-        padding: "16px 20px",
-        background: "rgba(0, 0, 0, 0.03)",
-        border: "1px solid var(--v5-border-subtle)",
-        borderRadius: "12px",
-        fontSize: "12px",
-        color: "var(--v5-text-muted)",
-        lineHeight: "1.5",
-        marginTop: "16px"
-      }}>
+      <div className="v52-insights-disclaimer-note">
         ⚠️ <strong>Clinical Advisory Disclaimer:</strong> Automated analysis is strictly calculated using a rule-based algorithm and is intended for care coordination and personal support only. It does not replace clinical consultation, professional diagnosis, or prescriptive medical advice.
       </div>
 
