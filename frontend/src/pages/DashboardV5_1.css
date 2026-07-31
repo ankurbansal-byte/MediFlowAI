@@ -1,0 +1,341 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap');
+@import "./DashboardV5.css";
+
+/* V5.1 OVERRIDES */
+:root {
+  --v51-bg-page: #FFF8EF;
+  --v51-sidebar-bg: #FFF3E2;
+  --v51-sidebar-border: #F1DFC7;
+  --v51-sidebar-hover: #FFE7C2;
+  --v51-sidebar-active: #FFD79A;
+
+  --v51-hero-bg: #FFFDF8;
+  --v51-btn-orange: #FF8A00;
+  --v51-avatar-green: #25D366;
+  --v51-avatar-border: #F3DFC5;
+  --v51-manual-btn: #25D366;
+
+  /* Lab & Insights backgrounds */
+  --v51-bg-lab: #FFF7E8;
+  --v51-bg-ai: #F5EEFF;
+  --v51-bg-trends: #FFF3E8;
+}
+
+/* 1. PAGE BACKGROUND OVERRIDES */
+.dashboard-wrapper.dashboard--v5_1 {
+  background: var(--v51-bg-page) !important;
+  background-color: var(--v51-bg-page) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .dashboard {
+  background: var(--v51-bg-page) !important;
+  background-color: var(--v51-bg-page) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .dashboard__content {
+  background: var(--v51-bg-page) !important;
+  background-color: var(--v51-bg-page) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .patient-top-header {
+  background: var(--v51-bg-page) !important;
+  background-color: var(--v51-bg-page) !important;
+  border-bottom: 1.5px solid #F3DFC5 !important;
+  margin-bottom: 24px !important;
+  padding: 16px 24px !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .patient-top-header__breadcrumb {
+  background-color: transparent !important;
+}
+
+/* 2. SIDEBAR OVERRIDES - OVERRIDING BOTH .dashboard--patient GRADIENTS AND COLORS */
+.dashboard-wrapper.dashboard--v5_1 .sidebar {
+  background: var(--v51-sidebar-bg) !important;
+  background-color: var(--v51-sidebar-bg) !important;
+  background-image: none !important;
+  border-right: 1.5px solid var(--v51-sidebar-border) !important;
+  box-shadow: 4px 0 24px rgba(107, 100, 93, 0.02) !important;
+  color: var(--v5-text-dark) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar__brand-container {
+  border-bottom: 1px solid var(--v51-sidebar-border) !important;
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar__brand-name {
+  color: var(--v5-text-dark) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar__brand-mark {
+  background: #25D366 !important;
+  color: #FFFFFF !important;
+  border-radius: 6px !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar__role-context {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: var(--v5-text-muted) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar__collapse-toggle {
+  background: var(--v51-sidebar-bg) !important;
+  background-color: var(--v51-sidebar-bg) !important;
+  border: 1px solid var(--v51-sidebar-border) !important;
+  color: var(--v5-text-dark) !important;
+  font-weight: 600 !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar__collapse-toggle:hover {
+  background: var(--v51-sidebar-hover) !important;
+  background-color: var(--v51-sidebar-hover) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar__link {
+  color: var(--v5-text-dark) !important;
+  margin: 4px 12px !important;
+  font-weight: 600 !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar__link .sidebar__icon,
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar__icon {
+  stroke: var(--v5-text-dark) !important;
+  color: var(--v5-text-dark) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar__link:hover {
+  background: var(--v51-sidebar-hover) !important;
+  background-color: var(--v51-sidebar-hover) !important;
+  color: var(--v5-text-dark) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar__link--active {
+  background: var(--v51-sidebar-active) !important;
+  background-color: var(--v51-sidebar-active) !important;
+  color: var(--v5-text-dark) !important;
+  border-left: 3px solid #E28C34 !important; /* warm border */
+  font-weight: 700 !important;
+  padding-left: 11px !important;
+  box-shadow: none !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar__link--active .sidebar__icon {
+  stroke: var(--v5-text-dark) !important;
+  color: var(--v5-text-dark) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar__support {
+  border-top: 1px solid var(--v51-sidebar-border) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar__signout-btn {
+  border: 1px solid var(--v51-sidebar-border) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  color: var(--v5-text-dark) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar__signout-btn:hover {
+  background: var(--v51-sidebar-hover) !important;
+  background-color: var(--v51-sidebar-hover) !important;
+  border-color: #E28C34 !important;
+  color: var(--v5-text-dark) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .sidebar .sidebar--v5-support-card {
+  background: #FFFDF9 !important;
+  background-color: #FFFDF9 !important;
+  border: 1px solid var(--v51-sidebar-border) !important;
+}
+
+/* 3. HERO OVERRIDES */
+.dashboard-wrapper.dashboard--v5_1 .v5-hero-wrapper {
+  background-color: var(--v51-hero-bg) !important;
+  border: 1.5px solid #F3DFC5 !important;
+  border-radius: var(--v5-radius-lg) !important;
+  box-shadow: 0 4px 20px rgba(243, 223, 197, 0.4) !important;
+  padding: 24px !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v5-hero {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+/* 5. PROFILE AREA OVERRIDES */
+.dashboard-wrapper.dashboard--v5_1 .account-dropdown-trigger {
+  background-color: var(--v51-bg-page) !important;
+  border: 1.5px solid var(--v51-avatar-border) !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .account-dropdown-trigger:hover {
+  background-color: #FFF3E2 !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .account-avatar {
+  background-color: var(--v51-avatar-green) !important;
+  color: #FFFFFF !important;
+  border-radius: 6px !important; /* rounded square */
+  width: 32px !important;
+  height: 32px !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+/* 7. MOTIVATIONAL QUOTE OVERRIDES */
+.dashboard-wrapper.dashboard--v5_1 .v5-editorial-text {
+  font-family: 'Dancing Script', 'Caveat', cursive, serif !important;
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  color: #5C4B37 !important;
+  margin: 16px auto !important;
+  text-align: center !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v5-editorial-divider {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v5-editorial-line {
+  background: #EAE3D5 !important;
+  height: 1px !important;
+  flex: 1 !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v5-editorial-props-container {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 16px !important;
+  margin-top: 8px !important;
+  color: #8C7B65 !important;
+}
+
+/* 8. LATEST HEALTH SNAPSHOT OVERRIDES */
+.dashboard-wrapper.dashboard--v5_1 .v5-metric-card .v5-card-affordance {
+  display: none !important; /* Remove View Details / See Trend */
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v5-metric-card {
+  padding-bottom: 24px !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v5-metric-card .v51-snapshot-btn-container {
+  margin-top: 18px !important;
+  width: 100% !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v51-view-more-btn {
+  background-color: var(--v51-btn-orange) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 10px 16px !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  width: 100% !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  text-align: center !important;
+  box-shadow: 0 2px 6px rgba(255, 138, 0, 0.2) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v51-view-more-btn:hover {
+  background-color: #E27B00 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(255, 138, 0, 0.3) !important;
+}
+
+/* 9. YOUR HEALTH AT A GLANCE OVERRIDES */
+.dashboard-wrapper.dashboard--v5_1 .v5-summary-card .v5-action-text {
+  display: none !important; /* Hide old explore arrow */
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v5-summary-card {
+  padding-bottom: 20px !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v5-summary-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(243, 223, 197, 0.5) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v5-summary-card .v51-glance-btn-container {
+  margin-top: 14px !important;
+  border-top: 1px solid rgba(107, 100, 93, 0.08) !important;
+  padding-top: 12px !important;
+  width: 100% !important;
+}
+
+/* 10. TODAY'S HEALTH OVERRIDES */
+.dashboard-wrapper.dashboard--v5_1 .v5-today-box {
+  background-color: #EAF9EE !important;
+  border: 1.5px solid #C2F0CE !important;
+  border-radius: var(--v5-radius-lg) !important;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.05) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v5-today-box .v51-manual-entry-btn {
+  background-color: var(--v51-manual-btn) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 20px !important; /* rounded, premium */
+  padding: 8px 20px !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.25) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v5-today-box .v51-manual-entry-btn:hover {
+  background-color: #1EBD59 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.35) !important;
+}
+
+/* 12. LAB & INSIGHTS CARD BG OVERRIDES */
+.dashboard-wrapper.dashboard--v5_1 .v5-lab-box {
+  background-color: var(--v51-bg-lab) !important;
+  border: 1.5px solid #F3DFC5 !important;
+  border-radius: var(--v5-radius-lg) !important;
+  box-shadow: 0 4px 16px rgba(243, 223, 197, 0.25) !important;
+  padding: 24px !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v5-cta-card.insights {
+  background-color: var(--v51-bg-ai) !important;
+  border: 1.5px solid #DED2F9 !important;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.04) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v5-cta-card.trends {
+  background-color: var(--v51-bg-trends) !important;
+  border: 1.5px solid #F5DFC2 !important;
+  box-shadow: 0 4px 16px rgba(255, 138, 0, 0.04) !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v5-cta-card .v5-cta-btn {
+  background-color: #FFFFFF !important;
+  color: var(--v5-text-dark) !important;
+  border: 1px solid var(--v5-border-subtle) !important;
+  font-weight: 700 !important;
+}
+
+.dashboard-wrapper.dashboard--v5_1 .v5-cta-card .v5-cta-btn:hover {
+  background-color: #FFFDF9 !important;
+  border-color: var(--v5-text-dark) !important;
+}
