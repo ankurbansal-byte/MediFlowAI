@@ -4,7 +4,6 @@ import { type TabType } from "../pages/Dashboard";
 type NavigationItem = {
   label: string;
   tab: TabType | "patients";
-  // SVG stroke paths
   iconSvg: React.ReactNode;
 };
 
@@ -14,10 +13,8 @@ const navigationItems = (_role: string): NavigationItem[] => [
     tab: "dashboard",
     iconSvg: (
       <svg viewBox="0 0 24 24" className="sidebar__icon">
-        <rect x="3" y="3" width="7" height="9" rx="1" />
-        <rect x="14" y="3" width="7" height="5" rx="1" />
-        <rect x="14" y="12" width="7" height="9" rx="1" />
-        <rect x="3" y="16" width="7" height="5" rx="1" />
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" fill="none" />
+        <polyline points="9 22 9 12 15 12 15 22" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" fill="none" />
       </svg>
     ),
   },
@@ -26,7 +23,7 @@ const navigationItems = (_role: string): NavigationItem[] => [
     tab: "trends",
     iconSvg: (
       <svg viewBox="0 0 24 24" className="sidebar__icon">
-        <path d="M3 12h3l3-9 4 18 3-13 1 4h7" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M3 12h3l3-9 4 18 3-13 1 4h7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" fill="none" />
       </svg>
     ),
   },
@@ -35,7 +32,7 @@ const navigationItems = (_role: string): NavigationItem[] => [
     tab: "ai-insights",
     iconSvg: (
       <svg viewBox="0 0 24 24" className="sidebar__icon">
-        <path d="M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5z" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" fill="none" />
       </svg>
     ),
   },
@@ -44,8 +41,8 @@ const navigationItems = (_role: string): NavigationItem[] => [
     tab: "profile",
     iconSvg: (
       <svg viewBox="0 0 24 24" className="sidebar__icon">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="12" cy="7" r="4" />
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" fill="none" />
+        <circle cx="12" cy="7" r="4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" fill="none" />
       </svg>
     ),
   },
@@ -54,8 +51,8 @@ const navigationItems = (_role: string): NavigationItem[] => [
     tab: "settings",
     iconSvg: (
       <svg viewBox="0 0 24 24" className="sidebar__icon">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="12" cy="12" r="3" strokeWidth="2" stroke="currentColor" fill="none" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" fill="none" />
       </svg>
     ),
   },
@@ -81,7 +78,6 @@ const SidebarV5_2: React.FC<SidebarV5_2Props> = ({
   onToggleCollapse,
 }) => {
   const filteredNavigationItems = navigationItems(userRole || "").filter(item => {
-    // Only patients have V5.2 in scope, but we keep fallback logic robust
     if (userRole === "doctor") {
       return (
         item.tab === "dashboard" ||
@@ -109,8 +105,8 @@ const SidebarV5_2: React.FC<SidebarV5_2Props> = ({
           {!isCollapsed && <span className="sidebar__brand-name">MediFlowAI</span>}
         </div>
         {!isCollapsed && (
-          <div className="sidebar__tagline" style={{ fontSize: "11px", fontWeight: 500, color: "var(--v5-text-muted)", marginTop: "4px", lineHeight: "1.3" }}>
-            AI-powered WhatsApp Health Platform
+          <div className="sidebar__tagline" style={{ fontSize: "11px", fontWeight: 600, color: "var(--v52-text-teal)", marginTop: "8px", lineHeight: "1.4", fontStyle: "italic" }}>
+            Intelligent Connected Clinical Care
           </div>
         )}
       </div>
@@ -121,9 +117,9 @@ const SidebarV5_2: React.FC<SidebarV5_2Props> = ({
           className="sidebar__collapse-toggle"
           type="button"
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          style={{ margin: "12px 20px 8px 20px", background: "none", border: "1px solid var(--v5-border-subtle)", borderRadius: "6px", cursor: "pointer", padding: "4px 8px", fontSize: "12px", color: "var(--v5-text-muted)" }}
+          style={{ margin: "12px 20px 8px 20px", background: "none", border: "1px solid var(--v5-border-subtle)", borderRadius: "6px", cursor: "pointer", padding: "6px 12px", fontSize: "12px", color: "var(--v5-text-dark)", fontWeight: "600" }}
         >
-          {isCollapsed ? "»" : "« Collapse"}
+          {isCollapsed ? "▶" : "◀ Collapse"}
         </button>
       )}
 
@@ -209,19 +205,9 @@ const SidebarV5_2: React.FC<SidebarV5_2Props> = ({
               fontSize: "13px",
               transition: "all 0.2s ease",
             }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = "#FFF0E0";
-              e.currentTarget.style.borderColor = "var(--v5-brand-orange)";
-              e.currentTarget.style.color = "var(--v5-brand-orange)";
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = "none";
-              e.currentTarget.style.borderColor = "var(--v5-border-subtle)";
-              e.currentTarget.style.color = "var(--v5-text-dark)";
-            }}
           >
-            <svg viewBox="0 0 24 24" className="sidebar__icon" style={{ stroke: "currentColor", width: "16px", height: "16px" }}>
-              <path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10" strokeLinecap="round" strokeLinejoin="round" />
+            <svg viewBox="0 0 24 24" className="sidebar__icon" style={{ stroke: "currentColor", width: "16px", height: "16px", fill: "none" }}>
+              <path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
             </svg>
             <span>Sign Out</span>
           </button>
