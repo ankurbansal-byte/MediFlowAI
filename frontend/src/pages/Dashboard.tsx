@@ -7,6 +7,7 @@ import SidebarV3 from "../components/SidebarV3";
 import SidebarV4 from "../components/SidebarV4";
 import SidebarV5 from "../components/SidebarV5";
 import SidebarV5_1 from "../components/SidebarV5_1";
+import SidebarV5_2 from "../components/SidebarV5_2";
 import RecordSubmissionModal from "../components/RecordSubmissionModal";
 import DashboardView from "./DashboardView";
 import DashboardViewV2 from "./DashboardViewV2";
@@ -14,6 +15,7 @@ import DashboardViewV3 from "./DashboardViewV3";
 import DashboardViewV4 from "./DashboardViewV4";
 import DashboardViewV5 from "./DashboardViewV5";
 import DashboardViewV5_1 from "./DashboardViewV5_1";
+import DashboardViewV5_2 from "./DashboardViewV5_2";
 import TrendsView from "./TrendsView";
 import TrendsViewV5 from "./TrendsViewV5";
 import AIInsightsView from "./AIInsightsView";
@@ -49,6 +51,7 @@ interface DashboardProps {
   isV4?: boolean;
   isV5?: boolean;
   isV5_1?: boolean;
+  isV5_2?: boolean;
   isRecordsV5?: boolean;
   isInsightsV5?: boolean;
   isProfileV5?: boolean;
@@ -57,7 +60,7 @@ interface DashboardProps {
 
 export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "settings" | "hospital" | "patients" | "doctors" | "visits-admin" | "doctor-visits" | "today-patients" | "my-patients";
 
-const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, isV2 = false, isV3 = false, isV4 = false, isV5 = false, isV5_1 = false, isRecordsV5 = false, isInsightsV5 = false, isProfileV5 = false, isSettingsV5 = false }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, isV2 = false, isV3 = false, isV4 = false, isV5 = false, isV5_1 = false, isV5_2 = false, isRecordsV5 = false, isInsightsV5 = false, isProfileV5 = false, isSettingsV5 = false }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -191,7 +194,32 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
             />
           );
         }
-        return isV5_1 ? (
+        return isV5_2 ? (
+          <DashboardViewV5_2
+            user={user}
+            effectivePatientId={effectivePatientId}
+            selectedPatientOption={selectedPatientOption}
+            summary={summary}
+            timeline={timeline}
+            timelineFilter={timelineFilter}
+            setTimelineFilter={setTimelineFilter}
+            isTimelineLoading={isTimelineLoading}
+            isPatientsLoading={isPatientsLoading}
+            hasSummaryError={hasSummaryError}
+            hasTimelineError={hasTimelineError}
+            bloodSugarStats={bloodSugarStats}
+            bloodPressureStats={bloodPressureStats}
+            heartRateStats={heartRateStats}
+            temperatureStats={temperatureStats}
+            weightStats={weightStats}
+            selectedParameter={selectedParameter}
+            setSelectedParameter={setSelectedParameter}
+            visibleTimeline={visibleTimeline}
+            setIsModalOpen={setIsModalOpen}
+            onTabChange={handleTabChange}
+            setSelectedHistoryDate={setSelectedHistoryDate}
+          />
+        ) : isV5_1 ? (
           <DashboardViewV5_1
             user={user}
             effectivePatientId={effectivePatientId}
@@ -478,7 +506,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
   const hasPatientPanel = user.role === "doctor" && activeTab === "doctor-visits";
 
   return (
-    <div className={`dashboard-wrapper ${isSidebarCollapsed ? "sidebar-collapsed" : ""} ${isV5_1 ? "dashboard--v5_1" : (isV5 || isRecordsV5 || isInsightsV5 || isProfileV5 || isSettingsV5) ? "dashboard--v5" : isV4 ? "dashboard--v4" : isV3 ? "dashboard--v3" : isV2 ? "dashboard--v2" : ""}`}>
+    <div className={`dashboard-wrapper ${isSidebarCollapsed ? "sidebar-collapsed" : ""} ${isV5_2 ? "dashboard--v5_2" : isV5_1 ? "dashboard--v5_1" : (isV5 || isRecordsV5 || isInsightsV5 || isProfileV5 || isSettingsV5) ? "dashboard--v5" : isV4 ? "dashboard--v4" : isV3 ? "dashboard--v3" : isV2 ? "dashboard--v2" : ""}`}>
       {/* Mobile Nav Top Bar Header */}
       <div className="mobile-top-bar">
         <button
@@ -526,7 +554,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
             >
               ✕
             </button>
-            {isV5_1 ? (
+            {isV5_2 ? (
+              <SidebarV5_2
+                onLogout={onLogout}
+                onLogoutConfirmTrigger={() => setIsLogoutModalOpen(true)}
+                userRole={user.role}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+                isCollapsed={isSidebarCollapsed}
+                onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              />
+            ) : isV5_1 ? (
               <SidebarV5_1
                 onLogout={onLogout}
                 onLogoutConfirmTrigger={() => setIsLogoutModalOpen(true)}
@@ -613,7 +651,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
           {user.role === "patient" && (
             <div className="patient-top-header">
               <div className="patient-top-header__breadcrumb">
-                {isV5_1 ? (
+                {(isV5_1 || isV5_2) ? (
                   <span className="breadcrumb-current">Home</span>
                 ) : (
                   <>
@@ -642,7 +680,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
                     aria-label="Account menu"
                   >
                     <div className="account-avatar">
-                      {isV5_1 ? "W" : (user.fullName ? user.fullName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : user.username.slice(0, 2).toUpperCase())}
+                      {(isV5_1 || isV5_2) ? "W" : (user.fullName ? user.fullName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : user.username.slice(0, 2).toUpperCase())}
                     </div>
                     <span className="account-trigger-name">{user.fullName || user.username}</span>
                     <span className="account-trigger-chevron">▼</span>
