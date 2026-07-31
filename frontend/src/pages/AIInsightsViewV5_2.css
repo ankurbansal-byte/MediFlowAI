@@ -84,6 +84,199 @@
   flex-direction: column;
 }
 
+/* AI HEALTH ASSESSMENT CARD SPECIFICS */
+.v52-insights-panel-inner {
+  background: var(--v5-bg-white);
+  border: 1.5px solid var(--v5-border-subtle);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: var(--v5-shadow-md);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+}
+
+.v52-insights-panel-inner:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--v5-shadow-lg);
+}
+
+.v52-insights-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-bottom: 1.5px solid var(--v5-bg-cream);
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.v52-insights-eyebrow-text {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.v52-insights-title {
+  margin: 4px 0 0 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--v5-text-dark);
+}
+
+.v52-insights-status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+}
+
+.v52-insights-status-badge.normal {
+  background: #D1FAE5;
+  color: #065F46;
+  border: 1px solid #A7F3D0;
+}
+
+.v52-insights-status-badge.warning {
+  background: #FFF0E0;
+  color: var(--v52-orange);
+  border: 1px solid #FFE5CC;
+}
+
+.v52-insights-status-badge.alert {
+  background: #FFE4E6;
+  color: var(--v52-rose);
+  border: 1px solid #FECDD3;
+}
+
+/* Fact Card Highlights */
+.v52-insights-fact-card {
+  background: var(--v5-bg-cream);
+  border: 1.5px solid var(--v5-border-subtle);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--v5-shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.v52-insights-fact-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--v5-shadow-md);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.v52-insights-fact-label {
+  font-size: 11px;
+  color: var(--v5-text-muted);
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.v52-insights-fact-value {
+  font-size: 16px;
+  color: var(--v5-text-dark);
+  font-weight: 700;
+}
+
+.v52-insights-sampled-container {
+  background: rgba(16, 185, 129, 0.02);
+  border: 1.5px dashed var(--v5-border-subtle);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.v52-insights-sampled-container:hover {
+  background: rgba(16, 185, 129, 0.04);
+  border-color: var(--v5-brand-green);
+}
+
+.v52-insights-sampled-label {
+  font-size: 11px;
+  color: var(--v5-text-muted);
+  font-weight: 600;
+}
+
+.v52-insights-sampled-value {
+  font-size: 14px;
+  color: var(--v5-text-dark);
+}
+
+/* Narrative cards */
+.v52-insights-narrative-primary {
+  border-radius: 12px;
+  padding: 16px 20px;
+  transition: all 0.2s ease;
+}
+
+.v52-insights-narrative-primary:hover {
+  transform: translateX(4px);
+}
+
+.v52-insights-narrative-secondary {
+  background: var(--v5-bg-cream);
+  border: 1.5px solid var(--v5-border-subtle);
+  border-left: 5px solid var(--v5-text-muted);
+  border-radius: 12px;
+  padding: 16px 20px;
+  transition: all 0.2s ease;
+}
+
+.v52-insights-narrative-secondary:hover {
+  transform: translateX(4px);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+/* DOCTOR TALKING POINTS & DISCLAIMER */
+.v52-insights-doctor-panel {
+  background: var(--v5-bg-white);
+  border: 1.5px solid var(--v5-border-subtle);
+  border-radius: 16px;
+  padding: 24px 32px;
+  box-shadow: var(--v5-shadow-sm);
+  border-left: 6px solid var(--v52-teal);
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  transition: all 0.2s ease;
+}
+
+.v52-insights-doctor-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--v5-shadow-md);
+}
+
+.v52-insights-doctor-text {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--v5-text-dark);
+  font-weight: 500;
+}
+
+.v52-insights-disclaimer-note {
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--v5-border-subtle);
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--v5-text-muted);
+  line-height: 1.5;
+  margin-top: 16px;
+  transition: background-color 0.2s ease;
+}
+
+.v52-insights-disclaimer-note:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
 .v52-hero-eyebrow {
   background: var(--v5-brand-green-light);
   color: #065F46;
@@ -245,6 +438,64 @@
   color: var(--v52-orange) !important;
   border-color: var(--v52-orange) !important;
   border-width: 2.5px !important;
+}
+
+/* PARAMETER SWITCHER */
+.v52-metric-buttons-container {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.v52-insights-canvas .v52-param-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: 24px;
+  border: 1.5px solid var(--v5-border-subtle);
+  background: var(--v5-bg-white);
+  color: var(--v5-text-dark);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.v52-insights-canvas .v52-param-tab-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--v5-shadow-sm);
+}
+
+.v52-insights-canvas .v52-param-tab-btn--active {
+  background: #FFF0E0 !important;
+  color: var(--v52-orange) !important;
+  border: 2.5px solid var(--v52-orange) !important;
+  box-shadow: var(--v5-shadow-sm);
+}
+
+.v52-param-tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 14px;
+}
+
+.v52-param-tab-badge {
+  font-size: 11px;
+  background: var(--v5-text-muted);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.v52-param-tab-btn--active .v52-param-tab-badge {
+  background: var(--v52-orange) !important;
 }
 
 .v52-labs-specimen-badge {
