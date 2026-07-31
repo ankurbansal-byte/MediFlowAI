@@ -1,0 +1,284 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap');
+
+/* V5.2 HEALTH INSIGHTS CANVAS BACKGROUND & SPACING */
+.v52-insights-canvas {
+  display: flex;
+  flex-direction: column;
+  gap: 56px; /* Generous 56px section spacing */
+  padding: 16px 24px;
+  background-color: #FFFFFF !important; /* Keep the outside page background white */
+}
+
+/* Redesigned Premium Cards with hover scale */
+.v52-insights-canvas .v52-section-panel {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+}
+
+.v52-insights-canvas .v52-section-panel:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--v5-shadow-md);
+}
+
+/* Grids */
+@media (max-width: 968px) {
+  .v52-insights-grid {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+}
+
+/* EDITORIAL DIVIDER QUOTE SECTIONS */
+.v52-editorial-divider-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 24px 0;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.v52-editorial-line {
+  flex: 1;
+  height: 1.5px;
+  background: linear-gradient(to right, transparent, var(--v5-border-subtle), transparent);
+}
+
+.v52-editorial-quote-text {
+  font-family: 'Dancing Script', 'Georgia', cursive, serif;
+  font-size: 26px;
+  font-weight: 600;
+  color: #6B5B49;
+  text-align: center;
+  margin: 0;
+  max-width: 600px;
+  line-height: 1.5;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* COMPACT PREMIUM HERO STYLE */
+.v52-hero-section {
+  background: linear-gradient(135deg, #FAF3E8 0%, #F5EAD4 100%);
+  border: 1.5px solid #E6D8BF;
+  border-radius: var(--v5-radius-xl);
+  padding: 40px;
+  box-shadow: var(--v5-shadow-md);
+}
+
+.v52-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+@media (max-width: 968px) {
+  .v52-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+.v52-hero-content-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.v52-hero-eyebrow {
+  background: var(--v5-brand-green-light);
+  color: #065F46;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 6px 12px;
+  border-radius: 6px;
+  align-self: flex-start;
+  margin-bottom: 16px;
+}
+
+.v52-hero-title {
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--v5-text-dark);
+  margin: 0 0 16px 0;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.v52-hero-body {
+  font-size: 15px;
+  color: var(--v5-text-muted);
+  line-height: 1.6;
+  margin: 0 0 24px 0;
+}
+
+.v52-hero-id-badge {
+  font-size: 12px;
+  color: var(--v52-orange);
+  background: #FFF0E0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  align-self: flex-start;
+  border: 1px solid #FFE5CC;
+}
+
+/* STORYTELLING ASSETS SYSTEM */
+.v52-hero-visual-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.v52-storytelling-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.v52-storytelling-card {
+  background: var(--v5-bg-white);
+  border: 1.5px solid var(--v5-border-subtle);
+  border-radius: var(--v5-radius-lg);
+  padding: 16px;
+  box-shadow: var(--v5-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.v52-storytelling-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--v5-shadow-md);
+}
+
+.v52-image-tag {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  background: var(--v5-brand-green);
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.v52-storytelling-image {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--v5-border-subtle);
+}
+
+.v52-image-caption {
+  font-size: 11px;
+  color: var(--v5-text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* SECTION BACKGROUND PERSONALITIES */
+.v52-section-panel {
+  border-radius: var(--v5-radius-xl);
+  padding: 40px;
+  box-shadow: var(--v5-shadow-sm);
+  border: 1.5px solid var(--v5-border-subtle);
+}
+
+/* Color thematic section panels - eliminating flat white panels */
+.v52-bg-summary-panel {
+  background: linear-gradient(180deg, #FFF5E6 0%, #FEEBD0 100%); /* Rich Mango theme */
+  border-top: 4px solid var(--v52-orange);
+  border-color: #FFE0B2;
+}
+
+.v52-bg-labs-panel {
+  background: linear-gradient(180deg, #F0FDF4 0%, #DCFCE7 100%); /* Soft pathology teal/green background */
+  border-top: 4px solid var(--v52-teal);
+  border-color: #A7F3D0;
+}
+
+.v52-bg-insights-panel {
+  background: linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%); /* Royal purple AI panel */
+  border-top: 4px solid var(--v52-purple);
+  border-color: #E9D5FF;
+}
+
+/* PANEL HEADINGS & SUBTITLES */
+.v52-panel-heading {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--v5-text-dark);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.v52-panel-subtitle {
+  font-size: 14px;
+  color: var(--v5-text-muted);
+  margin: 0 0 28px 0;
+  max-width: 680px;
+}
+
+/* PARAMETER SWITCHER BUTTONS */
+.v52-param-tab-btn {
+  transition: all 0.2s ease !important;
+}
+
+.v52-param-tab-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--v5-shadow-sm);
+}
+
+.v52-param-tab-btn--active {
+  background: #FFF0E0 !important;
+  color: var(--v52-orange) !important;
+  border-color: var(--v52-orange) !important;
+  border-width: 2.5px !important;
+}
+
+.v52-labs-specimen-badge {
+  background: #FEF3C7;
+  color: #B45309;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+
+.v52-labs-layout-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 40px;
+  align-items: center;
+}
+
+@media (max-width: 968px) {
+  .v52-labs-layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.v52-labs-list-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.v52-labs-visual-column {
+  display: flex;
+  flex-direction: column;
+}
