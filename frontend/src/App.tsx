@@ -165,10 +165,16 @@ function App() {
     const isProfileV5 = window.location.pathname === "/design-preview/profile-v5" ||
                         window.location.pathname === "/patient/profile-v5" ||
                         new URLSearchParams(window.location.search).get("view") === "design-preview-profile-v5";
+    const isProfileV5_2 = window.location.pathname === "/design-preview/profile-v5-2" ||
+                          window.location.pathname === "/patient/profile-v5-2" ||
+                          new URLSearchParams(window.location.search).get("view") === "design-preview-profile-v5-2";
     const isSettingsV5 = window.location.pathname === "/design-preview/settings-v5" ||
                          window.location.pathname === "/patient/settings-v5" ||
                          new URLSearchParams(window.location.search).get("view") === "design-preview-settings-v5";
-    return <Dashboard user={user} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} isV2={isV2} isV3={isV3} isV4={isV4} isV5={isV5} isV5_1={isV5_1} isV5_2={isV5_2} isRecordsV5={isRecordsV5} isInsightsV5={isInsightsV5} isProfileV5={isProfileV5} isSettingsV5={isSettingsV5} isRecordsV5_2={isRecordsV5_2} isInsightsV5_2={isInsightsV5_2} />;
+    const isSettingsV5_2 = window.location.pathname === "/design-preview/settings-v5-2" ||
+                           window.location.pathname === "/patient/settings-v5-2" ||
+                           new URLSearchParams(window.location.search).get("view") === "design-preview-settings-v5-2";
+    return <Dashboard user={user} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} isV2={isV2} isV3={isV3} isV4={isV4} isV5={isV5} isV5_1={isV5_1} isV5_2={isV5_2} isRecordsV5={isRecordsV5} isInsightsV5={isInsightsV5} isProfileV5={isProfileV5} isSettingsV5={isSettingsV5} isRecordsV5_2={isRecordsV5_2} isInsightsV5_2={isInsightsV5_2} isProfileV5_2={isProfileV5_2} isSettingsV5_2={isSettingsV5_2} />;
   }
 
   // Guest Routing
