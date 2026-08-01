@@ -225,6 +225,22 @@ async function processMessageFlow(
     }
   }
 
+  // Deduplicate candidateRecords to prevent accidental duplicate observations from the same message
+  const uniqueCandidateRecords: CandidateRecord[] = [];
+  for (const item of candidateRecords) {
+    const isDup = uniqueCandidateRecords.some(c => {
+      if (c.parameter !== item.parameter) return false;
+      if (c.parameter === "blood_pressure") {
+        return c.systolic === item.systolic && c.diastolic === item.diastolic;
+      }
+      return c.value === item.value && c.context === item.context && c.timeContext === item.timeContext;
+    });
+    if (!isDup) {
+      uniqueCandidateRecords.push(item);
+    }
+  }
+  candidateRecords = uniqueCandidateRecords;
+
   // Find unresolved measurements using deterministic rules combined with AI
   const detUnresolved = findUnresolvedPlausibleNumbers(message, candidateRecords);
   let unresolvedMeasurements = Array.from(new Set([...aiUnresolved, ...detUnresolved]));

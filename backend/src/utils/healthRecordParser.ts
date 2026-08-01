@@ -151,7 +151,7 @@ export function parseGlucoseContext(msg: string): GlucoseContext | null {
     return "fasting";
   }
 
-  // Pre-meal
+  // Pre-meal / Before breakfast / Before lunch / Before dinner
   if (
     clean.includes("before food") ||
     clean.includes("before breakfast") ||
@@ -162,12 +162,20 @@ export function parseGlucoseContext(msg: string): GlucoseContext | null {
     clean.includes("pre_meal") ||
     clean.includes("premeal") ||
     clean.includes("khane se pehle") ||
-    clean.includes("खाने से पहले")
+    clean.includes("खाने से पहले") ||
+    clean.includes("nashte se pehle") ||
+    clean.includes("नाश्ते से पहले") ||
+    clean.includes("lunch se pehle") ||
+    clean.includes("लंच से पहले") ||
+    clean.includes("dinner se pehle") ||
+    clean.includes("डिनर से पहले") ||
+    clean.includes("breakfast se pehle") ||
+    clean.includes("dinner se pehle")
   ) {
     return "pre_meal";
   }
 
-  // Post-meal
+  // Post-meal / After breakfast / After lunch / After dinner
   if (
     clean.includes("after food") ||
     clean.includes("after breakfast") ||
@@ -182,7 +190,14 @@ export function parseGlucoseContext(msg: string): GlucoseContext | null {
     clean.includes("khane ke 2 ghante baad") ||
     clean.includes("2 hours after meal") ||
     clean.includes("2 hrs after food") ||
-    clean.includes("खाने के बाद")
+    clean.includes("खाने के बाद") ||
+    clean.includes("nashte ke baad") ||
+    clean.includes("नाश्ते के बाद") ||
+    clean.includes("lunch ke baad") ||
+    clean.includes("लंच के बाद") ||
+    clean.includes("dinner ke baad") ||
+    clean.includes("डिनर के बाद") ||
+    clean.includes("breakfast ke baad")
   ) {
     return "post_meal";
   }
@@ -371,57 +386,56 @@ export function deterministicExtract(message: string): any {
     reason: "Deterministic local fallback extraction"
   };
 
-  const candidateRecords: any[] = [];
-  const missingFields: string[] = [];
-
   const keywordMap: Record<string, string[]> = {
-    blood_sugar: ["sugar", "glucose", "sugar level", "shugar", "cheeni", "schugar", "शुगर", "सीनी", "चीनी", "meri sugar", "mera sugar"],
-    blood_pressure: ["bp", "blood pressure", "pressure", "बीपी", "रक्तचाप", "mera bp", "meri bp"],
-    heart_rate: ["pulse", "heart rate", "hr", "bpm", "dhadkan", "dil", "beat", "पल्स", "धड़कन"],
-    oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन", "ओक्सीजन", "ऑक्सिजन", "oxygen level"],
-    body_temperature: ["temp", "temperature", "fever", "body temp", "bukhar", "bukhaar", "tapman", "तापमान", "बुखार"],
-    weight: ["weight", "vajan", "wajan", "kg", "vazan", "वजन"],
-    respiratory_rate: ["breath", "breathing", "breathing rate", "resp", "respiratory", "rr", "saans", "सांस की दर"],
+    blood_sugar: ["sugar level", "sugar", "glucose", "shugar", "cheeni", "schugar", "शुगर", "सीनी", "चीनी", "meri sugar", "mera sugar"],
+    blood_pressure: ["blood pressure", "pressure", "bp", "बीपी", "रक्तचाप", "mera bp", "meri bp", "ब्लड प्रेशर"],
+    heart_rate: ["heart rate", "pulse", "hr", "bpm", "dhadkan", "dil", "beat", "पल्स", "धड़कन", "नाड़ी"],
+    oxygen_saturation: ["oxygen saturation", "oxygen level", "oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन", "ओक्सीजन", "ऑक्सिजन"],
+    body_temperature: ["body temp", "temp", "temperature", "fever", "bukhar", "bukhaar", "tapman", "तापमान", "बुखार", "बुख़ार"],
+    weight: ["weight", "vajan", "wajan", "kg", "vazan", "वजन", "वज़न"],
+    respiratory_rate: ["breathing rate", "breathing", "breath", "resp", "respiratory", "rr", "saans", "सांस की दर"],
     height: ["height", "lambai", "kad", "हाइट", "लंबाई", "कद"]
   };
 
-  function detectSegmentParameter(text: string): string | null {
-    const cleanSeg = text.toLowerCase();
-    for (const [param, keywords] of Object.entries(keywordMap)) {
-      for (const kw of keywords) {
-        if (/[\u0900-\u097F]/.test(kw)) {
-          if (cleanSeg.includes(kw)) {
-            return param;
-          }
-        } else {
-          const rx = new RegExp(`\\b${kw}\\b`, "i");
-          if (rx.test(cleanSeg)) {
-            return param;
-          }
-        }
-      }
-    }
-    return null;
-  }
+  function findKeywordMatches(text: string): { param: string; index: number; keyword: string }[] {
+    const matches: { param: string; index: number; keyword: string }[] = [];
+    const cleanText = text.toLowerCase();
 
-  function hasConflictingParameterKeywords(text: string, currentParam: string): boolean {
-    const cleanSeg = text.toLowerCase();
     for (const [param, keywords] of Object.entries(keywordMap)) {
-      if (param === currentParam) continue;
       for (const kw of keywords) {
-        if (/[\u0900-\u097F]/.test(kw)) {
-          if (cleanSeg.includes(kw)) {
-            return true;
+        const isDevanagari = /[\u0900-\u097F]/.test(kw);
+        if (isDevanagari) {
+          let startPos = 0;
+          while ((startPos = cleanText.indexOf(kw, startPos)) !== -1) {
+            matches.push({ param, index: startPos, keyword: kw });
+            startPos += kw.length;
           }
         } else {
-          const rx = new RegExp(`\\b${kw}\\b`, "i");
-          if (rx.test(cleanSeg)) {
-            return true;
+          const escapedKw = kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+          const regex = new RegExp(`\\b${escapedKw}\\b`, "gi");
+          let match;
+          while ((match = regex.exec(cleanText)) !== null) {
+            matches.push({ param, index: match.index, keyword: kw });
           }
         }
       }
     }
-    return false;
+
+    matches.sort((a, b) => {
+      if (a.index !== b.index) return a.index - b.index;
+      return b.keyword.length - a.keyword.length;
+    });
+
+    const filteredMatches: typeof matches = [];
+    let lastEnd = -1;
+    for (const m of matches) {
+      if (m.index >= lastEnd) {
+        filteredMatches.push(m);
+        lastEnd = m.index + m.keyword.length;
+      }
+    }
+
+    return filteredMatches;
   }
 
   function extractTemporalInfo(text: string): string | null {
@@ -468,57 +482,103 @@ export function deterministicExtract(message: string): any {
     return undefined;
   }
 
-  // Split by clause separators, using non-word-boundary patterns for Devanagari words
-  const rawSegments = message.split(/[,;।।]|\b(?:and|aur|or|&|\+|then|fir|phir)\b|(?:^|\s+)(?:था|और)(?:\s+|$)/i);
+  function hasConflictingParameterKeywords(text: string, currentParam: string): boolean {
+    const cleanSeg = text.toLowerCase();
+    for (const [param, keywords] of Object.entries(keywordMap)) {
+      if (param === currentParam) continue;
+      for (const kw of keywords) {
+        const isDevanagari = /[\u0900-\u097F]/.test(kw);
+        if (isDevanagari) {
+          if (cleanSeg.includes(kw)) {
+            return true;
+          }
+        } else {
+          const rx = new RegExp(`\\b${kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, "i");
+          if (rx.test(cleanSeg)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
 
+  const rawClauses = message.split(/[\n,;।।]|\b(?:and|aur|or|&|\+|then|fir|phir)\b|(?:^|\s+)(?:था|और)(?:\s+|$)/i);
+  const subClauses: { param: string | null; text: string }[] = [];
+
+  for (const rawClause of rawClauses) {
+    const trimmedClause = rawClause.trim();
+    if (!trimmedClause) continue;
+
+    const matches = findKeywordMatches(trimmedClause);
+    if (matches.length > 0) {
+      if (matches[0].index > 0) {
+        subClauses.push({
+          param: null,
+          text: trimmedClause.substring(0, matches[0].index)
+        });
+      }
+      for (let i = 0; i < matches.length; i++) {
+        const start = matches[i].index;
+        const end = i + 1 < matches.length ? matches[i + 1].index : trimmedClause.length;
+        subClauses.push({
+          param: matches[i].param,
+          text: trimmedClause.substring(start, end)
+        });
+      }
+    } else {
+      subClauses.push({
+        param: null,
+        text: trimmedClause
+      });
+    }
+  }
+
+  const resolvedSubClauses: { param: string | null; text: string }[] = [];
   let runningParameter: string | null = null;
-  let runningRecordedAt: string | null = null;
-  let runningTimeContext: "morning" | "afternoon" | "evening" | "night" | undefined = undefined;
 
-  for (const rawSeg of rawSegments) {
-    const trimmedSeg = rawSeg.trim();
+  for (const sub of subClauses) {
+    let resolvedParam = sub.param;
+    const trimmedSeg = sub.text.trim();
     if (!trimmedSeg) continue;
 
-    let segmentParam = detectSegmentParameter(trimmedSeg);
-    if (segmentParam) {
-      runningParameter = segmentParam;
-    } else if (runningParameter && !hasConflictingParameterKeywords(trimmedSeg, runningParameter)) {
-      segmentParam = runningParameter;
-    }
-
-    // Also check for standalone BP patterns, which can implicitly establish BP context
     const cleanedSegment = stripNumbersBelongingToDatesAndTimes(trimmedSeg);
     const hasStandaloneBpPattern = /\b(\d{2,3})\s*[\/\\]\s*(\d{2,3})\b/.test(cleanedSegment);
-    if (!segmentParam && hasStandaloneBpPattern) {
-      segmentParam = "blood_pressure";
+
+    if (resolvedParam) {
+      runningParameter = resolvedParam;
+    } else if (hasStandaloneBpPattern) {
+      resolvedParam = "blood_pressure";
       runningParameter = "blood_pressure";
+    } else if (runningParameter && !hasConflictingParameterKeywords(trimmedSeg, runningParameter)) {
+      resolvedParam = runningParameter;
     }
 
-    if (!segmentParam) continue;
+    resolvedSubClauses.push({
+      param: resolvedParam,
+      text: trimmedSeg
+    });
+  }
 
-    let tempInfo = extractTemporalInfo(trimmedSeg);
-    let tContext = extractTimeContext(trimmedSeg);
+  const candidateRecords: any[] = [];
+  const missingFields: string[] = [];
 
-    if (tempInfo) {
-      runningRecordedAt = tempInfo;
-    } else if (runningRecordedAt) {
-      tempInfo = runningRecordedAt;
-    }
+  for (const seg of resolvedSubClauses) {
+    if (seg.param === null) continue;
 
-    if (tContext) {
-      runningTimeContext = tContext;
-    } else if (runningTimeContext) {
-      tContext = runningTimeContext;
-    }
+    const segmentText = seg.text;
+    const segmentParam = seg.param;
+    const cleanedSegment = stripNumbersBelongingToDatesAndTimes(segmentText);
+
+    const tempInfo = extractTemporalInfo(segmentText);
+    const tContext = extractTimeContext(segmentText);
 
     if (segmentParam === "blood_pressure") {
-      // Prioritize explicit decimal BP like 131.82 when strong BP context exists
       let bpMatched = false;
       const decimalBpMatch = cleanedSegment.match(/\b(\d{2,3})\.(\d{2,3})\b/);
       if (decimalBpMatch) {
         const systolic = parseInt(decimalBpMatch[1], 10);
         let diastolicStr = decimalBpMatch[2];
-        // If diastolic representation is single digit (e.g. 120.8), treat as 80
         if (diastolicStr.length === 1) {
           diastolicStr += "0";
         }
@@ -538,34 +598,28 @@ export function deterministicExtract(message: string): any {
       }
 
       if (!bpMatched) {
-        const bpPairRegexes = [
-          /(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप)?\s*(\d{2,3})\s*(?:\/|\\|h|by|and|aur|over|\s+)\s*(\d{2,3})\b/i,
-          /\b(\d{2,3})\s*[\/\\]\s*(\d{2,3})\b/
-        ];
-        for (const rx of bpPairRegexes) {
-          const match = cleanedSegment.match(rx);
-          if (match) {
-            const systolic = parseInt(match[1], 10);
-            const diastolic = parseInt(match[2], 10);
-            if (systolic >= 10 && systolic <= 1000 && diastolic >= 10 && diastolic <= 1000) {
-              candidateRecords.push({
-                parameter: "blood_pressure",
-                systolic,
-                diastolic,
-                unit: "mmHg",
-                recordedAt: tempInfo,
-                timeContext: tContext || undefined,
-                confidence: 0.99
-              });
-              bpMatched = true;
-              break;
-            }
+        const bpGlobalRegex = /\b(\d{2,3})\s*(?:\/|\\|by|over|and|aur|\s+)\s*(\d{2,3})\b/gi;
+        let bpMatch;
+        while ((bpMatch = bpGlobalRegex.exec(cleanedSegment)) !== null) {
+          const systolic = parseInt(bpMatch[1], 10);
+          const diastolic = parseInt(bpMatch[2], 10);
+          if (systolic >= 10 && systolic <= 1000 && diastolic >= 10 && diastolic <= 1000) {
+            candidateRecords.push({
+              parameter: "blood_pressure",
+              systolic,
+              diastolic,
+              unit: "mmHg",
+              recordedAt: tempInfo,
+              timeContext: tContext || undefined,
+              confidence: 0.99
+            });
+            bpMatched = true;
           }
         }
       }
 
       if (!bpMatched) {
-        const incompleteBpRegex = /(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप)(?:[^0-9\n]*)\b(\d{2,3})\b/i;
+        const incompleteBpRegex = /(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप|ब्लड प्रेशर)(?:[^0-9\n]*)\b(\d{2,3})\b/i;
         const match = cleanedSegment.match(incompleteBpRegex);
         if (match) {
           const systolic = parseInt(match[1], 10);
@@ -589,7 +643,7 @@ export function deterministicExtract(message: string): any {
       for (const numStr of numbersInSeg) {
         const val = parseFloat(numStr);
         if (val >= 1 && val <= 2000) {
-          const context = parseGlucoseContext(trimmedSeg) || parseGlucoseContext(message);
+          const context = parseGlucoseContext(segmentText) || parseGlucoseContext(message);
           if (context) {
             candidateRecords.push({
               parameter: "blood_sugar",
@@ -656,8 +710,8 @@ export function deterministicExtract(message: string): any {
         const val = parseFloat(numStr);
         if (val >= 1 && val <= 500) {
           let tempUnit: string | null = null;
-          const hasExplicitC = /\b(?:°?c|celsius|celcius)\b/i.test(trimmedSeg) || trimmedSeg.includes("°c") || trimmedSeg.includes("celsius") || trimmedSeg.includes("सेल्सियस");
-          const hasExplicitF = /\b(?:°?f|fahrenheit|farenheit)\b/i.test(trimmedSeg) || trimmedSeg.includes("°f") || trimmedSeg.includes("fahrenheit") || trimmedSeg.includes("फ़ारेनहाइट") || trimmedSeg.includes("फारेनहाइट");
+          const hasExplicitC = /\b(?:°?c|celsius|celcius)\b/i.test(segmentText) || segmentText.includes("°c") || segmentText.includes("celsius") || segmentText.includes("सेल्सियस");
+          const hasExplicitF = /\b(?:°?f|fahrenheit|farenheit)\b/i.test(segmentText) || segmentText.includes("°f") || segmentText.includes("fahrenheit") || segmentText.includes("फ़ारेनहाइट") || segmentText.includes("फारेनहाइट");
 
           if (hasExplicitC) {
             tempUnit = "°C";
@@ -710,7 +764,7 @@ export function deterministicExtract(message: string): any {
       for (const numStr of numbersInSeg) {
         const val = parseFloat(numStr);
         if (val >= -500 && val <= 1000) {
-          const isLbs = trimmedSeg.includes("lbs");
+          const isLbs = segmentText.includes("lbs");
           if (isLbs) {
             const kgVal = parseFloat((val * 0.45359237).toFixed(1));
             candidateRecords.push({
@@ -762,7 +816,7 @@ export function deterministicExtract(message: string): any {
         /\b(\d+)\s*(?:feet|foot|ft|फ़ीट|फुट)\s*(\d+)\s*(?:inches|inch|in|इंच)?\b/iu
       ];
       for (const rx of feetInchesRegexes) {
-        const match = trimmedSeg.match(rx);
+        const match = segmentText.match(rx);
         if (match) {
           const ft = parseInt(match[1], 10);
           const inch = parseInt(match[2], 10);
@@ -800,11 +854,35 @@ export function deterministicExtract(message: string): any {
     }
   }
 
-  if (candidateRecords.length > 0) {
+  // Deduplicate candidateRecords
+  const uniqueCandidates: any[] = [];
+  for (const record of candidateRecords) {
+    const isDup = uniqueCandidates.some(c => {
+      if (c.parameter !== record.parameter) return false;
+      if (c.parameter === "blood_pressure") {
+        return c.systolic === record.systolic && c.diastolic === record.diastolic;
+      }
+      return c.value === record.value && c.context === record.context && c.timeContext === record.timeContext;
+    });
+    if (!isDup) {
+      uniqueCandidates.push(record);
+    }
+  }
+
+  const unresolved = findUnresolvedPlausibleNumbers(message, uniqueCandidates);
+
+  if (uniqueCandidates.length > 0) {
     result.action = missingFields.length > 0 ? "CLARIFY" : "RECORD";
     result.intent = "health_measurement";
-    result.candidateRecords = candidateRecords;
+    result.candidateRecords = uniqueCandidates;
     result.missingFields = Array.from(new Set(missingFields));
+    result.unresolvedMeasurements = unresolved;
+  } else if (unresolved.length > 0) {
+    result.action = "CLARIFY";
+    result.intent = "ambiguous_health_message";
+    result.candidateRecords = [];
+    result.missingFields = [];
+    result.unresolvedMeasurements = unresolved;
   }
 
   return result;
