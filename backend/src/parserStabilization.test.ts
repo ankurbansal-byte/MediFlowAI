@@ -202,7 +202,7 @@ async function runParserStabilizationTests() {
     // Before Breakfast
     resetState();
     await receiveMessage(makePayload("917618432290", "Sugar 118 before breakfast", "msg-sugar-before-bf", referenceTimestamp), mockResponse() as any);
-    assert(MOCK_RECORDS["PAT-101"]?.[0]?.context === "pre_meal", "Context: 'before breakfast' mapped to pre_meal");
+    assert(MOCK_RECORDS["PAT-101"]?.[0]?.context === "fasting", "Context: 'before breakfast' mapped to fasting");
 
     // After Breakfast
     resetState();
@@ -212,7 +212,7 @@ async function runParserStabilizationTests() {
     // Before Lunch / Dinner
     resetState();
     await receiveMessage(makePayload("917618432290", "Sugar 118 before lunch", "msg-sugar-before-lunch", referenceTimestamp), mockResponse() as any);
-    assert(MOCK_RECORDS["PAT-101"]?.[0]?.context === "pre_meal", "Context: 'before lunch' mapped to pre_meal");
+    assert(MOCK_RECORDS["PAT-101"]?.[0]?.context === "fasting", "Context: 'before lunch' mapped to fasting");
 
     // After Lunch / Dinner
     resetState();
@@ -222,7 +222,7 @@ async function runParserStabilizationTests() {
     // Hindi/Devanagari breakfast variations
     resetState();
     await receiveMessage(makePayload("917618432290", "शुगर 118 नाश्ते से पहले", "msg-sugar-hin-bf-pre", referenceTimestamp), mockResponse() as any);
-    assert(MOCK_RECORDS["PAT-101"]?.[0]?.context === "pre_meal", "Context: 'नाश्ते से पहले' mapped to pre_meal");
+    assert(MOCK_RECORDS["PAT-101"]?.[0]?.context === "fasting", "Context: 'नाश्ते से पहले' mapped to fasting");
 
     resetState();
     await receiveMessage(makePayload("917618432290", "शुगर 118 नाश्ते के बाद", "msg-sugar-hin-bf-post", referenceTimestamp), mockResponse() as any);

@@ -275,6 +275,18 @@ async function processMessageFlow(
   const implausibleCandidates: CandidateRecord[] = [];
 
   for (const item of candidateRecords) {
+    // Normalize timing context canonically
+    if (item.context) {
+      const cleanCtx = String(item.context).toLowerCase().trim();
+      if (cleanCtx === "pre_meal" || cleanCtx === "pre-meal" || cleanCtx === "fasting" || cleanCtx === "fasted") {
+        item.context = "fasting";
+      } else if (cleanCtx === "post_meal" || cleanCtx === "post-meal") {
+        item.context = "post_meal";
+      } else if (cleanCtx === "random") {
+        item.context = "random";
+      }
+    }
+
     const isSugarIncomplete = item.parameter === "blood_sugar" && (
       missingFields.includes("glucose_context") ||
       item.context === "unknown" ||
@@ -420,32 +432,53 @@ async function processMessageFlow(
       continue;
     }
 
-    // Identical observation recently saved check
-    // If identical observation (same metric, same value, same patient) received within configurable interval (seconds),
-    // do not create a duplicate record but trigger the duplicate warning prompt.
-    const dupWindowSec = process.env.WHATSAPP_DUPLICATE_WINDOW_SECONDS
-      ? parseInt(process.env.WHATSAPP_DUPLICATE_WINDOW_SECONDS, 10)
-      : 300;
+    // Identical observation duplicate check
+    // Duplicate detection must compare Metric, Value, Normalized timing, and Date.
+    const tzOffsetMinutes = process.env.WHATSAPP_TIMEZONE_OFFSET_MINUTES
+      ? parseInt(process.env.WHATSAPP_TIMEZONE_OFFSET_MINUTES, 10)
+      : 330;
+
+    const getLocalDateString = (d: Date | string) => {
+      const dateObj = new Date(d);
+      const localTimeMs = dateObj.getTime() + (tzOffsetMinutes * 60 * 1000);
+      const localDate = new Date(localTimeMs);
+      return `${localDate.getUTCFullYear()}-${localDate.getUTCMonth() + 1}-${localDate.getUTCDate()}`;
+    };
 
     let recentDuplicate = null;
-    const nowTime = new Date().getTime();
 
     if (process.env.USE_MOCK_DATA === "true") {
       const pRecords = MOCK_RECORDS[rPayload.patientId] || [];
       recentDuplicate = pRecords.find((rec: any) => {
-        if (rec.parameter !== rPayload.parameter || String(rec.value) !== String(rPayload.value)) {
-          return false;
-        }
-        const diffMs = Math.abs(nowTime - new Date(rec.recordedAt).getTime());
-        return diffMs <= dupWindowSec * 1000;
+        if (rec.parameter !== rPayload.parameter) return false;
+        if (String(rec.value) !== String(rPayload.value)) return false;
+
+        const recCtx = rec.context || "unknown";
+        const payloadCtx = rPayload.context || "unknown";
+        if (recCtx !== payloadCtx) return false;
+
+        const recTimeCtx = rec.timeContext || "unknown";
+        const payloadTimeCtx = rPayload.timeContext || "unknown";
+        if (recTimeCtx !== payloadTimeCtx) return false;
+
+        return getLocalDateString(rec.recordedAt) === getLocalDateString(rPayload.recordedAt);
       });
     } else {
-      const cutOffDate = new Date(nowTime - dupWindowSec * 1000);
-      recentDuplicate = await HealthRecord.findOne({
+      const candidates = await HealthRecord.find({
         patientId: rPayload.patientId,
         parameter: rPayload.parameter,
-        value: rPayload.value,
-        recordedAt: { $gte: cutOffDate }
+        value: rPayload.value
+      });
+      recentDuplicate = candidates.find((rec: any) => {
+        const recCtx = rec.context || "unknown";
+        const payloadCtx = rPayload.context || "unknown";
+        if (recCtx !== payloadCtx) return false;
+
+        const recTimeCtx = rec.timeContext || "unknown";
+        const payloadTimeCtx = rPayload.timeContext || "unknown";
+        if (recTimeCtx !== payloadTimeCtx) return false;
+
+        return getLocalDateString(rec.recordedAt) === getLocalDateString(rPayload.recordedAt);
       });
     }
 
