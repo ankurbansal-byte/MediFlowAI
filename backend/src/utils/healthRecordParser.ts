@@ -570,8 +570,8 @@ export function deterministicExtract(message: string): any {
     const segmentParam = seg.param;
     const cleanedSegment = stripNumbersBelongingToDatesAndTimes(segmentText);
 
-    const tempInfo = extractTemporalInfo(segmentText);
-    const tContext = extractTimeContext(segmentText);
+    const tempInfo = extractTemporalInfo(segmentText) || extractTemporalInfo(message);
+    const tContext = extractTimeContext(segmentText) || extractTimeContext(message);
 
     if (segmentParam === "blood_pressure") {
       let bpMatched = false;
@@ -639,7 +639,7 @@ export function deterministicExtract(message: string): any {
     }
 
     else if (segmentParam === "blood_sugar") {
-      const numbersInSeg = cleanedSegment.match(/-?\d+(?:\.\d+)?/g) || [];
+      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
       for (const numStr of numbersInSeg) {
         const val = parseFloat(numStr);
         if (val >= 1 && val <= 2000) {
@@ -671,7 +671,7 @@ export function deterministicExtract(message: string): any {
     }
 
     else if (segmentParam === "heart_rate") {
-      const numbersInSeg = cleanedSegment.match(/-?\d+(?:\.\d+)?/g) || [];
+      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
       for (const numStr of numbersInSeg) {
         const val = parseInt(numStr, 10);
         if (val >= 1 && val <= 1000) {
@@ -688,7 +688,7 @@ export function deterministicExtract(message: string): any {
     }
 
     else if (segmentParam === "oxygen_saturation") {
-      const numbersInSeg = cleanedSegment.match(/-?\d+(?:\.\d+)?/g) || [];
+      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
       for (const numStr of numbersInSeg) {
         const val = parseInt(numStr, 10);
         if (val >= 1 && val <= 300) {
@@ -705,7 +705,7 @@ export function deterministicExtract(message: string): any {
     }
 
     else if (segmentParam === "body_temperature") {
-      const numbersInSeg = cleanedSegment.match(/-?\d+(?:\.\d+)?/g) || [];
+      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
       for (const numStr of numbersInSeg) {
         const val = parseFloat(numStr);
         if (val >= 1 && val <= 500) {
@@ -760,7 +760,7 @@ export function deterministicExtract(message: string): any {
     }
 
     else if (segmentParam === "weight") {
-      const numbersInSeg = cleanedSegment.match(/-?\d+(?:\.\d+)?/g) || [];
+      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
       for (const numStr of numbersInSeg) {
         const val = parseFloat(numStr);
         if (val >= -500 && val <= 1000) {
@@ -792,7 +792,7 @@ export function deterministicExtract(message: string): any {
     else if (segmentParam === "respiratory_rate") {
       const isRrSymptomOnly = clean.includes("saans lene mein") || clean.includes("saans phool") || clean.includes("breathing difficulty") || clean.includes("shortness of breath");
       if (!isRrSymptomOnly) {
-        const numbersInSeg = cleanedSegment.match(/-?\d+/g) || [];
+        const numbersInSeg = cleanedSegment.match(/\b\d+\b/g) || [];
         for (const numStr of numbersInSeg) {
           const val = parseInt(numStr, 10);
           if (val >= 1 && val <= 200) {
@@ -828,7 +828,7 @@ export function deterministicExtract(message: string): any {
       }
 
       if (heightValue === null) {
-        const numbersInSeg = cleanedSegment.match(/-?\d+(?:\.\d+)?/g) || [];
+        const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
         for (const numStr of numbersInSeg) {
           const val = parseFloat(numStr);
           if (val >= 10 && val <= 500) {
@@ -1328,28 +1328,43 @@ export function validateCandidateRecord(
 
   // 3. Values exist and are supported/not fabricated
   if (record.parameter === "blood_pressure") {
-    if (record.systolic === undefined || record.diastolic === undefined) {
-      console.warn(`[Validation Error] Incomplete blood pressure: systolic or diastolic is missing.`);
+    if (
+      record.systolic === undefined || record.systolic === null || Number.isNaN(record.systolic) ||
+      record.diastolic === undefined || record.diastolic === null || Number.isNaN(record.diastolic) ||
+      String(record.systolic).trim() === "" || String(record.diastolic).trim() === "" ||
+      String(record.systolic).toLowerCase() === "undefined" || String(record.diastolic).toLowerCase() === "undefined" ||
+      String(record.systolic).toLowerCase() === "null" || String(record.diastolic).toLowerCase() === "null" ||
+      String(record.systolic).toLowerCase() === "nan" || String(record.diastolic).toLowerCase() === "nan"
+    ) {
+      console.warn(`[Validation Error] Incomplete, invalid, or partial blood pressure values rejected.`);
       return false;
     }
-    if (record.systolic <= 0 || record.diastolic <= 0) {
-      console.warn(`[Validation Error] Blood pressure values must be positive.`);
+    const sys = Number(record.systolic);
+    const dia = Number(record.diastolic);
+    if (isNaN(sys) || isNaN(dia) || sys <= 0 || dia <= 0) {
+      console.warn(`[Validation Error] Blood pressure values must be positive numbers.`);
       return false;
     }
     // Check ranges
-    if (record.systolic < 70 || record.systolic > 250 || record.diastolic < 40 || record.diastolic > 150) {
-      console.warn(`[Validation Error] Implausible blood pressure range: ${record.systolic}/${record.diastolic}`);
+    if (sys < 70 || sys > 250 || dia < 40 || dia > 150) {
+      console.warn(`[Validation Error] Implausible blood pressure range: ${sys}/${dia}`);
       return false;
     }
     // Check fabricated values
-    const bpValStr = `${record.systolic}/${record.diastolic}`;
+    const bpValStr = `${sys}/${dia}`;
     if (!isValueSupportedByMessage(originalMessage, bpValStr, record.parameter)) {
       console.warn(`[Validation Error] Fabricated blood pressure values rejected.`);
       return false;
     }
   } else {
-    if (record.value === undefined || record.value === null) {
-      console.warn(`[Validation Error] Value is missing for parameter ${record.parameter}.`);
+    if (
+      record.value === undefined || record.value === null ||
+      String(record.value).trim() === "" ||
+      String(record.value).toLowerCase() === "undefined" ||
+      String(record.value).toLowerCase() === "null" ||
+      String(record.value).toLowerCase() === "nan"
+    ) {
+      console.warn(`[Validation Error] Value is missing, invalid, or empty for parameter ${record.parameter}.`);
       return false;
     }
     const numVal = Number(record.value);
