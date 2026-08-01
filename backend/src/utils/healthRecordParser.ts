@@ -146,7 +146,11 @@ export function parseGlucoseContext(msg: string): GlucoseContext | null {
     clean.includes("खाली पेट") ||
     clean === "fast" ||
     clean === "fating" ||
-    clean === "fastg"
+    clean === "fastg" ||
+    clean.includes("empty stomach") ||
+    clean.includes("bina khaye") ||
+    clean.includes("बिना खाए") ||
+    clean.includes("बिना कुछ खाए")
   ) {
     return "fasting";
   }
@@ -170,7 +174,9 @@ export function parseGlucoseContext(msg: string): GlucoseContext | null {
     clean.includes("dinner se pehle") ||
     clean.includes("डिनर से पहले") ||
     clean.includes("breakfast se pehle") ||
-    clean.includes("dinner se pehle")
+    clean.includes("dinner se pehle") ||
+    clean.includes("bhojan se pehle") ||
+    clean.includes("भोजन से पहले")
   ) {
     return "pre_meal";
   }
@@ -182,6 +188,7 @@ export function parseGlucoseContext(msg: string): GlucoseContext | null {
     clean.includes("after lunch") ||
     clean.includes("after dinner") ||
     clean.includes("after meal") ||
+    clean.includes("after a meal") ||
     clean.includes("post-meal") ||
     clean.includes("post_meal") ||
     clean.includes("postmeal") ||
@@ -197,7 +204,10 @@ export function parseGlucoseContext(msg: string): GlucoseContext | null {
     clean.includes("लंच के बाद") ||
     clean.includes("dinner ke baad") ||
     clean.includes("डिनर के बाद") ||
-    clean.includes("breakfast ke baad")
+    clean.includes("breakfast ke baad") ||
+    clean.includes("meal ke baad") ||
+    clean.includes("bhojan ke baad") ||
+    clean.includes("भोजन के बाद")
   ) {
     return "post_meal";
   }

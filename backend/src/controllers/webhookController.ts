@@ -372,6 +372,8 @@ async function processMessageFlow(
 
   // Save complete records that aren't already saved
   const newlySavedRecords: any[] = [];
+  let detectedDuplicateRecently = false;
+
   for (const rPayload of recordsToSave) {
     // 2. Strict Validation Before Save
     if (rPayload.parameter === "blood_pressure") {
@@ -415,6 +417,41 @@ async function processMessageFlow(
 
     if (existingRecord) {
       console.log(`[Parser Debug] Skipped duplicate record for ${rPayload.parameter}. Save Result: SKIPPED. Skipped reason: Duplicate record found.`);
+      continue;
+    }
+
+    // Identical observation recently saved check
+    // If identical observation (same metric, same value, same patient) received within configurable interval (seconds),
+    // do not create a duplicate record but trigger the duplicate warning prompt.
+    const dupWindowSec = process.env.WHATSAPP_DUPLICATE_WINDOW_SECONDS
+      ? parseInt(process.env.WHATSAPP_DUPLICATE_WINDOW_SECONDS, 10)
+      : 300;
+
+    let recentDuplicate = null;
+    const nowTime = new Date().getTime();
+
+    if (process.env.USE_MOCK_DATA === "true") {
+      const pRecords = MOCK_RECORDS[rPayload.patientId] || [];
+      recentDuplicate = pRecords.find((rec: any) => {
+        if (rec.parameter !== rPayload.parameter || String(rec.value) !== String(rPayload.value)) {
+          return false;
+        }
+        const diffMs = Math.abs(nowTime - new Date(rec.recordedAt).getTime());
+        return diffMs <= dupWindowSec * 1000;
+      });
+    } else {
+      const cutOffDate = new Date(nowTime - dupWindowSec * 1000);
+      recentDuplicate = await HealthRecord.findOne({
+        patientId: rPayload.patientId,
+        parameter: rPayload.parameter,
+        value: rPayload.value,
+        recordedAt: { $gte: cutOffDate }
+      });
+    }
+
+    if (recentDuplicate) {
+      console.log(`[Parser Debug] Identical duplicate observation detected for ${rPayload.parameter} = ${rPayload.value} within safety window.`);
+      detectedDuplicateRecently = true;
       continue;
     }
 
@@ -526,7 +563,18 @@ async function processMessageFlow(
     console.log("✅ Confirmation with possible alerts/clarifications sent:", successMsg);
   } else {
     // newlySavedRecords.length === 0
-    if (bpVoiceFailed) {
+    if (detectedDuplicateRecently) {
+      let dupMsg = "";
+      if (resolvedLang === "hindi") {
+        dupMsg = "यह रीडिंग हाल ही में पहले से ही रिकॉर्ड की जा चुकी है। क्या आप एक नई रीडिंग रिकॉर्ड करना चाहते थे?";
+      } else if (resolvedLang === "hinglish") {
+        dupMsg = "Yeh reading haal hi mein pehle se record ho chuki hai. Kya aap ek nayi reading record karna chahte they?";
+      } else {
+        dupMsg = "This reading has already been recorded recently. Did you intend to record a new reading?";
+      }
+      await sendWhatsAppMessage(from, dupMsg);
+      console.log("⚠️ Identical observation received within interval. Sent duplicate warning.");
+    } else if (bpVoiceFailed) {
       const bpErrPrompt = getVoiceBpNotUnderstoodMessage(resolvedLang);
       await sendWhatsAppMessage(from, bpErrPrompt);
       console.log("⚠️ Voice BP parsing failed with 0 saved records. Sent error prompt.");

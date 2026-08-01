@@ -192,7 +192,7 @@ async function runParserReliabilityTests() {
   // Check the response content: must show save confirmation first, then voice BP retry message, and NO "undefined/undefined"
   const responseMsg = axiosPostCalls[0]?.data?.text?.body || "";
   assert(
-    responseMsg.includes("Successfully recorded") || responseMsg.includes("Successfully aapke health observations"),
+    responseMsg.includes("successfully saved") || responseMsg.includes("successfully save"),
     "Confirmation block present"
   );
   assert(responseMsg.includes("Blood Sugar"), "Sugar listed in confirmation");
@@ -205,7 +205,7 @@ async function runParserReliabilityTests() {
   assert(!responseMsg.includes("NaN"), "Must never contain NaN");
   console.log("✅ Test 4 Passed: Voice BP failed, saved other valid parameters, appended clear repeat instructions, zero undefined/undefined.");
 
-  // 5. Multiple Alerts Combined into One Reply (Never send only alerts, always send save confirmation first)
+  // 5. Multiple Alerts (Warning Messages Disabled in V1 Engine - Only confirm recorded observations)
   resetState();
   // Abnormal Fasting sugar (150 > 100), Elevated BP (140/90), Normal Weight (70 kg), Low SpO2 (92%)
   await receiveMessage(makePayload("917618432290", "Sugar fasting 150 BP 140/90 weight 70 SpO2 92", "msg-multi-alert"), mockResponse() as any);
@@ -215,31 +215,28 @@ async function runParserReliabilityTests() {
 
   // Check confirmation is sent first
   assert(
-    combinedReply.startsWith("✅ Successfully recorded") ||
-    combinedReply.includes("Successfully recorded") ||
-    combinedReply.includes("Successfully aapke health observations"),
+    combinedReply.startsWith("✅ All your readings") ||
+    combinedReply.includes("successfully saved"),
     "Confirmation must be sent first."
   );
 
-  // Check both alerts are combined into the same message
-  assert(combinedReply.includes("Blood Sugar is high."), "Blood Sugar alert combined.");
-  assert(combinedReply.includes("Blood Pressure is elevated."), "Blood Pressure alert combined.");
-  assert(combinedReply.includes("Oxygen saturation is slightly low."), "Oxygen alert combined.");
-  assert(combinedReply.includes("Please recheck if you are feeling unwell."), "Please recheck footer present.");
+  // Warning Alerts are fully disabled as per Objective 2
+  assert(!combinedReply.includes("Blood Sugar is high."), "Automatic warnings must be disabled.");
+  assert(!combinedReply.includes("Blood Pressure is elevated."), "Automatic warnings must be disabled.");
+  assert(!combinedReply.includes("Oxygen saturation is slightly low."), "Automatic warnings must be disabled.");
 
   // Ensure we didn't send multiple messages
   assert.strictEqual(axiosPostCalls.length, 1, "Only exactly one combined reply sent.");
-  console.log("✅ Test 5 Passed: Multiple abnormal observations combined into one reply containing both save confirmation and alerts.");
+  console.log("✅ Test 5 Passed: Saved observations confirmed successfully with automatic alerts disabled.");
 
   // 6. Language Styles (Hindi & Hinglish)
   resetState();
   // Hindi abnormal BP
   await receiveMessage(makePayload("917618432290", "बीपी 140/90", "msg-hindi"), mockResponse() as any);
   const hindiReply = axiosPostCalls[0]?.data?.text?.body || "";
-  assert(hindiReply.includes("दर्ज किए गए") || hindiReply.includes("सफलतापूर्वक"), "Hindi confirmation header present.");
-  assert(hindiReply.includes("ब्लड प्रेसर बढ़ा हुआ है।") || hindiReply.includes("ब्लड प्रेशर बढ़ा हुआ है।"), "Hindi abnormal alert present.");
-  assert(hindiReply.includes("यदि आप अस्वस्थ महसूस कर रहे हैं तो कृपया दोबारा जांचें।"), "Hindi recheck instruction present.");
-  console.log("✅ Test 6 Passed: Language style matches Hindi confirmation and combined alerts.");
+  assert(hindiReply.includes("सफलतापूर्वक सेव") || hindiReply.includes("सफलतापूर्वक दर्ज"), "Hindi confirmation header present.");
+  assert(!hindiReply.includes("बढ़ा हुआ है।"), "Automatic warnings must be disabled in Hindi.");
+  console.log("✅ Test 6 Passed: Language style matches Hindi confirmation and no alerts are triggered.");
 
   // 7. Duplicate Detection
   resetState();
