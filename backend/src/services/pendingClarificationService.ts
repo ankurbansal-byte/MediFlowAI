@@ -82,25 +82,44 @@ export function clearRecentlyResolvedContext(patientId: string): void {
 export function detectQueryPattern(msg: string): { type: "latest" | "today" | null; parameter?: string } {
   const clean = msg.toLowerCase().trim();
 
+  // Explicitly identify general report and record queries that should NOT trigger the parser.
+  const queryPhrases = [
+    "आज की रिपोर्ट",
+    "आज क्या सेव किया",
+    "मेरी रिपोर्ट दिखाओ",
+    "आज का रिकॉर्ड",
+    "today's report",
+    "show today's records",
+    "my latest readings"
+  ];
+
+  const hasDirectQueryPhrase = queryPhrases.some(phrase => clean.includes(phrase));
+
   // To prevent false positives where a new health reading contains relative temporal words like "today" or "aaj",
   // we require actual query keywords or question markers to classify it as a read-back query.
   const queryKeywords = [
     "kitni", "kitna", "kya", "bheji", "bheja", "what", "did", "how", "?", "show", "tell", "read-back", "read back",
-    "batao", "bataiye", "bata", "dikhao", "dikha", "readings", "reading"
+    "batao", "bataiye", "bata", "dikhao", "dikha", "readings", "reading", "रिपोर्ट", "रिकॉर्ड"
   ];
   const hasQueryKeyword = queryKeywords.some(kw => {
     if (kw === "?") return clean.includes("?");
     return new RegExp(`\\b${kw}\\b`, "i").test(clean);
   });
 
-  if (!hasQueryKeyword) {
+  if (!hasDirectQueryPhrase && !hasQueryKeyword) {
     return { type: null };
   }
 
   const isToday =
     clean.includes("aaj") ||
     clean.includes("today") ||
-    clean.includes("readings sent today");
+    clean.includes("readings sent today") ||
+    clean.includes("आज की रिपोर्ट") ||
+    clean.includes("आज क्या सेव किया") ||
+    clean.includes("मेरी रिपोर्ट दिखाओ") ||
+    clean.includes("आज का रिकॉर्ड") ||
+    clean.includes("show today's records") ||
+    clean.includes("today's report");
 
   if (isToday) {
     return { type: "today" };

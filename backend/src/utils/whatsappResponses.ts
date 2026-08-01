@@ -92,13 +92,21 @@ export function formatConfirmationLegacy(records: any[], lang: LanguageStyle): s
 
 export function getCapitalizedFriendlyName(parameter: string, lang: LanguageStyle): string {
   if (lang === "hindi") {
+    if (parameter === "blood_sugar") return "ब्लड शुगर";
+    if (parameter === "blood_pressure") return "ब्लड प्रेशर";
+    if (parameter === "heart_rate") return "पल्स";
+    if (parameter === "oxygen_saturation") return "ऑक्सीजन";
+    if (parameter === "body_temperature") return "तापमान";
+    if (parameter === "weight") return "वजन";
+    if (parameter === "respiratory_rate") return "सांस की गति";
+    if (parameter === "height") return "कद";
     return getFriendlyName(parameter, lang);
   }
   if (parameter === "blood_sugar") return "Blood Sugar";
   if (parameter === "blood_pressure") return "Blood Pressure";
-  if (parameter === "heart_rate") return lang === "hinglish" ? "Pulse" : "Heart Rate";
-  if (parameter === "oxygen_saturation") return lang === "hinglish" ? "Oxygen Saturation" : "Oxygen Saturation";
-  if (parameter === "body_temperature") return lang === "hinglish" ? "Temperature" : "Body Temperature";
+  if (parameter === "heart_rate") return "Pulse";
+  if (parameter === "oxygen_saturation") return "Oxygen";
+  if (parameter === "body_temperature") return "Temperature";
   if (parameter === "weight") return "Weight";
   if (parameter === "respiratory_rate") return "Respiratory Rate";
   if (parameter === "height") return "Height";
@@ -112,16 +120,19 @@ export function formatConfirmation(records: any[], lang: LanguageStyle): string 
 
   // 1. Build the new premium confirmation block
   let header = "";
+  let readingsHeader = "";
   if (lang === "hindi") {
-    header = "✅ आपके स्वास्थ्य अवलोकन सफलतापूर्वक दर्ज किए गए।";
+    header = "✅ आपकी सभी रीडिंग सफलतापूर्वक सेव कर दी गई हैं।";
+    readingsHeader = "आज रिकॉर्ड हुई रीडिंग:";
   } else if (lang === "hinglish") {
-    header = "✅ Successfully aapke health observations record ho gaye hain.";
+    header = "✅ Aapki sabhi readings successfully save kar di gayi hain.";
+    readingsHeader = "Aaj record hui readings:";
   } else {
-    header = "✅ Successfully recorded your health observations.";
+    header = "✅ All your readings have been successfully saved.";
+    readingsHeader = "Readings recorded today:";
   }
 
   const lines: string[] = [];
-  const alerts: string[] = [];
 
   for (const r of records) {
     const name = getCapitalizedFriendlyName(r.parameter, lang);
@@ -135,77 +146,9 @@ export function formatConfirmation(records: any[], lang: LanguageStyle): string 
     }
 
     lines.push(`• ${name}${contextStr}: ${r.value}${space}${unit}`);
-
-    // Check abnormal alerts
-    if (r.parameter === "blood_sugar") {
-      const val = Number(r.value);
-      if (r.context === "fasting") {
-        if (val > 100) {
-          alerts.push(lang === "hindi" ? "ब्लड शुगर बढ़ा हुआ है।" : (lang === "hinglish" ? "Blood Sugar is high." : "Blood Sugar is high."));
-        } else if (val < 70) {
-          alerts.push(lang === "hindi" ? "ब्लड शुगर कम है।" : (lang === "hinglish" ? "Blood Sugar is low." : "Blood Sugar is low."));
-        }
-      } else {
-        if (val > 140) {
-          alerts.push(lang === "hindi" ? "ब्लड शुगर बढ़ा हुआ है।" : (lang === "hinglish" ? "Blood Sugar is high." : "Blood Sugar is high."));
-        } else if (val < 70) {
-          alerts.push(lang === "hindi" ? "ब्लड शुगर कम है।" : (lang === "hinglish" ? "Blood Sugar is low." : "Blood Sugar is low."));
-        }
-      }
-    } else if (r.parameter === "blood_pressure") {
-      const parts = String(r.value).split("/");
-      if (parts.length === 2) {
-        const sys = Number(parts[0]);
-        const dia = Number(parts[1]);
-        if (!isNaN(sys) && !isNaN(dia)) {
-          if (sys > 130 || dia > 80) {
-            alerts.push(lang === "hindi" ? "ब्लड प्रेशर बढ़ा हुआ है।" : (lang === "hinglish" ? "Blood Pressure is elevated." : "Blood Pressure is elevated."));
-          } else if (sys < 90 || dia < 60) {
-            alerts.push(lang === "hindi" ? "ब्लड प्रेशर कम है।" : (lang === "hinglish" ? "Blood Pressure is low." : "Blood Pressure is low."));
-          }
-        }
-      }
-    } else if (r.parameter === "oxygen_saturation") {
-      const val = Number(r.value);
-      if (!isNaN(val) && val < 95) {
-        alerts.push(lang === "hindi" ? "ऑक्सीजन स्तर थोड़ा कम है।" : (lang === "hinglish" ? "Oxygen saturation is slightly low." : "Oxygen saturation is slightly low."));
-      }
-    } else if (r.parameter === "heart_rate") {
-      const val = Number(r.value);
-      if (!isNaN(val)) {
-        if (val > 100) {
-          alerts.push(lang === "hindi" ? "हार्ट रेट बढ़ा हुआ है।" : (lang === "hinglish" ? "Heart Rate is high." : "Heart Rate is high."));
-        } else if (val < 60) {
-          alerts.push(lang === "hindi" ? "हार्ट रेट कम है।" : (lang === "hinglish" ? "Heart Rate is low." : "Heart Rate is low."));
-        }
-      }
-    } else if (r.parameter === "body_temperature") {
-      const val = Number(r.value);
-      if (!isNaN(val)) {
-        if (val > 37.5) {
-          alerts.push(lang === "hindi" ? "शरीर का तापमान अधिक है।" : (lang === "hinglish" ? "Body Temperature is high." : "Body Temperature is high."));
-        } else if (val < 36.0) {
-          alerts.push(lang === "hindi" ? "शरीर का तापमान कम है।" : (lang === "hinglish" ? "Body Temperature is low." : "Body Temperature is low."));
-        }
-      }
-    }
   }
 
-  let finalMsg = `${header}\n\n${lines.join("\n")}`;
-
-  if (alerts.length > 0) {
-    const alertHeader = lang === "hindi" ? "⚠️ अलर्ट:" : (lang === "hinglish" ? "⚠️ Alerts:" : "⚠️ Alerts:");
-    const instruction = lang === "hindi" ? "यदि आप अस्वस्थ महसूस कर रहे हैं तो कृपया दोबारा जांचें।" : (lang === "hinglish" ? "Please recheck if you are feeling unwell." : "Please recheck if you are feeling unwell.");
-
-    if (alerts.length === 1) {
-      // Direct message if only 1 alert (matches prompt example exactly)
-      finalMsg += `\n\n⚠️ ${alerts[0]}\n${instruction}`;
-    } else {
-      // Combined messages if multiple
-      const alertLines = alerts.map(a => `- ${a}`).join("\n");
-      finalMsg += `\n\n${alertHeader}\n${alertLines}\n${instruction}`;
-    }
-  }
+  let finalMsg = `${header}\n\n${readingsHeader}\n\n${lines.join("\n")}`;
 
   // 2. Append legacy format confirmation for perfect test compliance!
   const legacyConf = formatConfirmationLegacy(records, lang);
