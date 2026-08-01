@@ -109,6 +109,7 @@ import {
   getAudioTooLargeMessage,
   getTranscriptionFailureMessage,
   getEmptyVoiceTranscriptMessage,
+  getVoiceBpNotUnderstoodMessage,
 } from "../utils/whatsappResponses";
 
 // Resolve language style with fallback to detection, prioritizing pending state's language if available
@@ -138,7 +139,8 @@ async function processMessageFlow(
   whatsappMessageId: string,
   messageDate: Date,
   pendingToResolve?: any,
-  isEmergency?: boolean
+  isEmergency?: boolean,
+  source: "text" | "voice" = "text"
 ) {
   let extractedData = "";
   try {
@@ -298,8 +300,31 @@ async function processMessageFlow(
       if (validateCandidateRecord(item, message)) {
         completeCandidates.push(item);
       } else {
-        console.log(`[Parser] Deterministic validation failed for candidate:`, item);
+        console.log(`[Parser Debug] Deterministic validation failed for parameter ${item.parameter}. Extracted values: ${JSON.stringify(item)}. Result: FAIL. Skipped reason: Implausible values`);
         implausibleCandidates.push(item);
+      }
+    }
+  }
+
+  // Parameter Isolation & Voice BP parsing failure detection
+  let bpVoiceFailed = false;
+  if (source === "voice") {
+    const cleanMsg = message.toLowerCase();
+    const hasBpKeyword = cleanMsg.includes("bp") || cleanMsg.includes("blood pressure") || cleanMsg.includes("pressure") || cleanMsg.includes("बीपी") || cleanMsg.includes("रक्तचाप") || cleanMsg.includes("ब्लड प्रेशर");
+    const hasBpInComplete = completeCandidates.some(c => c.parameter === "blood_pressure");
+    if (hasBpKeyword && !hasBpInComplete) {
+      bpVoiceFailed = true;
+      console.log("[Parser Debug] Voice BP parsing failed: BP keyword detected but no complete BP extracted. Validation: FAIL. Skipped reason: Incomplete values from voice.");
+      // Filter out blood_pressure from incomplete and implausible lists to prevent standard alerts
+      for (let i = incompleteCandidates.length - 1; i >= 0; i--) {
+        if (incompleteCandidates[i].parameter === "blood_pressure") {
+          incompleteCandidates.splice(i, 1);
+        }
+      }
+      for (let i = implausibleCandidates.length - 1; i >= 0; i--) {
+        if (implausibleCandidates[i].parameter === "blood_pressure") {
+          implausibleCandidates.splice(i, 1);
+        }
       }
     }
   }
@@ -337,7 +362,7 @@ async function processMessageFlow(
       context: item.context || undefined,
       timeContext: item.timeContext || undefined,
       recordedAt: resolveRecordedAt(message, item.recordedAt as string | null, origMsgDate),
-      source: "text",
+      source,
       confidence: item.confidence ?? 0.99,
       originalMessage: pendingToResolve ? pendingToResolve.originalSourceText : message,
       whatsappMessageId: suffix,
@@ -348,6 +373,29 @@ async function processMessageFlow(
   // Save complete records that aren't already saved
   const newlySavedRecords: any[] = [];
   for (const rPayload of recordsToSave) {
+    // 2. Strict Validation Before Save
+    if (rPayload.parameter === "blood_pressure") {
+      const parts = String(rPayload.value).split("/");
+      if (
+        parts.length !== 2 ||
+        parts.some(p => p.toLowerCase() === "undefined" || p.toLowerCase() === "null" || p.toLowerCase() === "nan" || p.trim() === "")
+      ) {
+        console.log(`[Parser Debug] Skipped saving invalid/partial blood pressure: ${rPayload.value}. Save Result: SKIPPED.`);
+        continue;
+      }
+    } else {
+      if (
+        rPayload.value === undefined || rPayload.value === null ||
+        String(rPayload.value).toLowerCase() === "undefined" ||
+        String(rPayload.value).toLowerCase() === "null" ||
+        String(rPayload.value).toLowerCase() === "nan" ||
+        String(rPayload.value).trim() === ""
+      ) {
+        console.log(`[Parser Debug] Skipped saving invalid/empty value for ${rPayload.parameter}: ${rPayload.value}. Save Result: SKIPPED.`);
+        continue;
+      }
+    }
+
     let existingRecord = null;
     if (process.env.USE_MOCK_DATA === "true") {
       for (const pId in MOCK_RECORDS) {
@@ -366,7 +414,7 @@ async function processMessageFlow(
     }
 
     if (existingRecord) {
-      console.log("⚠️ Duplicate Record Skipped:", rPayload.parameter);
+      console.log(`[Parser Debug] Skipped duplicate record for ${rPayload.parameter}. Save Result: SKIPPED. Skipped reason: Duplicate record found.`);
       continue;
     }
 
@@ -379,7 +427,7 @@ async function processMessageFlow(
       await HealthRecord.create(rPayload);
     }
     newlySavedRecords.push(rPayload);
-    console.log("✅ Saved complete candidate:", rPayload.parameter);
+    console.log(`[Parser Debug] Parameter: ${rPayload.parameter}, Extracted values: ${JSON.stringify(rPayload)}, Validation result: PASS, Save result: SUCCESS.`);
   }
 
   if (newlySavedRecords.length > 0) {
@@ -431,8 +479,10 @@ async function processMessageFlow(
     return;
   }
 
-  // Determine what pending state should be
-  if (incompleteCandidates.length > 0 || unresolvedMeasurements.length > 0) {
+  // Determine pending state (excluding failed voice BP)
+  const hasPending = incompleteCandidates.length > 0 || unresolvedMeasurements.length > 0;
+
+  if (hasPending) {
     // Save/update pending clarification
     setPendingClarification(patient.patientId, {
       patientId: patient.patientId,
@@ -446,42 +496,53 @@ async function processMessageFlow(
       clarificationReason: reason,
       originalMessageDate: origMsgDate,
     });
+  } else {
+    if (pendingToResolve) {
+      completePendingClarification(patient.patientId);
+      clearPendingClarification(patient.patientId);
+    }
+  }
 
-    // Send clarification message
-    if (unresolvedMeasurements.length > 0) {
-      // If there are unresolved numbers, ask about them
-      const savedSummary = newlySavedRecords.length > 0
-        ? newlySavedRecords.map(r => {
-            const name = getFriendlyName(r.parameter, resolvedLang);
-            const connector = resolvedLang === "hindi" ? " और " : (resolvedLang === "hinglish" ? " aur " : " and ");
-            return `${r.value} ${name}`;
-          }).join(resolvedLang === "hindi" ? " और " : (resolvedLang === "hinglish" ? " aur " : " and "))
-        : "";
-      const clarifMsg = getUnresolvedMeasurementsClarification(unresolvedMeasurements, savedSummary, resolvedLang);
-      await sendWhatsAppMessage(from, clarifMsg);
-      console.log(`❓ Clarification requested for unresolved measurements: ${unresolvedMeasurements.join(", ")}`);
-    } else {
-      // Ask clarification for the first incomplete candidate
+  // Response generation
+  if (newlySavedRecords.length > 0) {
+    let successMsg = formatConfirmation(newlySavedRecords, resolvedLang);
+
+    if (bpVoiceFailed) {
+      successMsg += "\n\n" + getVoiceBpNotUnderstoodMessage(resolvedLang);
+    } else if (unresolvedMeasurements.length > 0) {
+      const clarifMsg = getUnresolvedMeasurementsClarification(unresolvedMeasurements, "", resolvedLang);
+      successMsg += "\n\n" + clarifMsg;
+    } else if (incompleteCandidates.length > 0) {
       const firstIncomplete = incompleteCandidates[0];
       const clarifMsg = getMissingDetailsClarification(
         firstIncomplete.parameter,
         resolvedLang,
         firstIncomplete.value
       );
-      await sendWhatsAppMessage(from, clarifMsg);
-      console.log(`❓ Clarification requested for incomplete candidate: ${firstIncomplete.parameter}`);
-    }
-  } else {
-    // No incomplete or unresolved left!
-    if (pendingToResolve) {
-      completePendingClarification(patient.patientId);
-      clearPendingClarification(patient.patientId);
+      successMsg += "\n\n" + clarifMsg;
     }
 
-    if (newlySavedRecords.length > 0) {
-      const successMsg = formatConfirmation(newlySavedRecords, resolvedLang);
-      await sendWhatsAppMessage(from, successMsg);
-      console.log("✅ Confirmation sent:", successMsg);
+    await sendWhatsAppMessage(from, successMsg);
+    console.log("✅ Confirmation with possible alerts/clarifications sent:", successMsg);
+  } else {
+    // newlySavedRecords.length === 0
+    if (bpVoiceFailed) {
+      const bpErrPrompt = getVoiceBpNotUnderstoodMessage(resolvedLang);
+      await sendWhatsAppMessage(from, bpErrPrompt);
+      console.log("⚠️ Voice BP parsing failed with 0 saved records. Sent error prompt.");
+    } else if (hasPending) {
+      if (unresolvedMeasurements.length > 0) {
+        const clarifMsg = getUnresolvedMeasurementsClarification(unresolvedMeasurements, "", resolvedLang);
+        await sendWhatsAppMessage(from, clarifMsg);
+      } else {
+        const firstIncomplete = incompleteCandidates[0];
+        const clarifMsg = getMissingDetailsClarification(
+          firstIncomplete.parameter,
+          resolvedLang,
+          firstIncomplete.value
+        );
+        await sendWhatsAppMessage(from, clarifMsg);
+      }
     } else {
       // If nothing saved and no pending clarification, could be IGNORE
       if (action === "IGNORE" || intent === "conversational") {
@@ -1258,7 +1319,7 @@ export const receiveMessage = async (req: Request, res: Response) => {
         const isEmergency = detectEmergencyUrgency(message);
         if (isEmergency) {
           console.log("⚠️ Emergency message detected! Bypassing normal turn flow for safety.");
-          await processMessageFlow(message, patient, from, whatsappMessageId, messageDate, undefined, true);
+          await processMessageFlow(message, patient, from, whatsappMessageId, messageDate, undefined, true, messageType === "audio" ? "voice" : "text");
           if (whatsappMessageId) {
             markMessageAsProcessed(whatsappMessageId);
           }
@@ -1312,7 +1373,7 @@ export const receiveMessage = async (req: Request, res: Response) => {
             console.log("⚠️ Explicit new observation bypass detected. Suspending active pending clarification.");
             const savedPending = pending;
             clearPendingClarification(patient.patientId);
-            await processMessageFlow(message, patient, from, whatsappMessageId, messageDate);
+            await processMessageFlow(message, patient, from, whatsappMessageId, messageDate, undefined, false, messageType === "audio" ? "voice" : "text");
             const newPending = getPendingClarification(patient.patientId);
             if (!newPending) {
               setPendingClarification(patient.patientId, savedPending);
@@ -1477,7 +1538,7 @@ export const receiveMessage = async (req: Request, res: Response) => {
             console.log("⚠️ Context hijack / conversational bypass detected. Clearing pending clarification bypassed to preserve old pending state.");
             console.log(`🔍 [Webhook Diagnostic] [Phase F: Processing Hijacked Message as Fresh] MsgId: ${whatsappMessageId || "none"}`);
             // Process the follow-up message as a fresh message
-            await processMessageFlow(message, patient, from, whatsappMessageId, messageDate);
+            await processMessageFlow(message, patient, from, whatsappMessageId, messageDate, undefined, false, messageType === "audio" ? "voice" : "text");
           } else {
             // 2. No hijack detected. Attempt deterministic field resolution (highest priority context resolution)
             let consumed = false;
@@ -1550,12 +1611,12 @@ export const receiveMessage = async (req: Request, res: Response) => {
             const combinedMessage = `${pending.originalSourceText} ${message}`;
             console.log(`🔄 Processing combined clarification message: "${combinedMessage}"`);
             console.log(`🔍 [Webhook Diagnostic] [Phase F: Processing Combined Pending Message] MsgId: ${whatsappMessageId || "none"}`);
-            await processMessageFlow(combinedMessage, patient, from, whatsappMessageId, messageDate, pending);
+            await processMessageFlow(combinedMessage, patient, from, whatsappMessageId, messageDate, pending, false, messageType === "audio" ? "voice" : "text");
           }
         } else {
           // Fresh message flow
           console.log(`🔍 [Webhook Diagnostic] [Phase F: Fresh Message Flow] MsgId: ${whatsappMessageId || "none"}`);
-          await processMessageFlow(message, patient, from, whatsappMessageId, messageDate);
+          await processMessageFlow(message, patient, from, whatsappMessageId, messageDate, undefined, false, messageType === "audio" ? "voice" : "text");
         }
       }
 
