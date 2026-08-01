@@ -505,7 +505,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
           />
         );
       case "profile":
-        if (isProfileV5_2) {
+        if (isV5_2 || isProfileV5_2) {
           return (
             <ProfileViewV5_2
               user={user}
@@ -525,7 +525,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
           />
         );
       case "settings":
-        if (isSettingsV5_2) {
+        if (isV5_2 || isSettingsV5_2) {
           return (
             <SettingsViewV5_2
               user={user}
@@ -700,7 +700,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
           {user.role === "patient" && (
             <div className="patient-top-header">
               <div className="patient-top-header__breadcrumb">
-                {(isV5_1 || isV5_2 || isRecordsV5_2 || isInsightsV5_2) ? (
+                {(isV5_1 || isV5_2 || isRecordsV5_2 || isInsightsV5_2 || isProfileV5_2 || isSettingsV5_2) ? (
                   <span className="breadcrumb-current">
                     {activeTab === "dashboard" ? "Home" : activeTab === "trends" ? "Health Records" : activeTab === "ai-insights" ? "Health Insights" : activeTab === "profile" ? "Profile" : "Settings"}
                   </span>
