@@ -284,12 +284,16 @@ async function processMessageFlow(
     // Normalize timing context canonically
     if (item.context) {
       const cleanCtx = String(item.context).toLowerCase().trim();
-      if (cleanCtx === "pre_meal" || cleanCtx === "pre-meal" || cleanCtx === "fasting" || cleanCtx === "fasted") {
+      if (cleanCtx === "fasting" || cleanCtx === "fasted") {
         item.context = "fasting";
-      } else if (cleanCtx === "post_meal" || cleanCtx === "post-meal") {
+      } else if (cleanCtx === "pre_meal" || cleanCtx === "pre-meal" || cleanCtx === "premeal") {
+        item.context = "pre_meal";
+      } else if (cleanCtx === "post_meal" || cleanCtx === "post-meal" || cleanCtx === "postmeal") {
         item.context = "post_meal";
       } else if (cleanCtx === "random") {
         item.context = "random";
+      } else {
+        item.context = "unknown";
       }
     }
 
@@ -2150,26 +2154,89 @@ async function saveAndAcknowledgeRecords(
       console.log(`🔍 [Webhook Diagnostic] [Phase G: Record Saved Successfully] PatientId: ${recordPayload.patientId}, Parameter: ${recordPayload.parameter}`);
     }
 
-    completePendingClarification(patient.patientId);
-    clearPendingClarification(patient.patientId);
+    const savedParams = new Set(savedRecords.map(r => r.parameter));
+    const remainingCandidates = pending.candidateRecords.filter(r => !savedParams.has(r.parameter));
+    const hasRemainingPending = remainingCandidates.length > 0 || (pending.unresolvedMeasurements && pending.unresolvedMeasurements.length > 0);
 
-    if (savedRecords.length > 0) {
-      const resolvedRecords = savedRecords.map(r => ({
-        patientId: r.patientId,
-        parameter: r.parameter,
-        value: r.value,
-        unit: r.unit,
-        context: r.context,
-        timeContext: r.timeContext,
-        recordedAt: r.recordedAt,
-        whatsappMessageId: r.whatsappMessageId,
-      }));
-      setRecentlyResolvedContext(patient.patientId, resolvedRecords);
+    if (hasRemainingPending) {
+      const remainingMissingFields = pending.missingFields.filter(f => {
+        if (savedParams.has("blood_sugar") && f === "glucose_context") return false;
+        if (savedParams.has("blood_pressure") && (f === "diastolic" || f === "systolic")) return false;
+        if (savedParams.has("body_temperature") && f === "temperature_unit") return false;
+        return true;
+      });
 
-      const resolvedLang = (pending.language || "english") as LanguageStyle;
-      const successMsg = formatConfirmation(savedRecords, resolvedLang);
-      await sendWhatsAppMessage(from, successMsg);
-      console.log("✅ Confirmation sent:", successMsg);
+      setPendingClarification(patient.patientId, {
+        patientId: pending.patientId,
+        hospitalId: pending.hospitalId,
+        originalWhatsappMessageId: pending.originalWhatsappMessageId,
+        originalSourceText: pending.originalSourceText,
+        language: pending.language,
+        candidateRecords: remainingCandidates,
+        missingFields: remainingMissingFields,
+        unresolvedMeasurements: pending.unresolvedMeasurements,
+        clarificationReason: pending.clarificationReason,
+        originalMessageDate: pending.originalMessageDate,
+      });
+
+      if (savedRecords.length > 0) {
+        const resolvedRecords = savedRecords.map(r => ({
+          patientId: r.patientId,
+          parameter: r.parameter,
+          value: r.value,
+          unit: r.unit,
+          context: r.context,
+          timeContext: r.timeContext,
+          recordedAt: r.recordedAt,
+          whatsappMessageId: r.whatsappMessageId,
+        }));
+        setRecentlyResolvedContext(patient.patientId, resolvedRecords);
+
+        const resolvedLang = (pending.language || "english") as LanguageStyle;
+        let successMsg = formatConfirmation(savedRecords, resolvedLang);
+
+        if (remainingCandidates.length > 0) {
+          const nextIncomplete = remainingCandidates[0];
+          const clarifMsg = getMissingDetailsClarification(
+            nextIncomplete.parameter,
+            resolvedLang,
+            nextIncomplete.value
+          );
+          successMsg += "\n\n" + clarifMsg;
+        } else if (pending.unresolvedMeasurements && pending.unresolvedMeasurements.length > 0) {
+          const clarifMsg = getUnresolvedMeasurementsClarification(
+            pending.unresolvedMeasurements,
+            "",
+            resolvedLang
+          );
+          successMsg += "\n\n" + clarifMsg;
+        }
+
+        await sendWhatsAppMessage(from, successMsg);
+        console.log("✅ Saved partial records and sent next clarification/unresolved prompt:", successMsg);
+      }
+    } else {
+      completePendingClarification(patient.patientId);
+      clearPendingClarification(patient.patientId);
+
+      if (savedRecords.length > 0) {
+        const resolvedRecords = savedRecords.map(r => ({
+          patientId: r.patientId,
+          parameter: r.parameter,
+          value: r.value,
+          unit: r.unit,
+          context: r.context,
+          timeContext: r.timeContext,
+          recordedAt: r.recordedAt,
+          whatsappMessageId: r.whatsappMessageId,
+        }));
+        setRecentlyResolvedContext(patient.patientId, resolvedRecords);
+
+        const resolvedLang = (pending.language || "english") as LanguageStyle;
+        const successMsg = formatConfirmation(savedRecords, resolvedLang);
+        await sendWhatsAppMessage(from, successMsg);
+        console.log("✅ Confirmation sent:", successMsg);
+      }
     }
   } else {
     // If validation fails (e.g. AI hallucinated value rejected), clear state & let user know

@@ -20,8 +20,11 @@ export const PARAMETER_SYNONYMS: Record<string, string[]> = {
 
 export const GLUCOSE_CONTEXT_SYNONYMS: Record<GlucoseContext, string[]> = {
   fasting: [
-    "fasting", "fasted", "empty stomach", "empty-stomach", "khali pet", "khaali pet", "fast", "fating", "fastg", "bina khaye", "बिना खाए", "बिना कुछ खाए", "खाली पेट", "सुबह खाली पेट",
-    "before breakfast", "before breakfast reading", "before eating", "before food", "before meal", "before a meal", "pre meal", "pre-meal", "preprandial", "premeal", "pre_meal",
+    "fasting", "fasted", "empty stomach", "empty-stomach", "khali pet", "khaali pet", "fast", "fating", "fastg", "bina khaye", "बिना खाए", "बिना कुछ खाए", "खाली पेट", "सुबह खाली पेट"
+  ],
+  pre_meal: [
+    "before a meal", "before meal", "pre-meal", "pre meal", "premeal", "pre_meal",
+    "before breakfast", "before breakfast reading", "before eating", "before food", "preprandial",
     "before lunch", "before dinner", "khane se pehle", "खाने से पहले", "nashte se pehle", "lunch se pehle", "लंच से पहले", "dinner se pehle", "डिनर से पहले", "breakfast se pehle", "bhojan se pehle", "नाश्ते से पहले", "भोजन से पहले"
   ],
   post_meal: [
@@ -30,9 +33,6 @@ export const GLUCOSE_CONTEXT_SYNONYMS: Record<GlucoseContext, string[]> = {
   ],
   random: [
     "random", "casual", "anytime", "random reading", "रैंडम", "कभी भी", "random tha", "any time"
-  ],
-  pre_meal: [
-    "pre meal", "pre-meal", "premeal", "before meal"
   ],
   unknown: []
 };
