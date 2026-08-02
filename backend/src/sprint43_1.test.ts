@@ -254,7 +254,7 @@ async function runTests() {
   resetState();
   await receiveMessage(makePayload("917618432290", "sugar 140", "msg-unique-1"), mockResponse() as any);
   assert.strictEqual(axiosPostCalls.length, 1);
-  assert(axiosPostCalls[0].data.text.body.includes("Was this glucose reading fasting") || axiosPostCalls[0].data.text.body.includes("glucose"));
+  assert(axiosPostCalls[0].data.text.body.includes("sugar") || axiosPostCalls[0].data.text.body.includes("checked"));
   console.log("✅ Test 16 Passed: One inbound message produces one logical clarification response");
 
   // =========================================================================
@@ -280,7 +280,7 @@ async function runTests() {
   // Msg 2: 80 (new ID)
   await receiveMessage(makePayload("917618432290", "80", "msg-new-2"), mockResponse() as any);
   assert.strictEqual(axiosPostCalls.length, 2);
-  assert(axiosPostCalls[1].data.text.body.includes("Done 👍 BP 130/80 mmHg"));
+  assert(axiosPostCalls[1].data.text.body.includes("Blood Pressure: 130/80 mmHg"));
   console.log("✅ Test 18 Passed: Genuinely new follow-up receives response");
 
   // =========================================================================
