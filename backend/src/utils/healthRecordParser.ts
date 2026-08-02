@@ -133,92 +133,121 @@ export function detectParameterFromMessage(msg: string): string | null {
 }
 
 /**
- * Parses glucose context deterministically from text
+ * Parses glucose context deterministically from text and normalizes timing expressions canonically.
  */
 export function parseGlucoseContext(msg: string): GlucoseContext | null {
   const clean = msg.toLowerCase().trim();
 
-  // Fasting
-  if (
-    clean.includes("fasting") ||
-    clean.includes("khali pet") ||
-    clean.includes("khaali pet") ||
-    clean.includes("खाली पेट") ||
-    clean === "fast" ||
-    clean === "fating" ||
-    clean === "fastg" ||
-    clean.includes("empty stomach") ||
-    clean.includes("bina khaye") ||
-    clean.includes("बिना खाए") ||
-    clean.includes("बिना कुछ खाए")
-  ) {
-    return "fasting";
+  const fastingExpressions = [
+    "fasting",
+    "fasted",
+    "empty stomach",
+    "empty-stomach",
+    "before breakfast",
+    "before breakfast reading",
+    "before eating",
+    "before food",
+    "before meal",
+    "before a meal",
+    "pre meal",
+    "pre-meal",
+    "preprandial",
+    "खाली पेट",
+    "सुबह खाली पेट",
+    "नाश्ते से पहले",
+    "भोजन से पहले",
+    // Compatibility / fallback synonyms:
+    "khali pet",
+    "khaali pet",
+    "fast",
+    "fating",
+    "fastg",
+    "bina khaye",
+    "बिना खाए",
+    "बिना कुछ खाए",
+    "pre_meal",
+    "premeal",
+    "before lunch",
+    "before dinner",
+    "khane se pehle",
+    "खाने से पहले",
+    "nashte se pehle",
+    "lunch se pehle",
+    "लंच से पहले",
+    "dinner se pehle",
+    "डिनर से पहले",
+    "breakfast se pehle",
+    "bhojan se pehle"
+  ];
+
+  const postMealExpressions = [
+    "after meal",
+    "after a meal",
+    "after food",
+    "after eating",
+    "after lunch",
+    "after dinner",
+    "after breakfast",
+    "post meal",
+    "post-meal",
+    "postprandial",
+    "खाने के बाद",
+    "भोजन के बाद",
+    // Compatibility / fallback synonyms:
+    "post_meal",
+    "postmeal",
+    "khane ke baad",
+    "khana khane ke baad",
+    "khane ke 2 ghante baad",
+    "2 hours after meal",
+    "2 hrs after food",
+    "nashte ke baad",
+    "नाश्ते के बाद",
+    "lunch ke baad",
+    "लंच के बाद",
+    "dinner ke baad",
+    "डिनर के बाद",
+    "breakfast ke baad",
+    "meal ke baad",
+    "bhojan ke baad"
+  ];
+
+  const randomExpressions = [
+    "random",
+    "casual",
+    "anytime",
+    "random reading",
+    "रैंडम",
+    "कभी भी",
+    // Compatibility / fallback synonyms:
+    "random tha"
+  ];
+
+  for (const expr of fastingExpressions) {
+    if (/[\u0900-\u097F]/.test(expr)) {
+      if (clean.includes(expr)) return "fasting";
+    } else {
+      const regex = new RegExp(`\\b${expr.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, "i");
+      if (regex.test(clean)) return "fasting";
+    }
   }
 
-  // Pre-meal / Before breakfast / Before lunch / Before dinner
-  if (
-    clean.includes("before food") ||
-    clean.includes("before breakfast") ||
-    clean.includes("before lunch") ||
-    clean.includes("before dinner") ||
-    clean.includes("before meal") ||
-    clean.includes("pre-meal") ||
-    clean.includes("pre_meal") ||
-    clean.includes("premeal") ||
-    clean.includes("khane se pehle") ||
-    clean.includes("खाने से पहले") ||
-    clean.includes("nashte se pehle") ||
-    clean.includes("नाश्ते से पहले") ||
-    clean.includes("lunch se pehle") ||
-    clean.includes("लंच से पहले") ||
-    clean.includes("dinner se pehle") ||
-    clean.includes("डिनर से पहले") ||
-    clean.includes("breakfast se pehle") ||
-    clean.includes("dinner se pehle") ||
-    clean.includes("bhojan se pehle") ||
-    clean.includes("भोजन से पहले")
-  ) {
-    return "pre_meal";
+  for (const expr of postMealExpressions) {
+    if (/[\u0900-\u097F]/.test(expr)) {
+      if (clean.includes(expr)) return "post_meal";
+    } else {
+      const regex = new RegExp(`\\b${expr.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, "i");
+      if (regex.test(clean)) return "post_meal";
+    }
   }
 
-  // Post-meal / After breakfast / After lunch / After dinner
-  if (
-    clean.includes("after food") ||
-    clean.includes("after breakfast") ||
-    clean.includes("after lunch") ||
-    clean.includes("after dinner") ||
-    clean.includes("after meal") ||
-    clean.includes("after a meal") ||
-    clean.includes("post-meal") ||
-    clean.includes("post_meal") ||
-    clean.includes("postmeal") ||
-    clean.includes("khane ke baad") ||
-    clean.includes("khana khane ke baad") ||
-    clean.includes("khane ke 2 ghante baad") ||
-    clean.includes("2 hours after meal") ||
-    clean.includes("2 hrs after food") ||
-    clean.includes("खाने के बाद") ||
-    clean.includes("nashte ke baad") ||
-    clean.includes("नाश्ते के बाद") ||
-    clean.includes("lunch ke baad") ||
-    clean.includes("लंच के बाद") ||
-    clean.includes("dinner ke baad") ||
-    clean.includes("डिनर के बाद") ||
-    clean.includes("breakfast ke baad") ||
-    clean.includes("meal ke baad") ||
-    clean.includes("bhojan ke baad") ||
-    clean.includes("भोजन के बाद")
-  ) {
-    return "post_meal";
-  }
-
-  // Random
-  if (
-    clean.includes("random") ||
-    clean.includes("random tha") ||
-    clean.includes("रैंडम")
-  ) {
-    return "random";
+  for (const expr of randomExpressions) {
+    if (/[\u0900-\u097F]/.test(expr)) {
+      if (clean.includes(expr)) return "random";
+    } else {
+      const regex = new RegExp(`\\b${expr.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, "i");
+      if (regex.test(clean)) return "random";
+    }
   }
 
   return null;
@@ -514,7 +543,7 @@ export function deterministicExtract(message: string): any {
   }
 
   const rawClauses = message.split(/[\n,;।।]|\b(?:and|aur|or|&|\+|then|fir|phir)\b|(?:^|\s+)(?:था|और)(?:\s+|$)/i);
-  const subClauses: { param: string | null; text: string }[] = [];
+  const subClauses: { param: string | null; text: string; rawClause: string }[] = [];
 
   for (const rawClause of rawClauses) {
     const trimmedClause = rawClause.trim();
@@ -525,7 +554,8 @@ export function deterministicExtract(message: string): any {
       if (matches[0].index > 0) {
         subClauses.push({
           param: null,
-          text: trimmedClause.substring(0, matches[0].index)
+          text: trimmedClause.substring(0, matches[0].index),
+          rawClause: trimmedClause
         });
       }
       for (let i = 0; i < matches.length; i++) {
@@ -533,18 +563,20 @@ export function deterministicExtract(message: string): any {
         const end = i + 1 < matches.length ? matches[i + 1].index : trimmedClause.length;
         subClauses.push({
           param: matches[i].param,
-          text: trimmedClause.substring(start, end)
+          text: trimmedClause.substring(start, end),
+          rawClause: trimmedClause
         });
       }
     } else {
       subClauses.push({
         param: null,
-        text: trimmedClause
+        text: trimmedClause,
+        rawClause: trimmedClause
       });
     }
   }
 
-  const resolvedSubClauses: { param: string | null; text: string }[] = [];
+  const resolvedSubClauses: { param: string | null; text: string; rawClause: string }[] = [];
   let runningParameter: string | null = null;
 
   for (const sub of subClauses) {
@@ -566,7 +598,8 @@ export function deterministicExtract(message: string): any {
 
     resolvedSubClauses.push({
       param: resolvedParam,
-      text: trimmedSeg
+      text: trimmedSeg,
+      rawClause: sub.rawClause
     });
   }
 
@@ -580,8 +613,8 @@ export function deterministicExtract(message: string): any {
     const segmentParam = seg.param;
     const cleanedSegment = stripNumbersBelongingToDatesAndTimes(segmentText);
 
-    const tempInfo = extractTemporalInfo(segmentText) || extractTemporalInfo(message);
-    const tContext = extractTimeContext(segmentText) || extractTimeContext(message);
+    const tempInfo = extractTemporalInfo(segmentText) || extractTemporalInfo(seg.rawClause) || extractTemporalInfo(message);
+    const tContext = extractTimeContext(segmentText) || extractTimeContext(seg.rawClause) || extractTimeContext(message);
 
     if (segmentParam === "blood_pressure") {
       let bpMatched = false;
@@ -653,7 +686,7 @@ export function deterministicExtract(message: string): any {
       for (const numStr of numbersInSeg) {
         const val = parseFloat(numStr);
         if (val >= 1 && val <= 2000) {
-          const context = parseGlucoseContext(segmentText) || parseGlucoseContext(message);
+          const context = parseGlucoseContext(segmentText) || parseGlucoseContext(seg.rawClause) || parseGlucoseContext(message);
           if (context) {
             candidateRecords.push({
               parameter: "blood_sugar",

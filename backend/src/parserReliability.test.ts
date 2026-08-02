@@ -198,7 +198,7 @@ async function runParserReliabilityTests() {
   assert(responseMsg.includes("Blood Sugar"), "Sugar listed in confirmation");
   assert(responseMsg.includes("Weight"), "Weight listed in confirmation");
   assert(
-    responseMsg.includes("I could not clearly understand") || responseMsg.includes("Mujhe aapka blood pressure reading"),
+    responseMsg.includes("Blood pressure incomplete lag raha") || responseMsg.includes("Blood pressure appears incomplete"),
     "BP repeat prompt appended"
   );
   assert(!responseMsg.includes("undefined"), "Must never contain undefined/undefined");

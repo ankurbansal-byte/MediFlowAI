@@ -245,14 +245,14 @@ async function runSprint34Tests() {
       action: "RECORD",
       intent: "health_measurement",
       candidateRecords: [
-        { parameter: "blood_pressure", systolic: 128, diastolic: 82, unit: "mmHg", confidence: 0.99 }
+        { parameter: "blood_pressure", systolic: 129, diastolic: 83, unit: "mmHg", confidence: 0.99 }
       ],
       missingFields: [],
       reason: ""
     };
-    await simulateReceive("bp 128 82", t6_resp, "msg-t6");
+    await simulateReceive("bp 129 83", t6_resp, "msg-t6");
     const r6 = MOCK_RECORDS["PAT-101"]?.find(r => r.parameter === "blood_pressure" && r.whatsappMessageId === "msg-t6_blood_pressure");
-    assert(!!r6 && r6.value === "128/82", "6. Complete BP with spaces saved successfully.");
+    assert(!!r6 && r6.value === "129/83", "6. Complete BP with spaces saved successfully.");
 
     // 7. Complete BP written using "by"
     const t7_resp = {
@@ -412,14 +412,14 @@ async function runSprint34Tests() {
       action: "RECORD",
       intent: "health_measurement",
       candidateRecords: [
-        { parameter: "blood_pressure", systolic: 130, diastolic: 85, unit: "mmHg", confidence: 0.99 },
-        { parameter: "heart_rate", value: 76, unit: "bpm", confidence: 0.99 },
-        { parameter: "oxygen_saturation", value: 97, unit: "%", confidence: 0.99 }
+        { parameter: "blood_pressure", systolic: 131, diastolic: 86, unit: "mmHg", confidence: 0.99 },
+        { parameter: "heart_rate", value: 77, unit: "bpm", confidence: 0.99 },
+        { parameter: "oxygen_saturation", value: 96, unit: "%", confidence: 0.99 }
       ],
       missingFields: [],
       reason: ""
     };
-    await simulateReceive("आज बीपी 130/85, पल्स 76 और ऑक्सीजन 97 है", t17_resp, "msg-t17");
+    await simulateReceive("आज बीपी 131/86, पल्स 77 और ऑक्सीजन 96 है", t17_resp, "msg-t17");
     const r17_bp = MOCK_RECORDS["PAT-101"]?.find(r => r.whatsappMessageId === "msg-t17_blood_pressure");
     const r17_pulse = MOCK_RECORDS["PAT-101"]?.find(r => r.whatsappMessageId === "msg-t17_heart_rate");
     const r17_spo2 = MOCK_RECORDS["PAT-101"]?.find(r => r.whatsappMessageId === "msg-t17_oxygen_saturation");
@@ -478,12 +478,12 @@ async function runSprint34Tests() {
       action: "RECORD",
       intent: "health_measurement",
       candidateRecords: [
-        { parameter: "blood_sugar", value: 125, unit: "mg/dL", context: "fasting", recordedAt: "20/07/2026", confidence: 0.99 }
+        { parameter: "blood_sugar", value: 126, unit: "mg/dL", context: "fasting", recordedAt: "20/07/2026", confidence: 0.99 }
       ],
       missingFields: [],
       reason: ""
     };
-    await simulateReceive("20/07/2026 ko sugar 125 thi", t21_resp, "msg-t21");
+    await simulateReceive("20/07/2026 ko sugar 126 thi", t21_resp, "msg-t21");
     const r21 = MOCK_RECORDS["PAT-101"]?.find(r => r.whatsappMessageId === "msg-t21_blood_sugar");
     assert(!!r21 && r21.recordedAt.getFullYear() === 2026 && r21.recordedAt.getMonth() === 6 && r21.recordedAt.getDate() === 20, "21. Explicit historical date (slash format 20/07/2026) resolves correctly.");
 

@@ -334,17 +334,12 @@ export function getGlucoseContextClarification(lang: LanguageStyle, value?: any)
  * Returns a localized message asking for missing blood pressure diastolic number.
  */
 export function getBloodPressureClarification(lang: LanguageStyle, systolicValue?: any): string {
-  const displayVal = systolicValue !== undefined && systolicValue !== null ? `${systolicValue}` : "";
-
   if (lang === "hindi") {
-    const prefix = displayVal ? `बीपी ${displayVal} ` : "बीपी ";
-    return `${prefix}नोट कर लिया 👍 दूसरा (डायस्टोलिक) नंबर क्या है? कृपया रक्तचाप का दूसरा (डायस्टोलिक) नंबर भी बताएं, जैसे 140/90।`;
+    return `ब्लड प्रेशर अधूरा लग रहा है। कृपया सिस्टोलिक और डायस्टोलिक दोनों वैल्यू भेजें। जैसे: 120/80`;
   } else if (lang === "hinglish") {
-    const prefix = displayVal ? `BP ${displayVal} ` : "BP ";
-    return `${prefix}note kar liya 👍 Doosra (diastolic) number kya hai? BP ka doosra (diastolic) number bhi batayein, jaise 140/90.`;
+    return `Blood pressure incomplete lag raha hai. Kripya systolic aur diastolic dono values bhejein. Example: 120/80`;
   } else {
-    const prefix = displayVal ? `Got it — BP systolic is ${displayVal}. ` : "Got it — BP systolic is noted. ";
-    return `${prefix}Please provide the second (diastolic) BP number, like 140/90.`;
+    return `Blood pressure appears incomplete. Please send both systolic and diastolic values. Example: 120/80`;
   }
 }
 
@@ -638,11 +633,11 @@ export function formatTodaysReadings(records: any[], lang: LanguageStyle): strin
 
 export function getVoiceBpNotUnderstoodMessage(lang: LanguageStyle): string {
   if (lang === "hindi") {
-    return "मुझे आपका ब्लड प्रेशर रीडिंग समझ नहीं आया। कृपया अपना बीपी सिस्टोलिक/डायस्टोलिक के रूप में दोबारा बताएं।";
+    return `ब्लड प्रेशर अधूरा लग रहा है। कृपया सिस्टोलिक और डायस्टोलिक दोनों वैल्यू भेजें। जैसे: 120/80`;
   } else if (lang === "hinglish") {
-    return "Mujhe aapka blood pressure reading samajh nahi aaya. Kripya apna BP systolic/diastolic ke roop mein dobara batayein.";
+    return `Blood pressure incomplete lag raha hai. Kripya systolic aur diastolic dono values bhejein. Example: 120/80`;
   } else {
-    return "I could not clearly understand your blood pressure reading. Please repeat your BP as systolic/diastolic.";
+    return `Blood pressure appears incomplete. Please send both systolic and diastolic values. Example: 120/80`;
   }
 }
 
