@@ -121,7 +121,7 @@ async function runSprint38Tests() {
     await receiveMessage(makePayload("917618432290", "Sugar 125", "msg-eng-1", referenceTimestamp), mockResponse() as any);
     assert(axiosPostCalls.length === 1, "English: Outbound WhatsApp triggered on Turn 1");
     assert(
-      axiosPostCalls[0]?.data?.text?.body.includes("Was this glucose reading fasting"),
+      axiosPostCalls[0]?.data?.text?.body.includes("When was this sugar checked?"),
       "English: Prompted naturally for fasting/before meal/after meal/random context"
     );
     assert(!axiosPostCalls[0]?.data?.text?.body.includes("glucose_context"), "English: Safe from internal terminology leakage");
@@ -143,7 +143,8 @@ async function runSprint38Tests() {
     assert(MOCK_RECORDS["PAT-101"]?.[0]?.value === 125, "English: Value saved is 125");
     assert(MOCK_RECORDS["PAT-101"]?.[0]?.context === "post_meal", "English: Context mapped is post_meal");
     assert(
-      axiosPostCalls[0]?.data?.text?.body.includes("Sugar 125 mg/dL (After meal) saved successfully"),
+      axiosPostCalls[0]?.data?.text?.body.includes("Done! I've successfully saved your sugar.") &&
+      axiosPostCalls[0]?.data?.text?.body.includes("• Blood Sugar (After meal): 125 mg/dL"),
       "English: Confirmation is natural English"
     );
 
@@ -160,7 +161,11 @@ async function runSprint38Tests() {
     );
     await receiveMessage(makePayload("917618432290", "BP 120/80", "msg-eng-bp", referenceTimestamp), mockResponse() as any);
     assert(MOCK_RECORDS["PAT-101"]?.[0]?.parameter === "blood_pressure", "English: Saved BP");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("BP 120/80 mmHg saved successfully"), "English: BP confirmation style is correct");
+    assert(
+      axiosPostCalls[0]?.data?.text?.body.includes("Done! I've successfully saved your BP.") &&
+      axiosPostCalls[0]?.data?.text?.body.includes("• Blood Pressure: 120/80 mmHg"),
+      "English: BP confirmation style is correct"
+    );
 
     // Turn 4: pulse
     resetState();
@@ -175,7 +180,11 @@ async function runSprint38Tests() {
     );
     await receiveMessage(makePayload("917618432290", "Pulse is 72", "msg-eng-pulse", referenceTimestamp), mockResponse() as any);
     assert(MOCK_RECORDS["PAT-101"]?.[0]?.parameter === "heart_rate", "English: Saved Pulse");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Pulse 72 bpm saved successfully"), "English: Pulse confirmation style is correct");
+    assert(
+      axiosPostCalls[0]?.data?.text?.body.includes("Done! I've successfully saved your pulse.") &&
+      axiosPostCalls[0]?.data?.text?.body.includes("• Pulse: 72 bpm"),
+      "English: Pulse confirmation style is correct"
+    );
 
     // Turn 5: oxygen
     resetState();
@@ -190,7 +199,11 @@ async function runSprint38Tests() {
     );
     await receiveMessage(makePayload("917618432290", "Oxygen level 98", "msg-eng-o2", referenceTimestamp), mockResponse() as any);
     assert(MOCK_RECORDS["PAT-101"]?.[0]?.parameter === "oxygen_saturation", "English: Saved Oxygen");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Oxygen 98% saved successfully"), "English: Oxygen confirmation style is correct");
+    assert(
+      axiosPostCalls[0]?.data?.text?.body.includes("Done! I've successfully saved your oxygen.") &&
+      axiosPostCalls[0]?.data?.text?.body.includes("• Oxygen: 98%"),
+      "English: Oxygen confirmation style is correct"
+    );
 
     // Turn 6: temperature
     resetState();
@@ -205,7 +218,11 @@ async function runSprint38Tests() {
     );
     await receiveMessage(makePayload("917618432290", "Temperature is 37 C", "msg-eng-temp", referenceTimestamp), mockResponse() as any);
     assert(MOCK_RECORDS["PAT-101"]?.[0]?.parameter === "body_temperature", "English: Saved Temperature");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Temperature 37 °C saved successfully"), "English: Temperature confirmation style is correct");
+    assert(
+      axiosPostCalls[0]?.data?.text?.body.includes("Done! I've successfully saved your temperature.") &&
+      axiosPostCalls[0]?.data?.text?.body.includes("• Temperature: 37 °C"),
+      "English: Temperature confirmation style is correct"
+    );
 
     // Turn 7: weight
     resetState();
@@ -220,7 +237,11 @@ async function runSprint38Tests() {
     );
     await receiveMessage(makePayload("917618432290", "My weight is 70 kg", "msg-eng-weight", referenceTimestamp), mockResponse() as any);
     assert(MOCK_RECORDS["PAT-101"]?.[0]?.parameter === "weight", "English: Saved Weight");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Weight 70 kg saved successfully"), "English: Weight confirmation style is correct");
+    assert(
+      axiosPostCalls[0]?.data?.text?.body.includes("Done! I've successfully saved your weight.") &&
+      axiosPostCalls[0]?.data?.text?.body.includes("• Weight: 70 kg"),
+      "English: Weight confirmation style is correct"
+    );
 
 
     // =========================================================================
@@ -242,7 +263,7 @@ async function runSprint38Tests() {
     await receiveMessage(makePayload("917618432290", "Sugar 125 hai", "msg-hing-1", referenceTimestamp), mockResponse() as any);
     assert(axiosPostCalls.length === 1, "Hinglish: Outbound WhatsApp triggered on Turn 1");
     assert(
-      axiosPostCalls[0]?.data?.text?.body.includes("Ye sugar reading fasting, khane se pehle, khane ke baad, ya random thi?"),
+      axiosPostCalls[0]?.data?.text?.body.includes("Yeh sugar kab check ki gayi thi?"),
       "Hinglish: Prompted naturally for fasting/before meal/after meal/random context in Hinglish style"
     );
 
@@ -261,8 +282,9 @@ async function runSprint38Tests() {
     assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Hinglish: Saved 1 health record on follow-up");
     assert(MOCK_RECORDS["PAT-101"]?.[0]?.context === "post_meal", "Hinglish: Context mapped is post_meal");
     assert(
-      axiosPostCalls[0]?.data?.text?.body.includes("Sugar 125 mg/dL (Khane ke baad) save ho gayi."),
-      "Hinglish: Confirmation is natural Hinglish style with parentheses fallback"
+      axiosPostCalls[0]?.data?.text?.body.includes("Done! Maine aapka sugar successfully save kar liya hai.") &&
+      axiosPostCalls[0]?.data?.text?.body.includes("• Blood Sugar (Khane ke baad): 125 mg/dL"),
+      "Hinglish: Confirmation is natural Hinglish style"
     );
 
     // Additional Hinglish records tests
@@ -277,7 +299,11 @@ async function runSprint38Tests() {
       })
     );
     await receiveMessage(makePayload("917618432290", "BP 140/90 hai", "msg-hing-bp", referenceTimestamp), mockResponse() as any);
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("BP 140/90 mmHg save ho gaya."), "Hinglish: BP confirmation style is correct");
+    assert(
+      axiosPostCalls[0]?.data?.text?.body.includes("Done! Maine aapka BP successfully save kar liya hai.") &&
+      axiosPostCalls[0]?.data?.text?.body.includes("• Blood Pressure: 140/90 mmHg"),
+      "Hinglish: BP confirmation style is correct"
+    );
 
     resetState();
     setMockExtractHealthData(async () =>
@@ -290,7 +316,11 @@ async function runSprint38Tests() {
       })
     );
     await receiveMessage(makePayload("917618432290", "oxygen 97 hai", "msg-hing-o2", referenceTimestamp), mockResponse() as any);
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Oxygen 97% save ho gaya."), "Hinglish: Oxygen confirmation style is correct");
+    assert(
+      axiosPostCalls[0]?.data?.text?.body.includes("Done! Maine aapka oxygen successfully save kar liya hai.") &&
+      axiosPostCalls[0]?.data?.text?.body.includes("• Oxygen: 97%"),
+      "Hinglish: Oxygen confirmation style is correct"
+    );
 
     resetState();
     setMockExtractHealthData(async () =>
@@ -303,7 +333,11 @@ async function runSprint38Tests() {
       })
     );
     await receiveMessage(makePayload("917618432290", "weight 82 kg hai", "msg-hing-weight", referenceTimestamp), mockResponse() as any);
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Weight 82 kg save ho gaya."), "Hinglish: Weight confirmation style is correct");
+    assert(
+      axiosPostCalls[0]?.data?.text?.body.includes("Done! Maine aapka weight successfully save kar liya hai.") &&
+      axiosPostCalls[0]?.data?.text?.body.includes("• Weight: 82 kg"),
+      "Hinglish: Weight confirmation style is correct"
+    );
 
 
     // =========================================================================
@@ -325,7 +359,7 @@ async function runSprint38Tests() {
     await receiveMessage(makePayload("917618432290", "मेरी शुगर 125 है", "msg-hin-1", referenceTimestamp), mockResponse() as any);
     assert(axiosPostCalls.length === 1, "Hindi: Outbound WhatsApp triggered on Turn 1");
     assert(
-      axiosPostCalls[0]?.data?.text?.body.includes("यह शुगर रीडिंग खाली पेट, खाने से पहले, खाने के बाद या रैंडम थी?"),
+      axiosPostCalls[0]?.data?.text?.body.includes("यह शुगर कब चेक की गई थी?"),
       "Hindi: Prompted naturally in Hindi script"
     );
 
@@ -344,8 +378,9 @@ async function runSprint38Tests() {
     assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Hindi: Saved 1 health record on follow-up");
     assert(MOCK_RECORDS["PAT-101"]?.[0]?.context === "post_meal", "Hindi: Context mapped is post_meal");
     assert(
-      axiosPostCalls[0]?.data?.text?.body.includes("शुगर 125 mg/dL (खाने के बाद) सेव हो गई।"),
-      "Hindi: Confirmation is natural Hindi style with parentheses fallback"
+      axiosPostCalls[0]?.data?.text?.body.includes("हो गया! मैंने आपका शुगर सफलतापूर्वक सेव कर लिया है।") &&
+      axiosPostCalls[0]?.data?.text?.body.includes("• ब्लड शुगर (खाने के बाद): 125 mg/dL"),
+      "Hindi: Confirmation is natural Hindi style"
     );
 
 
@@ -378,7 +413,8 @@ async function runSprint38Tests() {
     );
     await receiveMessage(makePayload("917618432290", "after meal", "msg-per-2", referenceTimestamp), mockResponse() as any);
     assert(
-      axiosPostCalls[0]?.data?.text?.body.includes("Sugar 125 mg/dL (Khane ke baad) save ho gayi."),
+      axiosPostCalls[0]?.data?.text?.body.includes("Done! Maine aapka sugar successfully save kar liya hai.") &&
+      axiosPostCalls[0]?.data?.text?.body.includes("• Blood Sugar (Khane ke baad): 125 mg/dL"),
       "Persistence: Saved in established Hinglish style even if follow-up message is a generic English phrase"
     );
 
@@ -404,7 +440,8 @@ async function runSprint38Tests() {
     assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Multi: Saved BP immediately");
     assert(MOCK_RECORDS["PAT-101"]?.[0]?.parameter === "blood_pressure", "Multi: Saved parameter is blood_pressure");
     assert(MOCK_RECORDS["PAT-101"]?.[0]?.value === "136/86", "Multi: Value is 136/86");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("146 kiski reading hai — sugar, pulse ya kuch aur?"), "Multi: Prompted for unresolved measurement in natural Hinglish style");
+    console.log("ACTUAL BODY OF OUTBOUND WHATSAPP:", JSON.stringify(axiosPostCalls[0]?.data?.text?.body));
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("146 kiski reading hai — sugar, pulse ya weight?"), "Multi: Prompted for unresolved measurement in natural Hinglish style");
 
     // Turn 2: sugar
     axiosPostCalls = [];
@@ -421,7 +458,11 @@ async function runSprint38Tests() {
     assert(getPendingClarification("PAT-101") !== null, "Multi: Still pending clarification");
     assert(getPendingClarification("PAT-101")?.candidateRecords?.[0]?.parameter === "blood_sugar", "Multi: Pending parameter resolved to blood_sugar");
     assert(getPendingClarification("PAT-101")?.candidateRecords?.[0]?.value === 146, "Multi: Pending value resolved to 146");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Sugar 146 hai 👍 Ye sugar reading fasting"), "Multi: Prompted for glucose context in natural Hinglish style");
+    assert(
+      axiosPostCalls[0]?.data?.text?.body.includes("Sugar 146 note kar li gayi hai.") &&
+      axiosPostCalls[0]?.data?.text?.body.includes("Yeh sugar kab check ki gayi thi?"),
+      "Multi: Prompted for glucose context in natural Hinglish style"
+    );
 
     // Turn 3: khane ke baad
     axiosPostCalls = [];
@@ -430,7 +471,11 @@ async function runSprint38Tests() {
     assert(MOCK_RECORDS["PAT-101"]?.[1]?.parameter === "blood_sugar", "Multi: Second record is blood_sugar");
     assert(MOCK_RECORDS["PAT-101"]?.[1]?.value === 146, "Multi: Glucose value is 146");
     assert(MOCK_RECORDS["PAT-101"]?.[1]?.context === "post_meal", "Multi: Glucose context is post_meal");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Sugar 146 mg/dL (Khane ke baad) save ho gayi."), "Multi: Saved successfully and acknowledged in Hinglish");
+    assert(
+      axiosPostCalls[0]?.data?.text?.body.includes("Done! Maine aapka sugar successfully save kar liya hai.") &&
+      axiosPostCalls[0]?.data?.text?.body.includes("• Blood Sugar (Khane ke baad): 146 mg/dL"),
+      "Multi: Saved successfully and acknowledged in Hinglish"
+    );
 
 
     // =========================================================================
@@ -444,13 +489,13 @@ async function runSprint38Tests() {
     // AI fails + Hinglish input
     await receiveMessage(makePayload("917618432290", "Sugar 127 hai", "msg-fail-hing", referenceTimestamp), mockResponse() as any);
     assert(axiosPostCalls.length === 1, "Failure: Outbound WhatsApp triggered on AI failure (Hinglish)");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Ye sugar reading fasting, khane se pehle, khane ke baad, ya random thi?"), "Failure: Survives AI offline and retains Hinglish style");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("Yeh sugar kab check ki gayi thi?"), "Failure: Survives AI offline and retains Hinglish style");
 
     // AI fails + Hindi input
     resetState();
     await receiveMessage(makePayload("917618432290", "मेरी शुगर 127 है", "msg-fail-hin", referenceTimestamp), mockResponse() as any);
     assert(axiosPostCalls.length === 1, "Failure: Outbound WhatsApp triggered on AI failure (Hindi)");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("यह शुगर रीडिंग खाली पेट, खाने से पहले, खाने के बाद या रैंडम थी?"), "Failure: Survives AI offline and retains Hindi style");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("यह शुगर कब चेक की गई थी?"), "Failure: Survives AI offline and retains Hindi style");
 
 
     // =========================================================================
@@ -464,6 +509,7 @@ async function runSprint38Tests() {
 
     // Internal field check
     const rawReply = axiosPostCalls[0]?.data?.text?.body;
+    console.log("SAFETY RAW REPLY:", JSON.stringify(rawReply));
     const internalKeywords = [
       "glucose_context",
       "candidateRecords",

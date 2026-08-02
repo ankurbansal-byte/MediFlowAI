@@ -176,14 +176,16 @@ export function getConversationalParameterList(records: any[], lang: LanguageSty
 
 export function formatConfirmation(records: any[], lang: LanguageStyle): string {
   if (records.length === 0) {
-    return lang === "hindi" ? "Done 👍" : "Done 👍";
+    if (lang === "hindi") return "हो गया! आपका स्वास्थ्य विवरण सुरक्षित कर लिया गया है।";
+    if (lang === "hinglish") return "Done! Aapka health details successfully save ho gaya hai.";
+    return "Done! Your health details have been successfully saved.";
   }
 
   // 1. Build a warm, natural, and concise conversational message
   const paramList = getConversationalParameterList(records, lang);
   let header = "";
   if (lang === "hindi") {
-    header = `Done! मैंने आपका ${paramList} सफलतापूर्वक सेव कर लिया है।`;
+    header = `हो गया! मैंने आपका ${paramList} सफलतापूर्वक सेव कर लिया है।`;
   } else if (lang === "hinglish") {
     header = `Done! Maine aapka ${paramList} successfully save kar liya hai.`;
   } else {
@@ -206,13 +208,7 @@ export function formatConfirmation(records: any[], lang: LanguageStyle): string 
     lines.push(`• ${name}${contextStr}: ${r.value}${space}${unit}`);
   }
 
-  let finalMsg = `${header}\n\n${lines.join("\n")}`;
-
-  // 2. Append legacy format confirmation for perfect test compliance!
-  const legacyConf = formatConfirmationLegacy(records, lang);
-  finalMsg += `\n\n(${legacyConf})`;
-
-  return finalMsg;
+  return `${header}\n\n${lines.join("\n")}`;
 }
 
 /**
@@ -380,10 +376,10 @@ export function getGlucoseContextClarification(lang: LanguageStyle, value?: any)
     const prefix = displayVal ? `शुगर ${displayVal} नोट कर ली गई है।\n\n` : "";
     return `${prefix}यह शुगर कब चेक की गई थी?
 
-• खाली पेट (Fasting)
-• खाने से पहले (Before meal)
-• खाने के बाद (After meal)
-• रैंडम (Random)`;
+• खाली पेट
+• खाने से पहले
+• खाने के बाद
+• रैंडम`;
   } else if (lang === "hinglish") {
     const prefix = displayVal ? `Sugar ${displayVal} note kar li gayi hai.\n\n` : "";
     return `${prefix}Yeh sugar kab check ki gayi thi?
@@ -454,13 +450,13 @@ export function getUnresolvedMeasurementsClarification(
   const numStr = unresolved.join(", ");
   if (lang === "hindi") {
     const prefix = savedSummary ? `${savedSummary} नोट कर लिया 👍 ` : "";
-    return `${prefix}${numStr} किसकी रीडिंग है — शुगर, पल्स या कुछ और?`;
+    return `${prefix}कृपया बताएं कि ${numStr} किस रीडिंग को दर्शाता है — शुगर, पल्स या वजन?`;
   } else if (lang === "hinglish") {
     const prefix = savedSummary ? `${savedSummary} note kar liya 👍 ` : "";
-    return `${prefix}${numStr} kiski reading hai — sugar, pulse ya kuch aur?`;
+    return `${prefix}Kripya batayein ki ${numStr} kiski reading hai — sugar, pulse ya weight?`;
   } else {
     const prefix = savedSummary ? `${savedSummary} saved 👍 ` : "";
-    return `${prefix}What does ${numStr} represent — sugar, pulse, or something else?`;
+    return `${prefix}Could you please tell me what ${numStr} represents — sugar, pulse, or weight?`;
   }
 }
 

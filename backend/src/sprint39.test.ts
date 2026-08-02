@@ -123,7 +123,7 @@ async function runSprint39Tests() {
     await receiveMessage(makePayload("917618432290", "Pulse 82", "msg-pulse-1", referenceTimestamp), mockResponse() as any);
     assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Pulse 1: Saved 1 record");
     assert(MOCK_RECORDS["PAT-101"]?.[0]?.parameter === "heart_rate" && MOCK_RECORDS["PAT-101"]?.[0]?.value === 82, "Pulse 1: heart_rate is 82");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Pulse 82 bpm saved successfully"), "Pulse 1: Outbound message is correct");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("Done! I've successfully saved your pulse.") && axiosPostCalls[0]?.data?.text?.body.includes("• Pulse: 82 bpm"), "Pulse 1: Outbound message is correct");
 
     // mera pulse 82 hai (Hinglish)
     resetState();
@@ -138,7 +138,7 @@ async function runSprint39Tests() {
     );
     await receiveMessage(makePayload("917618432290", "mera pulse 82 hai", "msg-pulse-2", referenceTimestamp), mockResponse() as any);
     assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Pulse 2 (Hinglish): Saved 1 record");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Pulse 82 bpm save ho gaya."), "Pulse 2 (Hinglish): Outbound message matches style");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("Done! Maine aapka pulse successfully save kar liya hai.") && axiosPostCalls[0]?.data?.text?.body.includes("• Pulse: 82 bpm"), "Pulse 2 (Hinglish): Outbound message matches style");
 
     // पल्स 82 है (Hindi)
     resetState();
@@ -153,7 +153,7 @@ async function runSprint39Tests() {
     );
     await receiveMessage(makePayload("917618432290", "पल्स 82 है", "msg-pulse-3", referenceTimestamp), mockResponse() as any);
     assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Pulse 3 (Hindi): Saved 1 record");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Done 👍 पल्स 82 bpm सेव हो गया।"), "Pulse 3 (Hindi): Outbound message matches style");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("हो गया! मैंने आपका पल्स सफलतापूर्वक सेव कर लिया है।") && axiosPostCalls[0]?.data?.text?.body.includes("• पल्स: 82 bpm"), "Pulse 3 (Hindi): Outbound message matches style");
 
     // AI failure deterministic fallback for pulse
     resetState();
@@ -198,7 +198,7 @@ async function runSprint39Tests() {
       })
     );
     await receiveMessage(makePayload("917618432290", "oxygen 97 hai", "msg-o2-2", referenceTimestamp), mockResponse() as any);
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Oxygen 97% save ho gaya."), "SpO2 Hinglish: Confirmed in Hinglish");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("Done! Maine aapka oxygen successfully save kar liya hai.") && axiosPostCalls[0]?.data?.text?.body.includes("• Oxygen: 97%"), "SpO2 Hinglish: Confirmed in Hinglish");
 
     // ऑक्सीजन 97 है (Hindi)
     resetState();
@@ -212,7 +212,7 @@ async function runSprint39Tests() {
       })
     );
     await receiveMessage(makePayload("917618432290", "ऑक्सीजन 97 है", "msg-o2-3", referenceTimestamp), mockResponse() as any);
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Done 👍 ऑक्सीजन 97% सेव हो गया।"), "SpO2 Hindi: Confirmed in Hindi");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("हो गया! मैंने आपका ऑक्सीजन सफलतापूर्वक सेव कर लिया है।") && axiosPostCalls[0]?.data?.text?.body.includes("• ऑक्सीजन: 97%"), "SpO2 Hindi: Confirmed in Hindi");
 
     // AI failure fallback for oxygen
     resetState();
@@ -267,7 +267,7 @@ async function runSprint39Tests() {
     );
     await receiveMessage(makePayload("917618432290", "temperature 99", "msg-temp-ambig", referenceTimestamp), mockResponse() as any);
     assert(!MOCK_RECORDS["PAT-101"] || MOCK_RECORDS["PAT-101"]?.length === 0, "Temp Ambig: Did not persist record without unit");
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Was the temperature 99 °C or °F?"), "Temp Ambig: Asked language-matched clarification");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("Temperature 99 has been noted.") && axiosPostCalls[0]?.data?.text?.body.includes("Please specify the temperature unit:"), "Temp Ambig: Asked language-matched clarification");
 
 
     // =========================================================================
@@ -314,7 +314,7 @@ async function runSprint39Tests() {
       })
     );
     await receiveMessage(makePayload("917618432290", "वजन 82 किलो है", "msg-weight-3", referenceTimestamp), mockResponse() as any);
-    assert(axiosPostCalls[0]?.data?.text?.body.includes("Done 👍 वजन 82 kg सेव हो गया।"), "Weight 3 (Hindi): Confirm matches Hindi style");
+    assert(axiosPostCalls[0]?.data?.text?.body.includes("हो गया! मैंने आपका वजन सफलतापूर्वक सेव कर लिया है।") && axiosPostCalls[0]?.data?.text?.body.includes("• वजन: 82 kg"), "Weight 3 (Hindi): Confirm matches Hindi style");
 
 
     // =========================================================================

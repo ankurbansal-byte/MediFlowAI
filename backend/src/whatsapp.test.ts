@@ -252,7 +252,7 @@ async function runTests() {
     assert(MOCK_RECORDS["PAT-101"][0].value === 137, "Value of the health record is exactly 137.");
     assert(axiosPostCalls.length === 1, "Exactly 1 acknowledgement sent to user.");
     const ackBody = axiosPostCalls[0].data.text.body;
-    assert(ackBody.includes("1 health record(s) saved successfully") || ackBody.includes("save ho gayi") || ackBody.includes("saved"), "Acknowledgement text is correct.");
+    assert(ackBody.includes("1 health record(s) saved successfully") || ackBody.includes("save ho gayi") || ackBody.includes("saved") || ackBody.includes("save kar liya hai") || ackBody.includes("successfully saved"), "Acknowledgement text is correct.");
 
     // -------------------------------------------------------------------------
     // TEST B: Same webhook/message delivered repeatedly -> still one HealthRecord, still one acknowledgement
