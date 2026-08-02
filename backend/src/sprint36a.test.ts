@@ -185,7 +185,7 @@ async function runSprint36aTests() {
     );
 
     // =========================================================================
-    // B. glucose pre_meal context persists (Normalized to fasting canonically)
+    // B. glucose pre_meal context persists (Normalized to pre_meal canonically)
     // =========================================================================
     resetState();
     setMockExtractHealthData(async () =>
@@ -194,7 +194,7 @@ async function runSprint36aTests() {
         action: "RECORD",
         intent: "health_measurement",
         candidateRecords: [
-          { parameter: "blood_sugar", value: 115, unit: "mg/dL", context: "fasting", confidence: 0.99 },
+          { parameter: "blood_sugar", value: 115, unit: "mg/dL", context: "pre_meal", confidence: 0.99 },
         ],
         missingFields: [],
         reason: "",
@@ -204,7 +204,7 @@ async function runSprint36aTests() {
     res = mockResponse();
     await receiveMessage(makePayload("917618432290", "Sugar before meal 115", "msg-b"), res);
     assert(
-      MOCK_RECORDS["PAT-101"] && MOCK_RECORDS["PAT-101"][0].context === "fasting",
+      MOCK_RECORDS["PAT-101"] && MOCK_RECORDS["PAT-101"][0].context === "pre_meal",
       "B. Glucose pre_meal context persists correctly."
     );
 

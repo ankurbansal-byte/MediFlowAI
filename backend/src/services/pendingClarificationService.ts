@@ -123,7 +123,9 @@ export function detectQueryPattern(msg: string): { type: "latest" | "today" | nu
     clean.includes("मेरी रिपोर्ट दिखाओ") ||
     clean.includes("आज का रिकॉर्ड") ||
     clean.includes("show today's records") ||
-    clean.includes("today's report");
+    clean.includes("today's report") ||
+    clean.includes("aaj ki report") ||
+    clean.includes("what did i record today");
 
   if (isToday) {
     return { type: "today" };
