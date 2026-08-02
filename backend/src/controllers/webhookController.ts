@@ -569,8 +569,9 @@ async function processMessageFlow(
       originalWhatsappMessageId: origMsgId,
       originalSourceText: pendingToResolve ? pendingToResolve.originalSourceText : message,
       language: resolvedLang,
-      candidateRecords: [],
-      missingFields: [],
+      candidateRecords: incompleteCandidates,
+      missingFields,
+      unresolvedMeasurements,
       clarificationReason: "duplicate_confirmation",
       originalMessageDate: origMsgDate,
       isDuplicateConfirmation: true,
@@ -1466,24 +1467,77 @@ export const receiveMessage = async (req: Request, res: Response) => {
                 console.log(`[Duplicate Engine] Explicitly saved duplicate observation: ${rPayload.parameter}`);
               }
 
-              completePendingClarification(patient.patientId);
-              clearPendingClarification(patient.patientId);
+              const hasRemainingPending = (pending.candidateRecords && pending.candidateRecords.length > 0) ||
+                                          (pending.unresolvedMeasurements && pending.unresolvedMeasurements.length > 0);
 
-              if (savedList.length > 0) {
-                const resolvedRecords = savedList.map(r => ({
-                  patientId: r.patientId,
-                  parameter: r.parameter,
-                  value: r.value,
-                  unit: r.unit,
-                  context: r.context,
-                  timeContext: r.timeContext,
-                  recordedAt: r.recordedAt,
-                  whatsappMessageId: r.whatsappMessageId,
-                }));
-                setRecentlyResolvedContext(patient.patientId, resolvedRecords);
+              if (hasRemainingPending) {
+                setPendingClarification(patient.patientId, {
+                  patientId: pending.patientId,
+                  hospitalId: pending.hospitalId,
+                  originalWhatsappMessageId: pending.originalWhatsappMessageId,
+                  originalSourceText: pending.originalSourceText,
+                  language: pending.language,
+                  candidateRecords: pending.candidateRecords || [],
+                  missingFields: pending.missingFields || [],
+                  unresolvedMeasurements: pending.unresolvedMeasurements || [],
+                  clarificationReason: pending.clarificationReason,
+                  originalMessageDate: pending.originalMessageDate,
+                });
 
-                const successMsg = formatConfirmation(savedList, resolvedPendingLang);
-                await sendWhatsAppMessage(from, successMsg);
+                if (savedList.length > 0) {
+                  const resolvedRecords = savedList.map(r => ({
+                    patientId: r.patientId,
+                    parameter: r.parameter,
+                    value: r.value,
+                    unit: r.unit,
+                    context: r.context,
+                    timeContext: r.timeContext,
+                    recordedAt: r.recordedAt,
+                    whatsappMessageId: r.whatsappMessageId,
+                  }));
+                  setRecentlyResolvedContext(patient.patientId, resolvedRecords);
+
+                  let successMsg = formatConfirmation(savedList, resolvedPendingLang);
+
+                  if (pending.candidateRecords && pending.candidateRecords.length > 0) {
+                    const nextIncomplete = pending.candidateRecords[0];
+                    const clarifMsg = getMissingDetailsClarification(
+                      nextIncomplete.parameter,
+                      resolvedPendingLang,
+                      nextIncomplete.value
+                    );
+                    successMsg += "\n\n" + clarifMsg;
+                  } else if (pending.unresolvedMeasurements && pending.unresolvedMeasurements.length > 0) {
+                    const clarifMsg = getUnresolvedMeasurementsClarification(
+                      pending.unresolvedMeasurements,
+                      "",
+                      resolvedPendingLang
+                    );
+                    successMsg += "\n\n" + clarifMsg;
+                  }
+
+                  await sendWhatsAppMessage(from, successMsg);
+                }
+              } else {
+                completePendingClarification(patient.patientId);
+                clearPendingClarification(patient.patientId);
+
+                if (savedList.length > 0) {
+                  const resolvedRecords = savedList.map(r => ({
+                    patientId: r.patientId,
+                    parameter: r.parameter,
+                    value: r.value,
+                    unit: r.unit,
+                    context: r.context,
+                    timeContext: r.timeContext,
+                    recordedAt: r.recordedAt,
+                    whatsappMessageId: r.whatsappMessageId,
+                  }));
+                  setRecentlyResolvedContext(patient.patientId, resolvedRecords);
+
+                  const successMsg = formatConfirmation(savedList, resolvedPendingLang);
+                  await sendWhatsAppMessage(from, successMsg);
+                }
               }
             } else {
               // Cancel save politely
@@ -1759,6 +1813,11 @@ export const receiveMessage = async (req: Request, res: Response) => {
                 if (diastolic !== null) {
                   consumed = true;
                   bpCandidate.diastolic = diastolic;
+                  const fullBp = extractFullBp(message);
+                  if (fullBp) {
+                    bpCandidate.systolic = fullBp.systolic;
+                    bpCandidate.diastolic = fullBp.diastolic;
+                  }
 
                   const records = parseMergedHealthRecords(pending, bpCandidate, "blood_pressure", message, whatsappMessageId, messageDate);
                   await saveAndAcknowledgeRecords(records, patient, from, pending);
@@ -1998,7 +2057,44 @@ export function isCancelCommand(msg: string): boolean {
 }
 
 
+export function extractFullBp(msg: string): { systolic: number; diastolic: number } | null {
+  const clean = msg.toLowerCase().trim();
+  const cleanedSegment = stripNumbersBelongingToDatesAndTimes(clean);
+
+  // Decimal BP e.g. 131.82
+  const decimalBpMatch = cleanedSegment.match(/\b(\d{2,3})\.(\d{2,3})\b/);
+  if (decimalBpMatch) {
+    const systolic = parseInt(decimalBpMatch[1], 10);
+    let diastolicStr = decimalBpMatch[2];
+    if (diastolicStr.length === 1) {
+      diastolicStr += "0";
+    }
+    const diastolic = parseInt(diastolicStr, 10);
+    if (systolic >= 70 && systolic <= 250 && diastolic >= 40 && diastolic <= 150) {
+      return { systolic, diastolic };
+    }
+  }
+
+  // Standard BP e.g. 145/95 or 145 by 95 or 145 over 95
+  const bpGlobalRegex = /\b(\d{2,3})\s*(?:\/|\\|by|over|and|aur|\s+)\s*(\d{2,3})\b/gi;
+  let bpMatch;
+  while ((bpMatch = bpGlobalRegex.exec(cleanedSegment)) !== null) {
+    const systolic = parseInt(bpMatch[1], 10);
+    const diastolic = parseInt(bpMatch[2], 10);
+    if (systolic >= 10 && systolic <= 1000 && diastolic >= 10 && diastolic <= 1000) {
+      return { systolic, diastolic };
+    }
+  }
+
+  return null;
+}
+
 export function extractDiastolicNumber(msg: string): number | null {
+  const fullBp = extractFullBp(msg);
+  if (fullBp) {
+    return fullBp.diastolic;
+  }
+
   const numbers = msg.match(/\b\d+\b/g);
   if (numbers && numbers.length > 0) {
     for (const numStr of numbers) {
