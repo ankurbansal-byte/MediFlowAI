@@ -116,6 +116,9 @@ import {
   getTranscriptionFailureMessage,
   getEmptyVoiceTranscriptMessage,
   getVoiceBpNotUnderstoodMessage,
+  getDuplicateConfirmationPrompt,
+  getDuplicatePoliteCancelMessage,
+  getDuplicateWarningMessage,
 } from "../utils/whatsappResponses";
 
 // Resolve language style with fallback to detection, prioritizing pending state's language if available
@@ -578,14 +581,7 @@ async function processMessageFlow(
       duplicatePayloads: duplicatesFound
     });
 
-    let dupMsg = "";
-    if (resolvedLang === "hindi") {
-      dupMsg = "यह रीडिंग हाल ही में पहले से ही रिकॉर्ड की जा चुकी है। क्या आप इसे फिर से सेव करना चाहते हैं? (हाँ/नहीं)";
-    } else if (resolvedLang === "hinglish") {
-      dupMsg = "Yeh reading haal hi mein pehle se record ho chuki hai. Kya aap isse fir se save karna chahte hain? (Yes/No)";
-    } else {
-      dupMsg = "This reading has already been recorded recently. Do you want to save it again? (Yes/No)";
-    }
+    const dupMsg = getDuplicateConfirmationPrompt(resolvedLang);
     await sendWhatsAppMessage(from, dupMsg);
     console.log("⚠️ Identical duplicate observation detected. Sent state-aware duplicate confirmation prompt.");
     return;
@@ -640,14 +636,7 @@ async function processMessageFlow(
     // newlySavedRecords.length === 0
     if (detectedDuplicateRecently) {
       // Handled by duplicatesFound.length > 0 above, but safe fallback if none triggered
-      let dupMsg = "";
-      if (resolvedLang === "hindi") {
-        dupMsg = "यह रीडिंग हाल ही में पहले से ही रिकॉर्ड की जा चुकी है। क्या आप एक नई रीडिंग रिकॉर्ड करना चाहते थे?";
-      } else if (resolvedLang === "hinglish") {
-        dupMsg = "Yeh reading haal hi mein pehle se record ho chuki hai. Kya aap ek nayi reading record karna chahte they?";
-      } else {
-        dupMsg = "This reading has already been recorded recently. Did you intend to record a new reading?";
-      }
+      const dupMsg = getDuplicateWarningMessage(resolvedLang);
       await sendWhatsAppMessage(from, dupMsg);
       console.log("⚠️ Identical observation received within interval. Sent duplicate warning.");
     } else if (bpVoiceFailed) {
@@ -1544,14 +1533,7 @@ export const receiveMessage = async (req: Request, res: Response) => {
               completePendingClarification(patient.patientId);
               clearPendingClarification(patient.patientId);
 
-              let politeCancelMsg = "";
-              if (resolvedPendingLang === "hindi") {
-                politeCancelMsg = "ठीक है, आपकी डुप्लिकेट रीडिंग सेव नहीं की गई है।";
-              } else if (resolvedPendingLang === "hinglish") {
-                politeCancelMsg = "Theek hai, duplicate reading save nahi ki gayi.";
-              } else {
-                politeCancelMsg = "Politely cancelled. The duplicate reading was not saved.";
-              }
+              const politeCancelMsg = getDuplicatePoliteCancelMessage(resolvedPendingLang);
               await sendWhatsAppMessage(from, politeCancelMsg);
               console.log("[Duplicate Engine] Saved cancelled politely.");
             }

@@ -90,6 +90,57 @@ export function formatConfirmationLegacy(records: any[], lang: LanguageStyle): s
   }
 }
 
+/**
+ * Returns a localized duplicate confirmation prompt.
+ */
+export function getDuplicateConfirmationPrompt(lang: LanguageStyle): string {
+  if (lang === "hindi") {
+    return `मुझे हाल ही में आपसे एक मिलती-जुलती रीडिंग मिली है।
+
+क्या आप इसे एक नई रीडिंग के रूप में सेव करना चाहते हैं?
+
+हाँ या नहीं में जवाब दें।`;
+  } else if (lang === "hinglish") {
+    return `Mujhe haal hi mein aapse ek milti-julti reading mili hai.
+
+Kya aap isse ek nayi reading ke roop mein save karna chahte hain?
+
+Yes ya No reply karein.`;
+  } else {
+    return `I already have a very similar reading from recently.
+
+Would you like me to save this as a new reading?
+
+Reply Yes or No.`;
+  }
+}
+
+/**
+ * Returns a localized polite duplicate cancel message.
+ */
+export function getDuplicatePoliteCancelMessage(lang: LanguageStyle): string {
+  if (lang === "hindi") {
+    return "ठीक है, आपकी डुप्लिकेट रीडिंग सेव नहीं की गई है।";
+  } else if (lang === "hinglish") {
+    return "Theek hai, duplicate reading save nahi ki gayi.";
+  } else {
+    return "Politely cancelled. The duplicate reading was not saved.";
+  }
+}
+
+/**
+ * Returns a localized duplicate warning message.
+ */
+export function getDuplicateWarningMessage(lang: LanguageStyle): string {
+  if (lang === "hindi") {
+    return "यह रीडिंग हाल ही में पहले से ही रिकॉर्ड की जा चुकी है। क्या आप एक नई रीडिंग रिकॉर्ड करना चाहते थे?";
+  } else if (lang === "hinglish") {
+    return "Yeh reading haal hi mein pehle se record ho chuki hai. Kya aap ek nayi reading record karna chahte they?";
+  } else {
+    return "This reading has already been recorded recently. Did you intend to record a new reading?";
+  }
+}
+
 export function getCapitalizedFriendlyName(parameter: string, lang: LanguageStyle): string {
   if (lang === "hindi") {
     if (parameter === "blood_sugar") return "ब्लड शुगर";
@@ -113,23 +164,30 @@ export function getCapitalizedFriendlyName(parameter: string, lang: LanguageStyl
   return getFriendlyName(parameter, lang);
 }
 
+export function getConversationalParameterList(records: any[], lang: LanguageStyle): string {
+  const names = records.map(r => getFriendlyName(r.parameter, lang));
+  if (names.length === 0) return "";
+  if (names.length === 1) return names[0];
+
+  const last = names.pop();
+  const conjunction = lang === "hindi" ? " और " : (lang === "hinglish" ? " aur " : " and ");
+  return names.join(", ") + conjunction + last;
+}
+
 export function formatConfirmation(records: any[], lang: LanguageStyle): string {
   if (records.length === 0) {
     return lang === "hindi" ? "Done 👍" : "Done 👍";
   }
 
-  // 1. Build the new premium confirmation block
+  // 1. Build a warm, natural, and concise conversational message
+  const paramList = getConversationalParameterList(records, lang);
   let header = "";
-  let readingsHeader = "";
   if (lang === "hindi") {
-    header = "✅ आपकी सभी रीडिंग सफलतापूर्वक सेव कर दी गई हैं।";
-    readingsHeader = "आज रिकॉर्ड हुई रीडिंग:";
+    header = `Done! मैंने आपका ${paramList} सफलतापूर्वक सेव कर लिया है।`;
   } else if (lang === "hinglish") {
-    header = "✅ Aapki sabhi readings successfully save kar di gayi hain.";
-    readingsHeader = "Aaj record hui readings:";
+    header = `Done! Maine aapka ${paramList} successfully save kar liya hai.`;
   } else {
-    header = "✅ All your readings have been successfully saved.";
-    readingsHeader = "Readings recorded today:";
+    header = `Done! I've successfully saved your ${paramList}.`;
   }
 
   const lines: string[] = [];
@@ -148,7 +206,7 @@ export function formatConfirmation(records: any[], lang: LanguageStyle): string 
     lines.push(`• ${name}${contextStr}: ${r.value}${space}${unit}`);
   }
 
-  let finalMsg = `${header}\n\n${readingsHeader}\n\n${lines.join("\n")}`;
+  let finalMsg = `${header}\n\n${lines.join("\n")}`;
 
   // 2. Append legacy format confirmation for perfect test compliance!
   const legacyConf = formatConfirmationLegacy(records, lang);
@@ -319,14 +377,29 @@ export function getGlucoseContextClarification(lang: LanguageStyle, value?: any)
   const displayVal = value !== undefined && value !== null ? `${value}` : "";
 
   if (lang === "hindi") {
-    const prefix = displayVal ? `शुगर ${displayVal} है 👍 ` : "";
-    return `${prefix}यह शुगर रीडिंग खाली पेट, खाने से पहले, खाने के बाद या रैंडम थी?`;
+    const prefix = displayVal ? `शुगर ${displayVal} नोट कर ली गई है।\n\n` : "";
+    return `${prefix}यह शुगर कब चेक की गई थी?
+
+• खाली पेट (Fasting)
+• खाने से पहले (Before meal)
+• खाने के बाद (After meal)
+• रैंडम (Random)`;
   } else if (lang === "hinglish") {
-    const prefix = displayVal ? `Sugar ${displayVal} hai 👍 ` : "";
-    return `${prefix}Ye sugar reading fasting, khane se pehle, khane ke baad, ya random thi?`;
+    const prefix = displayVal ? `Sugar ${displayVal} note kar li gayi hai.\n\n` : "";
+    return `${prefix}Yeh sugar kab check ki gayi thi?
+
+• Fasting
+• Before meal
+• After meal
+• Random`;
   } else {
-    const prefix = displayVal ? `Got it — sugar is ${displayVal}. ` : "Got it — sugar is noted. ";
-    return `${prefix}Was this glucose reading fasting, before a meal, after a meal, or random?`;
+    const prefix = displayVal ? `Sugar ${displayVal} has been noted.\n\n` : "";
+    return `${prefix}When was this sugar checked?
+
+• Fasting
+• Before meal
+• After meal
+• Random`;
   }
 }
 
@@ -335,11 +408,11 @@ export function getGlucoseContextClarification(lang: LanguageStyle, value?: any)
  */
 export function getBloodPressureClarification(lang: LanguageStyle, systolicValue?: any): string {
   if (lang === "hindi") {
-    return `ब्लड प्रेशर अधूरा लग रहा है। कृपया सिस्टोलिक और डायस्टोलिक दोनों वैल्यू भेजें। जैसे: 120/80`;
+    return `ब्लड प्रेशर पूरा करने के लिए कृपया सिस्टोलिक और डायस्टोलिक दोनों रीडिंग भेजें (जैसे: 120/80)।`;
   } else if (lang === "hinglish") {
-    return `Blood pressure incomplete lag raha hai. Kripya systolic aur diastolic dono values bhejein. Example: 120/80`;
+    return `Blood pressure pura karne ke liye please systolic aur diastolic dono values bhejein (jaise: 120/80).`;
   } else {
-    return `Blood pressure appears incomplete. Please send both systolic and diastolic values. Example: 120/80`;
+    return `To complete your blood pressure record, please send both systolic and diastolic readings (example: 120/80).`;
   }
 }
 
@@ -350,14 +423,23 @@ export function getBodyTemperatureClarification(lang: LanguageStyle, value?: any
   const displayVal = value !== undefined && value !== null ? `${value}` : "";
 
   if (lang === "hindi") {
-    const prefix = displayVal ? `तापमान ${displayVal} ` : "तापमान ";
-    return `${prefix}नोट कर लूँ 👍 बस बताइए — °C है या °F?`;
+    const prefix = displayVal ? `तापमान ${displayVal} दर्ज किया गया है।\n\n` : "";
+    return `${prefix}कृपया तापमान का पैमाना बताएं:
+
+• °C (Celsius)
+• °F (Fahrenheit)`;
   } else if (lang === "hinglish") {
-    const prefix = displayVal ? `Temperature ${displayVal} ` : "Temperature ";
-    return `${prefix}note kar loon 👍 Bas bata dijiye — °C hai ya °F?`;
+    const prefix = displayVal ? `Temperature ${displayVal} note kar liya hai.\n\n` : "";
+    return `${prefix}Kripya temperature ka scale batayein:
+
+• °C
+• °F`;
   } else {
-    const prefix = displayVal ? `Got it — temperature is ${displayVal}. ` : "Got it — temperature is noted. ";
-    return `${prefix}Was the temperature ${displayVal} °C or °F?`;
+    const prefix = displayVal ? `Temperature ${displayVal} has been noted.\n\n` : "";
+    return `${prefix}Please specify the temperature unit:
+
+• °C
+• °F`;
   }
 }
 
@@ -593,42 +675,82 @@ export function formatLatestReading(
  * Format compact list of today's readings.
  */
 export function formatTodaysReadings(records: any[], lang: LanguageStyle): string {
-  let title = "Today's readings:";
-  if (lang === "hindi") {
-    title = "आज की रीडिंग:";
-  } else if (lang === "hinglish") {
-    title = "Aaj ki readings:";
+  if (records.length === 0) {
+    return formatNoRecords(lang);
   }
 
-  const lines = records.map(r => {
-    const name = getFriendlyName(r.parameter, lang);
-    const capName = (lang !== "hindi" && name.length > 0) ? name.charAt(0).toUpperCase() + name.slice(1) : name;
-    const unit = r.unit || PARAMETER_REGISTRY[r.parameter]?.defaultUnit || "";
-    const space = unit === "%" ? "" : " ";
+  // Define parameter display titles with emojis for each language
+  const parameterHeaders: Record<string, { english: string; hindi: string; hinglish: string }> = {
+    blood_sugar: { english: "📈 Blood Sugar", hindi: "📈 ब्लड शुगर", hinglish: "📈 Blood Sugar" },
+    blood_pressure: { english: "🩺 Blood Pressure", hindi: "🩺 ब्लड प्रेशर", hinglish: "🩺 Blood Pressure" },
+    heart_rate: { english: "❤️ Heart Rate (Pulse)", hindi: "❤️ हृदय गति (पल्स)", hinglish: "❤️ Heart Rate (Pulse)" },
+    oxygen_saturation: { english: "⏱️ Oxygen (SpO2)", hindi: "⏱️ ऑक्सीजन स्तर (SpO2)", hinglish: "⏱️ Oxygen (SpO2)" },
+    body_temperature: { english: "🌡️ Body Temperature", hindi: "🌡️ शरीर का तापमान", hinglish: "🌡️ Body Temperature" },
+    weight: { english: "⚖️ Weight", hindi: "⚖️ वजन", hinglish: "⚖️ Weight" },
+    respiratory_rate: { english: "🫁 Respiratory Rate", hindi: "🫁 श्वसन दर", hinglish: "🫁 Respiratory Rate" },
+    height: { english: "📏 Height", hindi: "📏 कद", hinglish: "📏 Height" },
+  };
 
-    const contextLabel = r.context && r.context !== "unknown" ? getContextLabel(r.context, lang) : "";
+  // Group records by parameter while preserving their sorted order
+  const grouped: Record<string, any[]> = {};
+  const parameterOrder: string[] = []; // to maintain the order of appearance of parameters
 
-    let tcLabel = "";
-    if (r.timeContext) {
-      if (lang === "hindi") {
-        tcLabel = r.timeContext === "morning" ? "सुबह" : r.timeContext === "afternoon" ? "दोपहर" : r.timeContext === "evening" ? "शाम" : "रात";
-      } else if (lang === "hinglish") {
-        tcLabel = r.timeContext === "morning" ? "Morning" : r.timeContext === "afternoon" ? "Dopahar" : r.timeContext === "evening" ? "Shaam" : "Raat";
-      } else {
-        tcLabel = r.timeContext.charAt(0).toUpperCase() + r.timeContext.slice(1);
-      }
+  for (const r of records) {
+    if (!grouped[r.parameter]) {
+      grouped[r.parameter] = [];
+      parameterOrder.push(r.parameter);
     }
+    grouped[r.parameter].push(r);
+  }
 
-    let details: string[] = [];
-    if (contextLabel) details.push(contextLabel);
-    if (tcLabel) details.push(tcLabel);
+  // Build the localized title
+  let title = "Here are your readings recorded today:";
+  if (lang === "hindi") {
+    title = "आज रिकॉर्ड किए गए आपके स्वास्थ्य परिणाम:";
+  } else if (lang === "hinglish") {
+    title = "Aaj record kiye gaye aapke health readings:";
+  }
 
-    const detailStr = details.length > 0 ? ` (${details.join(" - ")})` : "";
+  const sections: string[] = [];
 
-    return `• ${capName} ${r.value}${space}${unit}${detailStr}`;
-  });
+  for (const param of parameterOrder) {
+    const paramRecs = grouped[param];
+    const headerObj = parameterHeaders[param];
+    const headerText = headerObj
+      ? (lang === "hindi" ? headerObj.hindi : (lang === "hinglish" ? headerObj.hinglish : headerObj.english))
+      : getFriendlyName(param, lang);
 
-  return `${title}\n${lines.join("\n")}`;
+    const lines = paramRecs.map(r => {
+      const name = getFriendlyName(r.parameter, lang);
+      const capName = (lang !== "hindi" && name.length > 0) ? name.charAt(0).toUpperCase() + name.slice(1) : name;
+      const unit = r.unit || PARAMETER_REGISTRY[r.parameter]?.defaultUnit || "";
+      const space = unit === "%" ? "" : " ";
+
+      const contextLabel = r.context && r.context !== "unknown" ? getContextLabel(r.context, lang) : "";
+
+      let tcLabel = "";
+      if (r.timeContext) {
+        if (lang === "hindi") {
+          tcLabel = r.timeContext === "morning" ? "सुबह" : r.timeContext === "afternoon" ? "दोपहर" : r.timeContext === "evening" ? "शाम" : "रात";
+        } else if (lang === "hinglish") {
+          tcLabel = r.timeContext === "morning" ? "Morning" : r.timeContext === "afternoon" ? "Dopahar" : r.timeContext === "evening" ? "Shaam" : "Raat";
+        } else {
+          tcLabel = r.timeContext.charAt(0).toUpperCase() + r.timeContext.slice(1);
+        }
+      }
+
+      const details: string[] = [];
+      if (contextLabel) details.push(contextLabel);
+      if (tcLabel) details.push(tcLabel);
+
+      const detailStr = details.length > 0 ? ` (${details.join(" - ")})` : "";
+      return `  • ${capName} ${r.value}${space}${unit}${detailStr}`;
+    });
+
+    sections.push(`${headerText}:\n${lines.join("\n")}`);
+  }
+
+  return `${title}\n\n${sections.join("\n\n")}`;
 }
 
 export function getVoiceBpNotUnderstoodMessage(lang: LanguageStyle): string {
