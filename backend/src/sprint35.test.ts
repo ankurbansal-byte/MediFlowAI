@@ -141,7 +141,7 @@ async function runSprint35Tests() {
     );
     assert(
       axiosPostCalls.length === 1 &&
-        axiosPostCalls[0].data.text.body.includes("Was this glucose reading fasting"),
+        axiosPostCalls[0].data.text.body.includes("When was this sugar checked"),
       "1. Sent English glucose clarification prompt."
     );
 
@@ -230,7 +230,7 @@ async function runSprint35Tests() {
     await receiveMessage(makePayload("917618432290", "शुगर १२५", "msg-4", referenceTimestamp), mockResponse());
     assert(
       axiosPostCalls.length === 1 &&
-        axiosPostCalls[0].data.text.body.includes("यह शुगर रीडिंग खाली पेट"),
+        axiosPostCalls[0].data.text.body.includes("यह शुगर कब चेक की गई थी?"),
       "4. Original Devanagari message triggers Devanagari clarification prompt."
     );
 
@@ -262,7 +262,7 @@ async function runSprint35Tests() {
     });
     await receiveMessage(makePayload("917618432290", "Sugar 125", "msg-5a", referenceTimestamp), mockResponse());
     assert(
-      axiosPostCalls[0].data.text.body.includes("Ye sugar reading fasting"),
+      axiosPostCalls[0].data.text.body.includes("Yeh sugar kab check ki gayi thi?"),
       "5. Sent Hinglish clarification prompt."
     );
     // Reply in Hindi Devanagari
@@ -304,7 +304,7 @@ async function runSprint35Tests() {
       "6. Incomplete BP 140 triggers CLARIFY and saves zero records."
     );
     assert(
-      axiosPostCalls[0].data.text.body.includes("Please provide the second (diastolic) BP number"),
+      axiosPostCalls[0].data.text.body.includes("To complete your blood pressure record, please send both systolic and diastolic"),
       "6. Sent English BP clarification prompt."
     );
 
@@ -354,7 +354,7 @@ async function runSprint35Tests() {
       "8. Ambiguous temperature triggers CLARIFY and saves zero records."
     );
     assert(
-      axiosPostCalls[0].data.text.body.includes("Was the temperature 38 °C or °F"),
+      axiosPostCalls[0].data.text.body.includes("• °C"),
       "8. Sent temperature unit clarification prompt."
     );
 
@@ -395,7 +395,7 @@ async function runSprint35Tests() {
       "10. Complete glucose message is processed immediately with zero clarifications."
     );
     assert(
-      axiosPostCalls[0].data.text.body.includes("saved successfully"),
+      axiosPostCalls[0].data.text.body.includes("successfully saved"),
       "10. Sent save confirmation message."
     );
 

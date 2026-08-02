@@ -152,7 +152,7 @@ Rules for Classification:
    - blood_pressure -> "mmHg" (requires both "systolic" and "diastolic")
    - heart_rate -> "bpm" (Pulse / dhadkan / pulse / heart rate)
    - oxygen_saturation -> "%" (Oxygen / oxygen level / SpO2 / ऑक्सीजन)
-   - body_temperature -> "°C" (Convert Fahrenheit F to Celsius C: C = (F - 32) * 5/9, e.g. 98.6 F -> 37 °C)
+   - body_temperature -> "°C" or "°F" (Preserve the unit exactly as provided. Do NOT automatically convert Fahrenheit to Celsius or Celsius to Fahrenheit, e.g. 98.6 F -> 98.6 °F, 37 C -> 37 °C)
    - weight -> "kg" (Weight / wajan / वजन / kilo)
    - respiratory_rate -> "breaths/min" (Respiratory rate / breathing rate / saans / सांस)
    - height -> "cm" (Height / meri height / कद / feet/inches safely converted to cm: 1 inch = 2.54 cm, 1 foot = 12 inches)

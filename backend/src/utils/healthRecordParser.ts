@@ -387,7 +387,10 @@ export function deterministicExtract(message: string): any {
     const tempInfo = extractTemporalInfo(segmentText) || extractTemporalInfo(seg.rawClause) || extractTemporalInfo(message);
     const tContext = extractTimeContext(segmentText) || extractTimeContext(seg.rawClause) || extractTimeContext(message);
 
-    if (segmentParam === "blood_pressure") {
+    const paramDef = PARAMETER_REGISTRY[segmentParam];
+    if (!paramDef) continue;
+
+    if (paramDef.isCompound) {
       let bpMatched = false;
       const decimalBpMatch = cleanedSegment.match(/\b(\d{2,3})\.(\d{2,3})\b/);
       if (decimalBpMatch) {
@@ -397,12 +400,12 @@ export function deterministicExtract(message: string): any {
           diastolicStr += "0";
         }
         const diastolic = parseInt(diastolicStr, 10);
-        if (systolic >= 70 && systolic <= 250 && diastolic >= 40 && diastolic <= 150) {
+        if (validateValue(segmentParam, systolic, "systolic") && validateValue(segmentParam, diastolic, "diastolic")) {
           candidateRecords.push({
-            parameter: "blood_pressure",
+            parameter: segmentParam,
             systolic,
             diastolic,
-            unit: "mmHg",
+            unit: paramDef.defaultUnit,
             recordedAt: tempInfo,
             timeContext: tContext || undefined,
             confidence: 0.99
@@ -417,12 +420,12 @@ export function deterministicExtract(message: string): any {
         while ((bpMatch = bpGlobalRegex.exec(cleanedSegment)) !== null) {
           const systolic = parseInt(bpMatch[1], 10);
           const diastolic = parseInt(bpMatch[2], 10);
-          if (systolic >= 10 && systolic <= 1000 && diastolic >= 10 && diastolic <= 1000) {
+          if (validateValue(segmentParam, systolic, "systolic") && validateValue(segmentParam, diastolic, "diastolic")) {
             candidateRecords.push({
-              parameter: "blood_pressure",
+              parameter: segmentParam,
               systolic,
               diastolic,
-              unit: "mmHg",
+              unit: paramDef.defaultUnit,
               recordedAt: tempInfo,
               timeContext: tContext || undefined,
               confidence: 0.99
@@ -433,15 +436,16 @@ export function deterministicExtract(message: string): any {
       }
 
       if (!bpMatched) {
-        const incompleteBpRegex = /(?:bp|blood\s*pressure|pressure|बीपी|रक्तचाप|ब्लड प्रेशर)(?:[^0-9\n]*)\b(\d{2,3})\b/i;
+        const rxStr = `(?:${PARAMETER_SYNONYMS[segmentParam].join("|")})(?:[^0-9\\n]*)\\b(\\d{2,3})\\b`;
+        const incompleteBpRegex = new RegExp(rxStr, "i");
         const match = cleanedSegment.match(incompleteBpRegex);
         if (match) {
           const systolic = parseInt(match[1], 10);
-          if (systolic >= 10 && systolic <= 1000) {
+          if (validateValue(segmentParam, systolic, "systolic")) {
             candidateRecords.push({
-              parameter: "blood_pressure",
+              parameter: segmentParam,
               systolic,
-              unit: "mmHg",
+              unit: paramDef.defaultUnit,
               recordedAt: tempInfo,
               timeContext: tContext || undefined,
               confidence: 0.99
@@ -450,220 +454,90 @@ export function deterministicExtract(message: string): any {
           }
         }
       }
-    }
-
-    else if (segmentParam === "blood_sugar") {
-      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
-      for (const numStr of numbersInSeg) {
-        const val = parseFloat(numStr);
-        if (val >= 1 && val <= 2000) {
-          const context = parseGlucoseContext(segmentText) || parseGlucoseContext(seg.rawClause) || parseGlucoseContext(message);
-          if (context) {
-            candidateRecords.push({
-              parameter: "blood_sugar",
-              value: val,
-              unit: "mg/dL",
-              context: context,
-              recordedAt: tempInfo,
-              timeContext: tContext || undefined,
-              confidence: 0.99
-            });
-          } else {
-            candidateRecords.push({
-              parameter: "blood_sugar",
-              value: val,
-              unit: "mg/dL",
-              context: "unknown",
-              recordedAt: tempInfo,
-              timeContext: tContext || undefined,
-              confidence: 0.99
-            });
-            missingFields.push("glucose_context");
-          }
-        }
+    } else {
+      if (segmentParam === "respiratory_rate") {
+        const isRrSymptomOnly = clean.includes("saans lene mein") || clean.includes("saans phool") || clean.includes("breathing difficulty") || clean.includes("shortness of breath");
+        if (isRrSymptomOnly) continue;
       }
-    }
 
-    else if (segmentParam === "heart_rate") {
       const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
       for (const numStr of numbersInSeg) {
-        const val = parseInt(numStr, 10);
-        if (val >= 1 && val <= 1000) {
-          candidateRecords.push({
-            parameter: "heart_rate",
-            value: val,
-            unit: "bpm",
-            recordedAt: tempInfo,
-            timeContext: tContext || undefined,
-            confidence: 0.99
-          });
-        }
-      }
-    }
+        let val = parseFloat(numStr);
 
-    else if (segmentParam === "oxygen_saturation") {
-      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
-      for (const numStr of numbersInSeg) {
-        const val = parseInt(numStr, 10);
-        if (val >= 1 && val <= 300) {
-          candidateRecords.push({
-            parameter: "oxygen_saturation",
-            value: val,
-            unit: "%",
-            recordedAt: tempInfo,
-            timeContext: tContext || undefined,
-            confidence: 0.99
-          });
-        }
-      }
-    }
-
-    else if (segmentParam === "body_temperature") {
-      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
-      for (const numStr of numbersInSeg) {
-        const val = parseFloat(numStr);
-        if (val >= 1 && val <= 500) {
-          let tempUnit: string | null = null;
-          const hasExplicitC = /\b(?:°?c|celsius|celcius)\b/i.test(segmentText) || segmentText.includes("°c") || segmentText.includes("celsius") || segmentText.includes("सेल्सियस");
-          const hasExplicitF = /\b(?:°?f|fahrenheit|farenheit)\b/i.test(segmentText) || segmentText.includes("°f") || segmentText.includes("fahrenheit") || segmentText.includes("फ़ारेनहाइट") || segmentText.includes("फारेनहाइट");
-
-          if (hasExplicitC) {
-            tempUnit = "°C";
-          } else if (hasExplicitF) {
-            tempUnit = "°F";
-          } else {
-            if (val === 98.6) {
-              tempUnit = "°F";
-            } else {
-              tempUnit = "unknown";
+        if (segmentParam === "height") {
+          let heightValue: number | null = null;
+          const feetInchesRegexes = [
+            /\b(\d+)\s*'\s*(\d+)(?:"|in|inch|inches)?\b/i,
+            /\b(\d+)\s*(?:feet|foot|ft|फ़ीट|फुट)\s*(\d+)\s*(?:inches|inch|in|इंच)?\b/iu
+          ];
+          for (const rx of feetInchesRegexes) {
+            const match = segmentText.match(rx);
+            if (match) {
+              const ft = parseInt(match[1], 10);
+              const inch = parseInt(match[2], 10);
+              if (ft >= 3 && ft <= 8 && inch >= 0 && inch < 12) {
+                heightValue = parseFloat(((ft * 12 + inch) * 2.54).toFixed(1));
+                break;
+              }
             }
           }
-
-          if (tempUnit === "°F") {
-            const celsiusVal = parseFloat(((val - 32) * 5 / 9).toFixed(1));
-            candidateRecords.push({
-              parameter: "body_temperature",
-              value: celsiusVal,
-              unit: "°C",
-              recordedAt: tempInfo,
-              timeContext: tContext || undefined,
-              confidence: 0.99
-            });
-          } else if (tempUnit === "°C") {
-            candidateRecords.push({
-              parameter: "body_temperature",
-              value: val,
-              unit: "°C",
-              recordedAt: tempInfo,
-              timeContext: tContext || undefined,
-              confidence: 0.99
-            });
-          } else {
-            candidateRecords.push({
-              parameter: "body_temperature",
-              value: val,
-              unit: "unknown",
-              recordedAt: tempInfo,
-              timeContext: tContext || undefined,
-              confidence: 0.99
-            });
-            missingFields.push("temperature_unit");
-          }
-        }
-      }
-    }
-
-    else if (segmentParam === "weight") {
-      const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
-      for (const numStr of numbersInSeg) {
-        const val = parseFloat(numStr);
-        if (val >= -500 && val <= 1000) {
-          const isLbs = segmentText.includes("lbs");
-          if (isLbs) {
-            const kgVal = parseFloat((val * 0.45359237).toFixed(1));
-            candidateRecords.push({
-              parameter: "weight",
-              value: kgVal,
-              unit: "kg",
-              recordedAt: tempInfo,
-              timeContext: tContext || undefined,
-              confidence: 0.99
-            });
-          } else {
-            candidateRecords.push({
-              parameter: "weight",
-              value: val,
-              unit: "kg",
-              recordedAt: tempInfo,
-              timeContext: tContext || undefined,
-              confidence: 0.99
-            });
-          }
-        }
-      }
-    }
-
-    else if (segmentParam === "respiratory_rate") {
-      const isRrSymptomOnly = clean.includes("saans lene mein") || clean.includes("saans phool") || clean.includes("breathing difficulty") || clean.includes("shortness of breath");
-      if (!isRrSymptomOnly) {
-        const numbersInSeg = cleanedSegment.match(/\b\d+\b/g) || [];
-        for (const numStr of numbersInSeg) {
-          const val = parseInt(numStr, 10);
-          if (val >= 1 && val <= 200) {
-            candidateRecords.push({
-              parameter: "respiratory_rate",
-              value: val,
-              unit: "breaths/min",
-              recordedAt: tempInfo,
-              timeContext: tContext || undefined,
-              confidence: 0.99
-            });
-          }
-        }
-      }
-    }
-
-    else if (segmentParam === "height") {
-      let heightValue: number | null = null;
-      const feetInchesRegexes = [
-        /\b(\d+)\s*'\s*(\d+)(?:"|in|inch|inches)?\b/i,
-        /\b(\d+)\s*(?:feet|foot|ft|फ़ीट|फुट)\s*(\d+)\s*(?:inches|inch|in|इंच)?\b/iu
-      ];
-      for (const rx of feetInchesRegexes) {
-        const match = segmentText.match(rx);
-        if (match) {
-          const ft = parseInt(match[1], 10);
-          const inch = parseInt(match[2], 10);
-          if (ft >= 3 && ft <= 8 && inch >= 0 && inch < 12) {
-            heightValue = parseFloat(((ft * 12 + inch) * 2.54).toFixed(1));
-            break;
-          }
-        }
-      }
-
-      if (heightValue === null) {
-        const numbersInSeg = cleanedSegment.match(/\b\d+(?:\.\d+)?\b/g) || [];
-        for (const numStr of numbersInSeg) {
-          const val = parseFloat(numStr);
-          if (val >= 10 && val <= 500) {
-            heightValue = val;
-            break;
+          if (heightValue !== null) {
+            val = heightValue;
           } else if (val >= 0.5 && val <= 2.5) {
-            heightValue = parseFloat((val * 100).toFixed(1));
+            val = parseFloat((val * 100).toFixed(1));
+          }
+        }
+
+        let parsedUnit: string | null = null;
+        for (const u of paramDef.supportedUnits) {
+          const escapedU = u.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+          const uRegex = new RegExp(`\\b${escapedU}\\b`, "i");
+          if (uRegex.test(segmentText) || segmentText.toLowerCase().includes(u.toLowerCase())) {
+            parsedUnit = u;
             break;
           }
         }
-      }
 
-      if (heightValue !== null) {
-        candidateRecords.push({
-          parameter: "height",
-          value: heightValue,
-          unit: "cm",
+        if (segmentParam === "body_temperature" && (!parsedUnit || parsedUnit === "unknown")) {
+          const hasC = /\b(?:°?c|celsius|celcius)\b/i.test(segmentText) || segmentText.includes("°c") || segmentText.includes("celsius") || segmentText.includes("सेल्सियस");
+          const hasF = /\b(?:°?f|fahrenheit|farenheit)\b/i.test(segmentText) || segmentText.includes("°f") || segmentText.includes("fahrenheit") || segmentText.includes("फ़ारेनहाइट") || segmentText.includes("फारेनहाइट");
+          if (hasC) {
+            parsedUnit = "°C";
+          } else if (hasF) {
+            parsedUnit = "°F";
+          } else {
+            if (val === 98.6) {
+              parsedUnit = "°F";
+            } else {
+              parsedUnit = "unknown";
+            }
+          }
+        }
+
+        const candidate: any = {
+          parameter: segmentParam,
+          value: val,
+          unit: parsedUnit || paramDef.defaultUnit,
           recordedAt: tempInfo,
           timeContext: tContext || undefined,
           confidence: 0.99
-        });
+        };
+
+        if (segmentParam === "blood_sugar") {
+          const context = parseGlucoseContext(segmentText) || parseGlucoseContext(seg.rawClause) || parseGlucoseContext(message);
+          if (context) {
+            candidate.context = context;
+          } else {
+            candidate.context = "unknown";
+            missingFields.push("glucose_context");
+          }
+        }
+
+        if (segmentParam === "body_temperature" && candidate.unit === "unknown") {
+          missingFields.push("temperature_unit");
+        }
+
+        candidateRecords.push(candidate);
       }
     }
   }
@@ -1103,7 +977,9 @@ export function validateCandidateRecord(
   if (record.unit) {
     const cleanUnit = record.unit.trim();
     const isUnitSupported = paramDef.supportedUnits.some(
-      u => u.toLowerCase() === cleanUnit.toLowerCase()
+      u => u.toLowerCase() === cleanUnit.toLowerCase() ||
+           (cleanUnit.toLowerCase() === "f" && u.toLowerCase() === "°f") ||
+           (cleanUnit.toLowerCase() === "c" && u.toLowerCase() === "°c")
     );
     if (!isUnitSupported) {
       console.warn(`[Validation Error] Unsupported unit: ${record.unit} for parameter ${record.parameter}`);
@@ -1112,35 +988,34 @@ export function validateCandidateRecord(
   }
 
   // 3. Values exist and are supported/not fabricated
-  if (record.parameter === "blood_pressure") {
-    if (
-      record.systolic === undefined || record.systolic === null || Number.isNaN(record.systolic) ||
-      record.diastolic === undefined || record.diastolic === null || Number.isNaN(record.diastolic) ||
-      String(record.systolic).trim() === "" || String(record.diastolic).trim() === "" ||
-      String(record.systolic).toLowerCase() === "undefined" || String(record.diastolic).toLowerCase() === "undefined" ||
-      String(record.systolic).toLowerCase() === "null" || String(record.diastolic).toLowerCase() === "null" ||
-      String(record.systolic).toLowerCase() === "nan" || String(record.diastolic).toLowerCase() === "nan"
-    ) {
-      console.warn(`[Validation Error] Incomplete, invalid, or partial blood pressure values rejected.`);
-      return false;
+  if (paramDef.isCompound) {
+    const components = paramDef.components || [];
+    for (const comp of components) {
+      const compVal = (record as any)[comp];
+      if (
+        compVal === undefined || compVal === null || Number.isNaN(compVal) ||
+        String(compVal).trim() === "" ||
+        String(compVal).toLowerCase() === "undefined" || String(compVal).toLowerCase() === "null" ||
+        String(compVal).toLowerCase() === "nan"
+      ) {
+        console.warn(`[Validation Error] Incomplete, invalid, or partial compound values rejected for ${record.parameter}.`);
+        return false;
+      }
+      const num = Number(compVal);
+      if (isNaN(num) || num <= 0) {
+        console.warn(`[Validation Error] Compound values must be positive numbers.`);
+        return false;
+      }
+      if (!validateValue(record.parameter, num, comp)) {
+        console.warn(`[Validation Error] Implausible compound value range for ${record.parameter} ${comp}: ${num}`);
+        return false;
+      }
     }
-    const sys = Number(record.systolic);
-    const dia = Number(record.diastolic);
-    if (isNaN(sys) || isNaN(dia) || sys <= 0 || dia <= 0) {
-      console.warn(`[Validation Error] Blood pressure values must be positive numbers.`);
-      return false;
-    }
-    // Isolate rules and validate via central validation engine
-    const isValidValue = validateValue("blood_pressure", sys) && validateValue("blood_pressure", dia);
-    // Extra specific range check matching Sprint 39 constraints
-    if (sys < 70 || sys > 250 || dia < 40 || dia > 150) {
-      console.warn(`[Validation Error] Implausible blood pressure range: ${sys}/${dia}`);
-      return false;
-    }
-    // Check fabricated values
-    const bpValStr = `${sys}/${dia}`;
-    if (!isValueSupportedByMessage(originalMessage, bpValStr, record.parameter)) {
-      console.warn(`[Validation Error] Fabricated blood pressure values rejected.`);
+
+    // Fabricated check for compound parameter
+    const valuesJoined = components.map(comp => (record as any)[comp]).join("/");
+    if (!isValueSupportedByMessage(originalMessage, valuesJoined, record.parameter)) {
+      console.warn(`[Validation Error] Fabricated compound values rejected for ${record.parameter}.`);
       return false;
     }
   } else {

@@ -113,35 +113,24 @@ export function isRetrievalQuery(text: string): boolean {
 export function validateValue(param: string, val: number, unit?: string): boolean {
   if (isNaN(val) || val <= 0) return false;
 
-  switch (param) {
-    case "blood_sugar":
-      const isMmol = unit === "mmol/L";
-      const sugarMin = isMmol ? 1.6 : 30;
-      const sugarMax = isMmol ? 27.8 : 500;
-      return val >= sugarMin && val <= sugarMax;
+  const def = PARAMETER_REGISTRY[param];
+  if (!def) return true;
 
-    case "heart_rate":
-      return val >= 30 && val <= 250;
+  const ranges = def.plausibleRanges;
+  if (!ranges) return true;
 
-    case "oxygen_saturation":
-      return val >= 50 && val <= 100;
-
-    case "body_temperature":
-      // C rules
-      return val >= 30 && val <= 45;
-
-    case "weight":
-      return val >= 10 && val <= 300;
-
-    case "respiratory_rate":
-      return val >= 10 && val <= 40;
-
-    case "height":
-      return val >= 50 && val <= 250;
-
-    default:
-      return true;
+  // Handle compound components specifically if passed (like systolic/diastolic)
+  if (def.isCompound && unit && ranges[unit]) {
+    const range = ranges[unit];
+    return val >= range.min && val <= range.max;
   }
+
+  const u = unit || def.defaultUnit;
+  const range = ranges[u] || ranges["default"];
+  if (range) {
+    return val >= range.min && val <= range.max;
+  }
+  return true;
 }
 
 // ==========================================
