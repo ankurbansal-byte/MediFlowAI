@@ -1179,9 +1179,10 @@ export const getPatientTimeline = async (
     return res.status(403).json({ success: false, message: "Forbidden. You do not have access to this patient's records." });
   }
 
-  const categoryFilter = req.query.category as string; // all, health_reading, lab_observation
-  const daysFilter = req.query.days ? Number(req.query.days) : undefined;
-  const parameterFilter = req.query.parameter as string; // e.g. blood_sugar, fbs
+  const query = req.query || {};
+  const categoryFilter = query.category as string; // all, health_reading, lab_observation
+  const daysFilter = query.days ? Number(query.days) : undefined;
+  const parameterFilter = query.parameter as string; // e.g. blood_sugar, fbs
 
   const normalizeRoutine = (r: any) => {
     let systolic: number | undefined;
