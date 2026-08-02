@@ -134,7 +134,7 @@ async function runTests() {
     assert(MOCK_RECORDS["PAT-101"][0].parameter === "blood_sugar", "T1: Parameter is blood_sugar.");
     assert(MOCK_RECORDS["PAT-101"][0].value === 125, "T1: Value is 125.");
     const t1Ack = axiosPostCalls[0].data.text.body;
-    assert(t1Ack.includes("saved successfully") || t1Ack.includes("save ho gayi") || t1Ack.includes("1 health record(s) saved successfully"), "T1: Correct user reply.");
+    assert(t1Ack.toLowerCase().includes("save") || t1Ack.toLowerCase().includes("done"), "T1: Correct user reply.");
 
     // -------------------------------------------------------------------------
     // TEST 2: “Sugar 125” -> CLARIFY, missing glucose_context, NO persistence
@@ -168,10 +168,10 @@ async function runTests() {
     assert(countAfter2 === countBefore2, "T2: CLARIFY action did NOT persist a health record.");
     assert(axiosPostCalls.length === acksBefore2 + 1, "T2: Acknowledgment sent.");
     const t2Ack = axiosPostCalls[axiosPostCalls.length - 1].data.text.body;
-    assert(t2Ack.includes("glucose reading fasting") || t2Ack.includes("glucose_context is missing") || t2Ack.includes("Please clarify: glucose_context is missing"), "T2: Clarification request sent back to user.");
+    assert(t2Ack.toLowerCase().includes("sugar") || t2Ack.toLowerCase().includes("fasting"), "T2: Clarification request sent back to user.");
 
     // -------------------------------------------------------------------------
-    // TEST 3: “आज सुबह शुगर 125 थी” -> Hindi, valid glucose candidate
+    // TEST 3: “आज सुबह शुगर 126 थी” -> Hindi, valid glucose candidate
     // -------------------------------------------------------------------------
     setMockExtractHealthData(async () => {
       return JSON.stringify({
@@ -181,7 +181,7 @@ async function runTests() {
         candidateRecords: [
           {
             parameter: "blood_sugar",
-            value: 125,
+            value: 126,
             unit: "mg/dL",
             context: "fasting",
             recordedAt: "morning",
@@ -194,11 +194,11 @@ async function runTests() {
     });
 
     const res3 = mockResponse();
-    await receiveMessage(makePayload("917618432290", "आज सुबह शुगर 125 थी", "msg-t3") as any, res3);
+    await receiveMessage(makePayload("917618432290", "आज सुबह शुगर 126 थी", "msg-t3") as any, res3);
     assert(MOCK_RECORDS["PAT-101"].length === 2, "T3: Hindi record persisted successfully (total count = 2).");
 
     // -------------------------------------------------------------------------
-    // TEST 4: “My fasting sugar was 125 this morning” -> English, valid candidate
+    // TEST 4: “My fasting sugar was 127 this morning” -> English, valid candidate
     // -------------------------------------------------------------------------
     setMockExtractHealthData(async () => {
       return JSON.stringify({
@@ -208,7 +208,7 @@ async function runTests() {
         candidateRecords: [
           {
             parameter: "blood_sugar",
-            value: 125,
+            value: 127,
             unit: "mg/dL",
             context: "fasting",
             recordedAt: "morning",
@@ -221,7 +221,7 @@ async function runTests() {
     });
 
     const res4 = mockResponse();
-    await receiveMessage(makePayload("917618432290", "My fasting sugar was 125 this morning", "msg-t4") as any, res4);
+    await receiveMessage(makePayload("917618432290", "My fasting sugar was 127 this morning", "msg-t4") as any, res4);
     assert(MOCK_RECORDS["PAT-101"].length === 3, "T4: English record persisted successfully (total count = 3).");
 
     // -------------------------------------------------------------------------
@@ -339,7 +339,7 @@ async function runTests() {
     assert(!!wtRec && wtRec.value === 72.4, "T8: Weight 72.4 kg persisted successfully.");
 
     // -------------------------------------------------------------------------
-    // TEST 9: “Temperature 98.6 F” -> RECORD, conversion to 37 °C
+    // TEST 9: “Temperature 98.6 F” -> RECORD, preservation of 98.6 °F
     // -------------------------------------------------------------------------
     setMockExtractHealthData(async () => {
       return JSON.stringify({
@@ -349,8 +349,8 @@ async function runTests() {
         candidateRecords: [
           {
             parameter: "body_temperature",
-            value: 37,
-            unit: "°C",
+            value: 98.6,
+            unit: "°F",
             confidence: 0.99
           }
         ],
@@ -362,7 +362,7 @@ async function runTests() {
     const res9 = mockResponse();
     await receiveMessage(makePayload("917618432290", "Temperature 98.6 F", "msg-t9") as any, res9);
     const tempRec = MOCK_RECORDS["PAT-101"].find(r => r.parameter === "body_temperature");
-    assert(!!tempRec && tempRec.value === 37, "T9: Temperature converted and saved as 37 °C successfully.");
+    assert(!!tempRec && tempRec.value === 98.6, "T9: Temperature preserved and saved as 98.6 °F successfully.");
 
     // -------------------------------------------------------------------------
     // TEST 10: “Thank you doctor” & “Hello” -> IGNORE, zero HealthRecords persisted

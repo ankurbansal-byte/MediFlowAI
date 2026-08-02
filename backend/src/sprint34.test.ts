@@ -129,8 +129,8 @@ async function runSprint34Tests() {
 
     // Fahrenheit temperature conversion and support checks
     assert(
-      isValueSupportedByMessage("bukhar 101 F hai", 38.3, "body_temperature"),
-      "Fahrenheit temperature 101 F should validate 38.3 C."
+      isValueSupportedByMessage("bukhar 101 F hai", 101, "body_temperature"),
+      "Fahrenheit temperature 101 F should validate 101 F."
     );
     assert(
       isValueSupportedByMessage("temperature 37 C", 37, "body_temperature"),
@@ -321,14 +321,14 @@ async function runSprint34Tests() {
       action: "RECORD",
       intent: "health_measurement",
       candidateRecords: [
-        { parameter: "body_temperature", value: 38.3, unit: "°C", confidence: 0.99 }
+        { parameter: "body_temperature", value: 101, unit: "°F", confidence: 0.99 }
       ],
       missingFields: [],
       reason: ""
     };
     await simulateReceive("bukhar 101 F hai", t11_resp, "msg-t11");
-    const r11 = MOCK_RECORDS["PAT-101"]?.find(r => r.parameter === "body_temperature" && r.value === 38.3);
-    assert(!!r11 && r11.unit === "°C", "11. Temperature Fahrenheit (converted) saved successfully.");
+    const r11 = MOCK_RECORDS["PAT-101"]?.find(r => r.parameter === "body_temperature" && r.value === 101);
+    assert(!!r11 && r11.unit === "°F", "11. Temperature Fahrenheit (preserved) saved successfully.");
 
     // 12. Temperature Celsius (English)
     const t12_resp = {

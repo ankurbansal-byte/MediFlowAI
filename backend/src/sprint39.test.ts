@@ -232,13 +232,13 @@ async function runSprint39Tests() {
         language: "english",
         action: "RECORD",
         intent: "health_measurement",
-        candidateRecords: [{ parameter: "body_temperature", value: 37, unit: "°C", confidence: 0.99 }],
+        candidateRecords: [{ parameter: "body_temperature", value: 98.6, unit: "°F", confidence: 0.99 }],
         missingFields: [],
       })
     );
     await receiveMessage(makePayload("917618432290", "Temp 98.6 F", "msg-temp-1", referenceTimestamp), mockResponse() as any);
     assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Temp 1: Saved 1 record");
-    assert(MOCK_RECORDS["PAT-101"]?.[0]?.parameter === "body_temperature" && MOCK_RECORDS["PAT-101"]?.[0]?.value === 37, "Temp 1: converted 98.6F to 37C");
+    assert(MOCK_RECORDS["PAT-101"]?.[0]?.parameter === "body_temperature" && MOCK_RECORDS["PAT-101"]?.[0]?.value === 98.6, "Temp 1: preserved 98.6F exactly");
 
     // Celsius explicit
     resetState();

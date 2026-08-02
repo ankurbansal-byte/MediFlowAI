@@ -139,8 +139,8 @@ async function runSprint42Tests() {
   assert(getPendingClarification("PAT-101") !== null, "Test 4: Clarification pending for temp unit");
   await receiveMessage(makePayload("917618432290", "F", "msg-4-2"), mockResponse() as any);
   assert(MOCK_RECORDS["PAT-101"]?.length === 1, "Test 4: Saved successfully");
-  assert(MOCK_RECORDS["PAT-101"]?.[0]?.unit === "°C", "Test 4: Unit converted to °C");
-  assert(Math.abs(MOCK_RECORDS["PAT-101"]?.[0]?.value - 37.2) < 0.2, "Test 4: Fahrenheit converted correctly to Celsius");
+  assert(MOCK_RECORDS["PAT-101"]?.[0]?.unit === "°F", "Test 4: Unit preserved as °F");
+  assert(MOCK_RECORDS["PAT-101"]?.[0]?.value === 99, "Test 4: Fahrenheit preserved correctly");
   console.log("✅ Test 4 Passed");
 
   // =========================================================================

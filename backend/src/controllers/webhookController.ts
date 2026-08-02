@@ -1727,6 +1727,7 @@ export const receiveMessage = async (req: Request, res: Response) => {
                 } else {
                   newCandidate.value = val;
                   newCandidate.unit = defaultUnit;
+                  pending.unresolvedMeasurements = updatedUnresolved;
 
                   const records = parseMergedHealthRecords(pending, newCandidate, detectedParam, message, whatsappMessageId, messageDate);
                   await saveAndAcknowledgeRecords(records, patient, from, pending);
@@ -1817,14 +1818,7 @@ export const receiveMessage = async (req: Request, res: Response) => {
                     tempCandidate.value = newValue;
                   }
 
-                  // Handle conversion from Fahrenheit to Celsius if unit is °F
-                  if (unit === "°F" && tempCandidate.value !== undefined) {
-                    const valNum = Number(tempCandidate.value);
-                    if (valNum > 50) {
-                      tempCandidate.value = parseFloat(((valNum - 32) * 5 / 9).toFixed(1));
-                      tempCandidate.unit = "°C";
-                    }
-                  }
+                  // Temperature Unit Preservation: unit is preserved exactly as provided, no conversion.
 
                   const records = parseMergedHealthRecords(pending, tempCandidate, "body_temperature", message, whatsappMessageId, messageDate);
                   await saveAndAcknowledgeRecords(records, patient, from, pending);
