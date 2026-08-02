@@ -1,6 +1,16 @@
 import { PARAMETER_REGISTRY } from "./parameterRegistry";
 import { IntelligenceResult, CandidateRecord, GlucoseContext } from "./intelligenceContract";
 import { HealthRecord } from "../services/healthRecordExtractor";
+import {
+  PARAMETER_SYNONYMS,
+  GLUCOSE_CONTEXT_SYNONYMS,
+  detectEmergencyUrgency as detectEmergencyV2,
+  detectParameterFromMessage as detectParameterV2,
+  parseGlucoseContextV2,
+  isCorrectionMessage as isCorrectionV2,
+  validateValue,
+  stripNumbersBelongingToDatesAndTimes as stripNumbersV2
+} from "./parserV2";
 
 /**
  * Helper to detect user language style
@@ -22,235 +32,18 @@ export function detectLanguageStyle(text: string): "english" | "hindi" | "hingli
 }
 
 export function detectEmergencyUrgency(message: string): "emergency" | null {
-  const clean = message.toLowerCase().trim();
-
-  // Robust negation/historical false-positive protections:
-  const negationPhrases = [
-    "no chest pain",
-    "no breathing",
-    "not having",
-    "past",
-    "historical",
-    "kal tha",
-    "kal thi",
-    "kal thaa",
-    "doctor ko dikha",
-    "doctor ko dikhaya",
-    "doctor ko bol",
-    "now fine",
-    "now better",
-    "now ok",
-    "theek hai",
-    "thik hai",
-    "theek hoon",
-    "thik hoon",
-    "breathing rate",
-    "respiratory rate"
-  ];
-
-  if (negationPhrases.some(phrase => clean.includes(phrase))) {
-    return null;
-  }
-
-  // 1. Chest pain detection (English/Hindi/Hinglish)
-  const isChestPain =
-    clean.includes("chest pain") ||
-    ((clean.includes("seene") || clean.includes("chhati") || clean.includes("dil") || clean.includes("chati") || clean.includes("सीने") || clean.includes("छाती") || clean.includes("दिल")) &&
-     (clean.includes("pain") || clean.includes("dard") || clean.includes("दर्द")));
-
-  // 2. Breathing difficulty detection
-  const isBreathingDifficulty =
-    clean.includes("difficulty breathing") ||
-    clean.includes("can't breathe") ||
-    clean.includes("cannot breathe") ||
-    (clean.includes("saans") && (clean.includes("takleef") || clean.includes("dikkat") || clean.includes("pareshani") || clean.includes("phool") || clean.includes("nahi") || clean.includes("nahin") || clean.includes("nhi"))) ||
-    (clean.includes("सांस") && (clean.includes("तकलीफ") || clean.includes("दिक्कत") || clean.includes("परेशानी") || clean.includes("कठिनाई") || clean.includes("फूल") || clean.includes("नहीं") || clean.includes("नही")));
-
-  // 3. Unconsciousness detection
-  const isUnconscious =
-    clean.includes("unconscious") ||
-    clean.includes("behoshi") ||
-    clean.includes("behosh") ||
-    clean.includes("बेहोश") ||
-    clean.includes("बेहोशी");
-
-  // 4. Severe bleeding detection
-  const isBleeding =
-    clean.includes("severe bleeding") ||
-    clean.includes("heavy bleeding") ||
-    clean.includes("khoon beh raha") ||
-    clean.includes("खून बह रहा") ||
-    clean.includes("भारी ब्लीडिंग") ||
-    clean.includes("बहुत खून") ||
-    (clean.includes("khoon") && clean.includes("bahut"));
-
-  // 5. Stroke-like symptoms / sudden weakness with speech difficulty
-  const isStrokeOrSpeech =
-    clean.includes("stroke") ||
-    clean.includes("speech difficulty") ||
-    clean.includes("difficulty speaking") ||
-    (clean.includes("sudden") && clean.includes("weakness")) ||
-    (clean.includes("achanak") && clean.includes("kamzori")) ||
-    (clean.includes("bolne") && (clean.includes("takleef") || clean.includes("dikkat") || clean.includes("difficulty"))) ||
-    (clean.includes("बोलने") && (clean.includes("तकलीफ") || clean.includes("दिक्कत") || clean.includes("कठिनाई") || clean.includes("परेशानी")));
-
-  if (isChestPain || isBreathingDifficulty || isUnconscious || isBleeding || isStrokeOrSpeech) {
-    return "emergency";
-  }
-
-  return null;
+  return detectEmergencyV2(message);
 }
 
 export function detectParameterFromMessage(msg: string): string | null {
-  const clean = msg.toLowerCase().trim();
-  const keywordsMap: Record<string, string[]> = {
-    blood_sugar: ["sugar", "glucose", "sugar level", "shugar", "cheeni", "schugar", "शुगर", "सीनी", "चीनी", "meri sugar", "mera sugar"],
-    blood_pressure: ["bp", "blood pressure", "pressure", "बीपी", "रक्तचाप", "mera bp", "meri bp"],
-    heart_rate: ["pulse", "heart rate", "hr", "bpm", "dhadkan", "dil", "beat", "पल्स", "धड़कन"],
-    oxygen_saturation: ["oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन", "ओक्सीजन", "ऑक्सिजन", "oxygen level"],
-    body_temperature: ["temp", "temperature", "fever", "body temp", "bukhar", "bukhaar", "tapman", "तापमान", "बुखार"],
-    weight: ["weight", "vajan", "wajan", "kg", "vazan", "वजन"],
-    respiratory_rate: ["breath", "breathing", "breathing rate", "resp", "respiratory", "saans"],
-    height: ["height", "lambai"]
-  };
-
-  for (const [param, keywords] of Object.entries(keywordsMap)) {
-    for (const kw of keywords) {
-      if (/[\u0900-\u097F]/.test(kw)) {
-        if (clean.includes(kw)) {
-          return param;
-        }
-      } else {
-        const regex = new RegExp(`\\b${kw}\\b`, "i");
-        if (regex.test(clean)) {
-          return param;
-        }
-      }
-    }
-  }
-
-  return null;
+  return detectParameterV2(msg);
 }
 
 /**
  * Parses glucose context deterministically from text and normalizes timing expressions canonically.
  */
 export function parseGlucoseContext(msg: string): GlucoseContext | null {
-  const clean = msg.toLowerCase().trim();
-
-  const fastingExpressions = [
-    "fasting",
-    "fasted",
-    "empty stomach",
-    "empty-stomach",
-    "before breakfast",
-    "before breakfast reading",
-    "before eating",
-    "before food",
-    "before meal",
-    "before a meal",
-    "pre meal",
-    "pre-meal",
-    "preprandial",
-    "खाली पेट",
-    "सुबह खाली पेट",
-    "नाश्ते से पहले",
-    "भोजन से पहले",
-    // Compatibility / fallback synonyms:
-    "khali pet",
-    "khaali pet",
-    "fast",
-    "fating",
-    "fastg",
-    "bina khaye",
-    "बिना खाए",
-    "बिना कुछ खाए",
-    "pre_meal",
-    "premeal",
-    "before lunch",
-    "before dinner",
-    "khane se pehle",
-    "खाने से पहले",
-    "nashte se pehle",
-    "lunch se pehle",
-    "लंच से पहले",
-    "dinner se pehle",
-    "डिनर से पहले",
-    "breakfast se pehle",
-    "bhojan se pehle"
-  ];
-
-  const postMealExpressions = [
-    "after meal",
-    "after a meal",
-    "after food",
-    "after eating",
-    "after lunch",
-    "after dinner",
-    "after breakfast",
-    "post meal",
-    "post-meal",
-    "postprandial",
-    "खाने के बाद",
-    "भोजन के बाद",
-    // Compatibility / fallback synonyms:
-    "post_meal",
-    "postmeal",
-    "khane ke baad",
-    "khana khane ke baad",
-    "khane ke 2 ghante baad",
-    "2 hours after meal",
-    "2 hrs after food",
-    "nashte ke baad",
-    "नाश्ते के बाद",
-    "lunch ke baad",
-    "लंच के बाद",
-    "dinner ke baad",
-    "डिनर के बाद",
-    "breakfast ke baad",
-    "meal ke baad",
-    "bhojan ke baad"
-  ];
-
-  const randomExpressions = [
-    "random",
-    "casual",
-    "anytime",
-    "random reading",
-    "रैंडम",
-    "कभी भी",
-    // Compatibility / fallback synonyms:
-    "random tha"
-  ];
-
-  for (const expr of fastingExpressions) {
-    if (/[\u0900-\u097F]/.test(expr)) {
-      if (clean.includes(expr)) return "fasting";
-    } else {
-      const regex = new RegExp(`\\b${expr.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, "i");
-      if (regex.test(clean)) return "fasting";
-    }
-  }
-
-  for (const expr of postMealExpressions) {
-    if (/[\u0900-\u097F]/.test(expr)) {
-      if (clean.includes(expr)) return "post_meal";
-    } else {
-      const regex = new RegExp(`\\b${expr.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, "i");
-      if (regex.test(clean)) return "post_meal";
-    }
-  }
-
-  for (const expr of randomExpressions) {
-    if (/[\u0900-\u097F]/.test(expr)) {
-      if (clean.includes(expr)) return "random";
-    } else {
-      const regex = new RegExp(`\\b${expr.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, "i");
-      if (regex.test(clean)) return "random";
-    }
-  }
-
-  return null;
+  return parseGlucoseContextV2(msg);
 }
 
 /**
@@ -258,18 +51,7 @@ export function parseGlucoseContext(msg: string): GlucoseContext | null {
  * Serves as fallback when the AI provider fails.
  */
 export function isCorrectionMessage(msg: string): boolean {
-  const clean = msg.toLowerCase().trim();
-  const keywords = [
-    "nahi", "nahin", "galat", "wrong", "mistake", "sorry", "instead of", "correct",
-    "नहीं", "गलत", "सुधार", "बदले", "correction", "edit", "change", "kar do", "ki jagah", "की जगह", "actual", "actually"
-  ];
-  const hasKeyword = keywords.some(kw => clean.includes(kw));
-  const hasNumbers = /\b\d+\b/.test(clean);
-  const comparisonPattern = /\b\d+\s*(?:nahi|nahin|instead\s*of|not|galat|नहीं|ki\s*jagah|की\s*जगह)\s*\d+\b/i.test(clean);
-  const hasParam = detectParameterFromMessage !== undefined && detectParameterFromMessage(msg) !== null;
-  const hasGlucoseCtx = parseGlucoseContext !== undefined && parseGlucoseContext(msg) !== null;
-
-  return hasKeyword && (hasNumbers || comparisonPattern || hasParam || hasGlucoseCtx);
+  return isCorrectionV2(msg);
 }
 
 export interface ParsedCorrection {
@@ -425,22 +207,11 @@ export function deterministicExtract(message: string): any {
     reason: "Deterministic local fallback extraction"
   };
 
-  const keywordMap: Record<string, string[]> = {
-    blood_sugar: ["sugar level", "sugar", "glucose", "shugar", "cheeni", "schugar", "शुगर", "सीनी", "चीनी", "meri sugar", "mera sugar"],
-    blood_pressure: ["blood pressure", "pressure", "bp", "बीपी", "रक्तचाप", "mera bp", "meri bp", "ब्लड प्रेशर"],
-    heart_rate: ["heart rate", "pulse", "hr", "bpm", "dhadkan", "dil", "beat", "पल्स", "धड़कन", "नाड़ी"],
-    oxygen_saturation: ["oxygen saturation", "oxygen level", "oxygen", "spo2", "o2", "saturation", "oxigen", "ऑक्सीजन", "ओक्सीजन", "ऑक्सिजन"],
-    body_temperature: ["body temp", "temp", "temperature", "fever", "bukhar", "bukhaar", "tapman", "तापमान", "बुखार", "बुख़ार"],
-    weight: ["weight", "vajan", "wajan", "kg", "vazan", "वजन", "वज़न"],
-    respiratory_rate: ["breathing rate", "breathing", "breath", "resp", "respiratory", "rr", "saans", "सांस की दर"],
-    height: ["height", "lambai", "kad", "हाइट", "लंबाई", "कद"]
-  };
-
   function findKeywordMatches(text: string): { param: string; index: number; keyword: string }[] {
     const matches: { param: string; index: number; keyword: string }[] = [];
     const cleanText = text.toLowerCase();
 
-    for (const [param, keywords] of Object.entries(keywordMap)) {
+    for (const [param, keywords] of Object.entries(PARAMETER_SYNONYMS)) {
       for (const kw of keywords) {
         const isDevanagari = /[\u0900-\u097F]/.test(kw);
         if (isDevanagari) {
@@ -523,7 +294,7 @@ export function deterministicExtract(message: string): any {
 
   function hasConflictingParameterKeywords(text: string, currentParam: string): boolean {
     const cleanSeg = text.toLowerCase();
-    for (const [param, keywords] of Object.entries(keywordMap)) {
+    for (const [param, keywords] of Object.entries(PARAMETER_SYNONYMS)) {
       if (param === currentParam) continue;
       for (const kw of keywords) {
         const isDevanagari = /[\u0900-\u097F]/.test(kw);
@@ -936,36 +707,7 @@ export function deterministicExtract(message: string): any {
  * This prevents them from accidentally validating hallucinated measurement values.
  */
 export function stripNumbersBelongingToDatesAndTimes(msg: string): string {
-  let cleaned = msg.toLowerCase();
-
-  // 1. Remove YYYY-MM-DD or standard ISO date parts (like 2026-07-11 or 2026-07-12)
-  cleaned = cleaned.replace(/\b\d{4}-\d{2}-\d{2}\b/g, "");
-
-  // 2. Remove DD Month YYYY or DD Month
-  const monthsPattern = "(?:january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)";
-  const ddMonthYyyyRegex = new RegExp(`\\b\\d{1,2}\\s+${monthsPattern}\\s*(?:\\d{2,4})?\\b`, "gi");
-  cleaned = cleaned.replace(ddMonthYyyyRegex, "");
-
-  // 3. Remove dates with slashes like DD/MM/YYYY or DD/MM/YY
-  cleaned = cleaned.replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g, "");
-
-  // 4. Remove short slash dates like "20/07" only if it matches day <= 31 and month <= 12
-  cleaned = cleaned.replace(/\b(\d{1,2})\/(\d{1,2})\b/g, (match, p1, p2) => {
-    const d = parseInt(p1, 10);
-    const m = parseInt(p2, 10);
-    if (d <= 31 && m <= 12) {
-      return "";
-    }
-    return match;
-  });
-
-  // 5. Remove times with colons/dots like 12:30 or 12.30 followed/preceded by am/pm/hours/minutes
-  cleaned = cleaned.replace(/\b\d{1,2}[:.]\d{2}\s*(?:am|pm)?\b/gi, "");
-
-  // 6. Remove numeric quantities representing durations or times (e.g., "2 hours", "10 min", "5 pm", "10am")
-  cleaned = cleaned.replace(/\b\d+\s*(?:am|pm|hours|hrs|hr|minutes|mins|min|seconds|sec)\b/gi, "");
-
-  return cleaned;
+  return stripNumbersV2(msg);
 }
 
 export function applyTimeStringToDate(date: Date, timeStr: string): Date {
@@ -1388,7 +1130,9 @@ export function validateCandidateRecord(
       console.warn(`[Validation Error] Blood pressure values must be positive numbers.`);
       return false;
     }
-    // Check ranges
+    // Isolate rules and validate via central validation engine
+    const isValidValue = validateValue("blood_pressure", sys) && validateValue("blood_pressure", dia);
+    // Extra specific range check matching Sprint 39 constraints
     if (sys < 70 || sys > 250 || dia < 40 || dia > 150) {
       console.warn(`[Validation Error] Implausible blood pressure range: ${sys}/${dia}`);
       return false;
@@ -1416,45 +1160,10 @@ export function validateCandidateRecord(
       return false;
     }
 
-    // Strict range validation for the remaining 7 parameters
-    if (record.parameter === "blood_sugar") {
-      const isMmol = record.unit === "mmol/L";
-      const min = isMmol ? 1.6 : 30;
-      const max = isMmol ? 27.8 : 500;
-      if (numVal < min || numVal > max) {
-        console.warn(`[Validation Error] Implausible blood glucose range: ${numVal} ${record.unit}`);
-        return false;
-      }
-    } else if (record.parameter === "heart_rate") {
-      if (numVal < 30 || numVal > 250) {
-        console.warn(`[Validation Error] Implausible heart rate range: ${numVal}`);
-        return false;
-      }
-    } else if (record.parameter === "oxygen_saturation") {
-      if (numVal < 50 || numVal > 100) {
-        console.warn(`[Validation Error] Implausible oxygen saturation range: ${numVal}`);
-        return false;
-      }
-    } else if (record.parameter === "body_temperature") {
-      if (numVal < 30 || numVal > 45) {
-        console.warn(`[Validation Error] Implausible body temperature range: ${numVal}`);
-        return false;
-      }
-    } else if (record.parameter === "weight") {
-      if (numVal < 10 || numVal > 300) {
-        console.warn(`[Validation Error] Implausible weight range: ${numVal}`);
-        return false;
-      }
-    } else if (record.parameter === "respiratory_rate") {
-      if (numVal < 10 || numVal > 40) {
-        console.warn(`[Validation Error] Implausible respiratory rate range: ${numVal}`);
-        return false;
-      }
-    } else if (record.parameter === "height") {
-      if (numVal < 50 || numVal > 250) {
-        console.warn(`[Validation Error] Implausible height range: ${numVal}`);
-        return false;
-      }
+    // Isolate rules and validate via central validation engine
+    if (!validateValue(record.parameter, numVal, record.unit)) {
+      console.warn(`[Validation Error] Implausible range for ${record.parameter}: ${numVal} ${record.unit}`);
+      return false;
     }
 
     // Check fabricated value

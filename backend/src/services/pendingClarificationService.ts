@@ -23,6 +23,10 @@ export interface PendingClarification {
   candidateTargets?: any[]; // Stores ambiguous match targets
   proposedNewContext?: string | null;
   proposedNewTimeContext?: string | null;
+
+  // Parser V2 Duplicate Engine Fields
+  isDuplicateConfirmation?: boolean;
+  duplicatePayloads?: any[];
 }
 
 // In-memory store of pending clarifications mapped by patientId (strict patient scoping)

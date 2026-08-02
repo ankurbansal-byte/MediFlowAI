@@ -45,6 +45,12 @@ import {
   getLabProcessingFailureMessage,
   formatLatestLabObservation,
 } from "../utils/whatsappResponses";
+import {
+  matchSynonym,
+  BOOLEAN_SYNONYMS,
+  detectMessageIntent,
+  ParserIntent
+} from "../utils/parserV2";
 
 // Simple in-memory cache for processed/processing message IDs to prevent duplicate webhook delivery/processing.
 const processingMessageIds = new Set<string>();
@@ -384,6 +390,7 @@ async function processMessageFlow(
 
   // Save complete records that aren't already saved
   const newlySavedRecords: any[] = [];
+  const duplicatesFound: any[] = [];
   let detectedDuplicateRecently = false;
 
   for (const rPayload of recordsToSave) {
@@ -485,6 +492,7 @@ async function processMessageFlow(
     if (recentDuplicate) {
       console.log(`[Parser Debug] Identical duplicate observation detected for ${rPayload.parameter} = ${rPayload.value} within safety window.`);
       detectedDuplicateRecently = true;
+      duplicatesFound.push(rPayload);
       continue;
     }
 
@@ -549,6 +557,35 @@ async function processMessageFlow(
     return;
   }
 
+  // Check for duplicates to trigger State-Aware Duplicate confirmation prompt
+  if (duplicatesFound.length > 0 && newlySavedRecords.length === 0) {
+    setPendingClarification(patient.patientId, {
+      patientId: patient.patientId,
+      hospitalId: patient.hospitalId,
+      originalWhatsappMessageId: origMsgId,
+      originalSourceText: pendingToResolve ? pendingToResolve.originalSourceText : message,
+      language: resolvedLang,
+      candidateRecords: [],
+      missingFields: [],
+      clarificationReason: "duplicate_confirmation",
+      originalMessageDate: origMsgDate,
+      isDuplicateConfirmation: true,
+      duplicatePayloads: duplicatesFound
+    });
+
+    let dupMsg = "";
+    if (resolvedLang === "hindi") {
+      dupMsg = "यह रीडिंग हाल ही में पहले से ही रिकॉर्ड की जा चुकी है। क्या आप इसे फिर से सेव करना चाहते हैं? (हाँ/नहीं)";
+    } else if (resolvedLang === "hinglish") {
+      dupMsg = "Yeh reading haal hi mein pehle se record ho chuki hai. Kya aap isse fir se save karna chahte hain? (Yes/No)";
+    } else {
+      dupMsg = "This reading has already been recorded recently. Do you want to save it again? (Yes/No)";
+    }
+    await sendWhatsAppMessage(from, dupMsg);
+    console.log("⚠️ Identical duplicate observation detected. Sent state-aware duplicate confirmation prompt.");
+    return;
+  }
+
   // Determine pending state (excluding failed voice BP)
   const hasPending = incompleteCandidates.length > 0 || unresolvedMeasurements.length > 0;
 
@@ -597,6 +634,7 @@ async function processMessageFlow(
   } else {
     // newlySavedRecords.length === 0
     if (detectedDuplicateRecently) {
+      // Handled by duplicatesFound.length > 0 above, but safe fallback if none triggered
       let dupMsg = "";
       if (resolvedLang === "hindi") {
         dupMsg = "यह रीडिंग हाल ही में पहले से ही रिकॉर्ड की जा चुकी है। क्या आप एक नई रीडिंग रिकॉर्ड करना चाहते थे?";
@@ -1396,6 +1434,77 @@ export const receiveMessage = async (req: Request, res: Response) => {
       if (message && from) {
         console.log("👤 User:", message);
 
+        const pending = getPendingClarification(patient.patientId);
+
+        // State-Aware Duplicate Confirmation Intercept
+        if (pending && pending.isDuplicateConfirmation) {
+          const resolvedPendingLang = (pending.language || "english") as LanguageStyle;
+          const cleanInput = message.toLowerCase().trim();
+
+          const isYes = matchSynonym(cleanInput, BOOLEAN_SYNONYMS.yes);
+          const isNo = matchSynonym(cleanInput, BOOLEAN_SYNONYMS.no);
+
+          if (isYes || isNo) {
+            if (isYes) {
+              const savedList: any[] = [];
+              const payloads = pending.duplicatePayloads || [];
+
+              for (const rPayload of payloads) {
+                if (process.env.USE_MOCK_DATA === "true") {
+                  if (!MOCK_RECORDS[rPayload.patientId]) {
+                    MOCK_RECORDS[rPayload.patientId] = [];
+                  }
+                  MOCK_RECORDS[rPayload.patientId].push(rPayload);
+                } else {
+                  await HealthRecord.create(rPayload);
+                }
+                savedList.push(rPayload);
+                console.log(`[Duplicate Engine] Explicitly saved duplicate observation: ${rPayload.parameter}`);
+              }
+
+              completePendingClarification(patient.patientId);
+              clearPendingClarification(patient.patientId);
+
+              if (savedList.length > 0) {
+                const resolvedRecords = savedList.map(r => ({
+                  patientId: r.patientId,
+                  parameter: r.parameter,
+                  value: r.value,
+                  unit: r.unit,
+                  context: r.context,
+                  timeContext: r.timeContext,
+                  recordedAt: r.recordedAt,
+                  whatsappMessageId: r.whatsappMessageId,
+                }));
+                setRecentlyResolvedContext(patient.patientId, resolvedRecords);
+
+                const successMsg = formatConfirmation(savedList, resolvedPendingLang);
+                await sendWhatsAppMessage(from, successMsg);
+              }
+            } else {
+              // Cancel save politely
+              completePendingClarification(patient.patientId);
+              clearPendingClarification(patient.patientId);
+
+              let politeCancelMsg = "";
+              if (resolvedPendingLang === "hindi") {
+                politeCancelMsg = "ठीक है, आपकी डुप्लिकेट रीडिंग सेव नहीं की गई है।";
+              } else if (resolvedPendingLang === "hinglish") {
+                politeCancelMsg = "Theek hai, duplicate reading save nahi ki gayi.";
+              } else {
+                politeCancelMsg = "Politely cancelled. The duplicate reading was not saved.";
+              }
+              await sendWhatsAppMessage(from, politeCancelMsg);
+              console.log("[Duplicate Engine] Saved cancelled politely.");
+            }
+
+            if (whatsappMessageId) {
+              markMessageAsProcessed(whatsappMessageId);
+            }
+            return res.sendStatus(200);
+          }
+        }
+
         // Clinical Safety Early Emergency Warning Detection
         const isEmergency = detectEmergencyUrgency(message);
         if (isEmergency) {
@@ -1416,8 +1525,6 @@ export const receiveMessage = async (req: Request, res: Response) => {
           }
           return res.sendStatus(200);
         }
-
-        const pending = getPendingClarification(patient.patientId);
 
         // Read-back query flow integration
         const queryPattern = detectQueryPattern(message);
