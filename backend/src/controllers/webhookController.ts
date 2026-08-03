@@ -544,54 +544,11 @@ async function processMessageFlow(
     return;
   }
 
-  // Check implausible candidates flow
-  if (implausibleCandidates.length > 0) {
-    if (pendingToResolve) {
-      completePendingClarification(patient.patientId);
-      clearPendingClarification(patient.patientId);
-    }
-    const firstImplausible = implausibleCandidates[0];
-    const implausibleVal = firstImplausible.parameter === "blood_pressure"
-      ? `${firstImplausible.systolic}/${firstImplausible.diastolic}`
-      : firstImplausible.value;
-    const implausibleMsg = getImplausibleValueClarification(
-      firstImplausible.parameter,
-      implausibleVal,
-      resolvedLang
-    );
-    await sendWhatsAppMessage(from, implausibleMsg);
-    console.log("⚠️ Implausible Candidate Clarification response sent.");
-    return;
-  }
-
-  // Check for duplicates to trigger State-Aware Duplicate confirmation prompt
-  if (duplicatesFound.length > 0 && newlySavedRecords.length === 0) {
-    setPendingClarification(patient.patientId, {
-      patientId: patient.patientId,
-      hospitalId: patient.hospitalId,
-      originalWhatsappMessageId: origMsgId,
-      originalSourceText: pendingToResolve ? pendingToResolve.originalSourceText : message,
-      language: resolvedLang,
-      candidateRecords: incompleteCandidates,
-      missingFields,
-      unresolvedMeasurements,
-      clarificationReason: "duplicate_confirmation",
-      originalMessageDate: origMsgDate,
-      isDuplicateConfirmation: true,
-      duplicatePayloads: duplicatesFound
-    });
-
-    const dupMsg = getDuplicateConfirmationPrompt(resolvedLang);
-    await sendWhatsAppMessage(from, dupMsg);
-    console.log("⚠️ Identical duplicate observation detected. Sent state-aware duplicate confirmation prompt.");
-    return;
-  }
-
-  // Determine pending state (excluding failed voice BP)
+  // Determine pending state
   const hasPending = incompleteCandidates.length > 0 || unresolvedMeasurements.length > 0;
 
-  if (hasPending) {
-    // Save/update pending clarification
+  // Save/update pending state or clear it
+  if (hasPending && implausibleCandidates.length === 0) {
     setPendingClarification(patient.patientId, {
       patientId: patient.patientId,
       hospitalId: patient.hospitalId,
@@ -611,11 +568,23 @@ async function processMessageFlow(
     }
   }
 
-  // Response generation
+  // Response generation (exactly ONE final response after processing completes)
   if (newlySavedRecords.length > 0) {
     let successMsg = formatConfirmation(newlySavedRecords, resolvedLang);
 
-    if (bpVoiceFailed) {
+    if (implausibleCandidates.length > 0) {
+      for (const impl of implausibleCandidates) {
+        const implVal = impl.parameter === "blood_pressure"
+          ? `${impl.systolic}/${impl.diastolic}`
+          : impl.value;
+        const implausibleMsg = getImplausibleValueClarification(
+          impl.parameter,
+          implVal,
+          resolvedLang
+        );
+        successMsg += "\n\n" + implausibleMsg;
+      }
+    } else if (bpVoiceFailed) {
       successMsg += "\n\n" + getVoiceBpNotUnderstoodMessage(resolvedLang);
     } else if (unresolvedMeasurements.length > 0) {
       const clarifMsg = getUnresolvedMeasurementsClarification(unresolvedMeasurements, "", resolvedLang);
@@ -628,17 +597,46 @@ async function processMessageFlow(
         firstIncomplete.value
       );
       successMsg += "\n\n" + clarifMsg;
+    } else if (duplicatesFound.length > 0) {
+      const dupMsg = getDuplicateWarningMessage(resolvedLang);
+      successMsg += "\n\n" + dupMsg;
     }
 
     await sendWhatsAppMessage(from, successMsg);
     console.log("✅ Confirmation with possible alerts/clarifications sent:", successMsg);
   } else {
     // newlySavedRecords.length === 0
-    if (detectedDuplicateRecently) {
-      // Handled by duplicatesFound.length > 0 above, but safe fallback if none triggered
-      const dupMsg = getDuplicateWarningMessage(resolvedLang);
+    if (implausibleCandidates.length > 0) {
+      const firstImplausible = implausibleCandidates[0];
+      const implausibleVal = firstImplausible.parameter === "blood_pressure"
+        ? `${firstImplausible.systolic}/${firstImplausible.diastolic}`
+        : firstImplausible.value;
+      const implausibleMsg = getImplausibleValueClarification(
+        firstImplausible.parameter,
+        implausibleVal,
+        resolvedLang
+      );
+      await sendWhatsAppMessage(from, implausibleMsg);
+      console.log("⚠️ Implausible Candidate Clarification response sent.");
+    } else if (duplicatesFound.length > 0) {
+      setPendingClarification(patient.patientId, {
+        patientId: patient.patientId,
+        hospitalId: patient.hospitalId,
+        originalWhatsappMessageId: origMsgId,
+        originalSourceText: pendingToResolve ? pendingToResolve.originalSourceText : message,
+        language: resolvedLang,
+        candidateRecords: incompleteCandidates,
+        missingFields,
+        unresolvedMeasurements,
+        clarificationReason: "duplicate_confirmation",
+        originalMessageDate: origMsgDate,
+        isDuplicateConfirmation: true,
+        duplicatePayloads: duplicatesFound
+      });
+
+      const dupMsg = getDuplicateConfirmationPrompt(resolvedLang);
       await sendWhatsAppMessage(from, dupMsg);
-      console.log("⚠️ Identical observation received within interval. Sent duplicate warning.");
+      console.log("⚠️ Identical duplicate observation detected. Sent state-aware duplicate confirmation prompt.");
     } else if (bpVoiceFailed) {
       const bpErrPrompt = getVoiceBpNotUnderstoodMessage(resolvedLang);
       await sendWhatsAppMessage(from, bpErrPrompt);
