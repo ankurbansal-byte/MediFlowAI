@@ -9,6 +9,7 @@ import VerifyEmail from "./pages/VerifyEmail";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
 import PublicHome from "./pages/PublicHome";
 import HomepageV1 from "./pages/HomepageV1";
+import HomepagePremium from "./pages/HomepagePremium";
 import { clearAuthSession, isTokenExpired } from "./api/axios";
 
 export interface User {
@@ -113,6 +114,24 @@ function App() {
   if (isHomepageV1) {
     return (
       <HomepageV1
+        onLoginClick={() => {
+          // Redirect to login view by clearing any existing state & pushing query params
+          setUser(null);
+          clearAuthSession();
+          setActiveView("login");
+          window.history.pushState({}, document.title, "/?view=login");
+        }}
+      />
+    );
+  }
+
+  // Homepage Premium Preview Route
+  const isHomepagePremium = window.location.pathname === "/design-preview/doc2me-home-premium" ||
+                            new URLSearchParams(window.location.search).get("view") === "design-preview-doc2me-home-premium";
+
+  if (isHomepagePremium) {
+    return (
+      <HomepagePremium
         onLoginClick={() => {
           // Redirect to login view by clearing any existing state & pushing query params
           setUser(null);
