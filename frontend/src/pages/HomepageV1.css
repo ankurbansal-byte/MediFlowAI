@@ -82,71 +82,21 @@
   }
 }
 
-/* 0-BYTE FILE REPLACEMENT AND FAIL-SAFE IMAGE WORKAROUNDS */
-/* If an image has 0-bytes, style it beautifully instead of showing a broken browser icon. */
 img {
   display: block;
   max-width: 100%;
-  position: relative;
-  background-color: #1E293B;
-  color: white;
-}
-
-img::after {
-  content: "✦ " attr(alt) " — Interactive Workspace Preview";
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
-  color: #E2E8F0;
-  font-size: 13px;
-  font-weight: 700;
-  text-align: center;
-  padding: 24px;
-  border-radius: inherit;
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
-  box-sizing: border-box;
-  white-space: pre-line;
 }
 
 /* Navbar Logo custom styling */
 .hp-logo {
   height: 36px;
   width: 36px;
-  border-radius: 8px;
-  background-color: var(--royal-blue);
-}
-.hp-logo::after {
-  content: "✚";
-  font-size: 18px;
-  font-weight: 900;
-  color: white;
-  background: var(--royal-blue);
-  padding: 0;
-  border: none;
 }
 
 /* Footer Logo custom styling */
 .footer-logo {
   height: 36px;
   width: 140px;
-  border-radius: 6px;
-  background-color: transparent;
-}
-.footer-logo::after {
-  content: "✚ Doc2Me Platform";
-  font-size: 14px;
-  font-weight: 900;
-  color: var(--navy-dark);
-  background: transparent;
-  padding: 0;
-  border: none;
-  text-align: left;
-  align-items: flex-start;
-  justify-content: flex-start;
 }
 
 /* Sticky modern Navigation Bar */
@@ -466,18 +416,7 @@ img::after {
   border-radius: 16px;
   border: 1px solid var(--border-premium);
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
-  position: relative;
-  z-index: 10;
   transition: var(--transition-smooth);
-}
-
-/* Fallback visualization layers when image is 0-bytes */
-.hp-hero-image::after {
-  content: "💬 WhatsApp ➔ 🧠 Doc2Me AI ➔ 📊 Structured Records\A\A[Doc2Me Interactive Workspace]";
-  font-size: 16px;
-  background: linear-gradient(135deg, #070D1F 0%, #152044 100%);
-  border: 2px solid var(--royal-blue);
-  box-shadow: inset 0 0 40px rgba(37, 99, 235, 0.15);
 }
 
 .hp-visual-container:hover .hp-hero-image {
@@ -526,15 +465,6 @@ img::after {
   border-radius: 16px;
   border: 1px solid var(--border-premium);
   box-shadow: 0 20px 50px rgba(7, 13, 31, 0.05);
-}
-
-.story-large-img::after {
-  content: "📖 Rajesh K. & Father's Story\A\A'He just whispers his vitals into WhatsApp, and we track everything.'";
-  font-size: 15px;
-  font-family: var(--font-georgia);
-  font-style: italic;
-  background: linear-gradient(135deg, #1A1F2C 0%, #11141D 100%);
-  border-left: 5px solid var(--vibrant-orange);
 }
 
 .story-content-block {
@@ -1101,12 +1031,6 @@ img::after {
   box-shadow: 0 20px 40px rgba(0,0,0,0.3);
 }
 
-.showcase-img::after {
-  content: "💬 WhatsApp Message Parser\A\A- Entity extraction\A- Timezone calculation\A- Context grouping";
-  font-size: 14px;
-  background: linear-gradient(135deg, #161E31 0%, #0A0D16 100%);
-}
-
 .simple-showcase {
   background-color: #131A2A;
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -1210,13 +1134,6 @@ img::after {
   box-shadow: 0 20px 40px rgba(0,0,0,0.04);
 }
 
-.family-large-img::after {
-  content: "👪 Pediatric, Gestational & Chronic Profiles\A\ASeparate family channels under one WhatsApp contact";
-  font-size: 14px;
-  background: linear-gradient(135deg, #1C2333 0%, #10151E 100%);
-  border-top: 4px solid var(--whatsapp-green);
-}
-
 /* DOCTORS PORTAL SECTION */
 .hp-doctors {
   padding: 120px 0;
@@ -1273,18 +1190,6 @@ img::after {
   transform: scale(1.02);
 }
 
-/* Specific fallbacks for doctor sections */
-.doc-preview-img[alt*="Clinician"]::after {
-  content: "🩺 Clinician Dashboard workspace\A\AReal-time telemetry, structured charts, filter controls";
-  font-size: 13px;
-  background: linear-gradient(135deg, #0C1220 0%, #1B243B 100%);
-}
-
-.doc-preview-img[alt*="consultation"]::after {
-  content: "💬 In-Cabin Consultation Feed\A\ANo manual data-entry during consultations";
-  font-size: 13px;
-  background: linear-gradient(135deg, #1C2433 0%, #0F1520 100%);
-}
 
 .shadow-premium {
   box-shadow: 0 15px 40px rgba(15, 23, 42, 0.05);
@@ -1333,13 +1238,6 @@ img::after {
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 24px 50px rgba(0,0,0,0.3);
-}
-
-.global-large-img::after {
-  content: "🌐 Global Multilingual Telemetry Map\A\AEnglish • Hindi • Hinglish NLP Nodes";
-  font-size: 14px;
-  background: linear-gradient(135deg, #0E1424 0%, #060911 100%);
-  border: 1px solid var(--vibrant-orange);
 }
 
 .global-stats-row {
@@ -1426,18 +1324,6 @@ img::after {
   transform: translateY(-4px);
 }
 
-/* Specific fallbacks for half cards */
-.showcase-half-img[alt*="Platform"]::after {
-  content: "💻 Doc2Me Responsive Web App Layout\A\AOptimized for clarity, speed, and continuous telemetry";
-  font-size: 13px;
-  background: linear-gradient(135deg, #1B2335 0%, #101622 100%);
-}
-
-.showcase-half-img[alt*="Billboard"]::after {
-  content: "🏙 Global Awareness Campaign\A\A'Your Health Records, Organized Automatically.'";
-  font-size: 13px;
-  background: linear-gradient(135deg, #252D3F 0%, #151A25 100%);
-}
 
 .showcase-half-caption {
   font-size: 14.5px;
