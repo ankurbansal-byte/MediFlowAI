@@ -126,7 +126,9 @@ function App() {
   }
 
   // Homepage Premium Preview Route
-  const isHomepagePremium = window.location.pathname === "/design-preview/doc2me-home-premium" ||
+  const isHomepagePremium = window.location.pathname === "/design-preview/home-premium" ||
+                            window.location.pathname === "/design-preview/doc2me-home-premium" ||
+                            new URLSearchParams(window.location.search).get("view") === "design-preview-home-premium" ||
                             new URLSearchParams(window.location.search).get("view") === "design-preview-doc2me-home-premium";
 
   if (isHomepagePremium) {
