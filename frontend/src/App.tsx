@@ -8,6 +8,7 @@ import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
 import PublicHome from "./pages/PublicHome";
+import HomepageV1 from "./pages/HomepageV1";
 import { clearAuthSession, isTokenExpired } from "./api/axios";
 
 export interface User {
@@ -104,6 +105,24 @@ function App() {
     setUser(updatedUser);
     localStorage.setItem("mediflow_user", JSON.stringify(updatedUser));
   };
+
+  // Homepage V1 Preview Route
+  const isHomepageV1 = window.location.pathname === "/design-preview/homepage-v1" ||
+                       new URLSearchParams(window.location.search).get("view") === "design-preview-homepage-v1";
+
+  if (isHomepageV1) {
+    return (
+      <HomepageV1
+        onLoginClick={() => {
+          // Redirect to login view by clearing any existing state & pushing query params
+          setUser(null);
+          clearAuthSession();
+          setActiveView("login");
+          window.history.pushState({}, document.title, "/?view=login");
+        }}
+      />
+    );
+  }
 
   // Guard routing
   if (user) {
