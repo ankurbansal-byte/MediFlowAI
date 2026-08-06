@@ -163,7 +163,7 @@ const HomepageV1: React.FC<HomepageV1Props> = ({ onLoginClick }) => {
           <div className="story-grid">
             <div className="story-image-block">
               <img
-                src="/images/hero/hero-health-story.png"
+                src="/images/features/feature-whatsapp-record.png"
                 alt="Patient story and health path"
                 className="story-large-img"
               />
