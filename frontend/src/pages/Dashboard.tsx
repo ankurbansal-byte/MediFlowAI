@@ -8,6 +8,7 @@ import SidebarV4 from "../components/SidebarV4";
 import SidebarV5 from "../components/SidebarV5";
 import SidebarV5_1 from "../components/SidebarV5_1";
 import SidebarV5_2 from "../components/SidebarV5_2";
+import SidebarV6 from "../components/SidebarV6";
 import RecordSubmissionModal from "../components/RecordSubmissionModal";
 import DashboardView from "./DashboardView";
 import DashboardViewV2 from "./DashboardViewV2";
@@ -16,6 +17,7 @@ import DashboardViewV4 from "./DashboardViewV4";
 import DashboardViewV5 from "./DashboardViewV5";
 import DashboardViewV5_1 from "./DashboardViewV5_1";
 import DashboardViewV5_2 from "./DashboardViewV5_2";
+import DashboardViewV6 from "./DashboardViewV6";
 import TrendsView from "./TrendsView";
 import TrendsViewV5 from "./TrendsViewV5";
 import TrendsViewV5_2 from "./TrendsViewV5_2";
@@ -64,19 +66,24 @@ interface DashboardProps {
   isInsightsV5_2?: boolean;
   isProfileV5_2?: boolean;
   isSettingsV5_2?: boolean;
+  isV6?: boolean;
+  isRecordsV6?: boolean;
+  isInsightsV6?: boolean;
+  isProfileV6?: boolean;
+  isSettingsV6?: boolean;
 }
 
 export type TabType = "dashboard" | "trends" | "ai-insights" | "profile" | "settings" | "hospital" | "patients" | "doctors" | "visits-admin" | "doctor-visits" | "today-patients" | "my-patients";
 
-const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, isV2 = false, isV3 = false, isV4 = false, isV5 = false, isV5_1 = false, isV5_2 = false, isRecordsV5 = false, isInsightsV5 = false, isProfileV5 = false, isSettingsV5 = false, isRecordsV5_2 = false, isInsightsV5_2 = false, isProfileV5_2 = false, isSettingsV5_2 = false }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, isV2 = false, isV3 = false, isV4 = false, isV5 = false, isV5_1 = false, isV5_2 = false, isRecordsV5 = false, isInsightsV5 = false, isProfileV5 = false, isSettingsV5 = false, isRecordsV5_2 = false, isInsightsV5_2 = false, isProfileV5_2 = false, isSettingsV5_2 = false, isV6 = false, isRecordsV6 = false, isInsightsV6 = false, isProfileV6 = false, isSettingsV6 = false }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(() => {
-    if (isInsightsV5 || isInsightsV5_2) return "ai-insights";
-    if (isRecordsV5 || isRecordsV5_2) return "trends";
-    if (isProfileV5 || isProfileV5_2) return "profile";
-    if (isSettingsV5 || isSettingsV5_2) return "settings";
+    if (isInsightsV5 || isInsightsV5_2 || isInsightsV6) return "ai-insights";
+    if (isRecordsV5 || isRecordsV5_2 || isRecordsV6) return "trends";
+    if (isProfileV5 || isProfileV5_2 || isProfileV6) return "profile";
+    if (isSettingsV5 || isSettingsV5_2 || isSettingsV6) return "settings";
     if (user.role === "admin") return "dashboard";
     if (user.role === "doctor") return "dashboard";
     return "dashboard";
@@ -202,7 +209,32 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
             />
           );
         }
-        return isV5_2 ? (
+        return isV6 ? (
+          <DashboardViewV6
+            user={user}
+            effectivePatientId={effectivePatientId}
+            selectedPatientOption={selectedPatientOption}
+            summary={summary}
+            timeline={timeline}
+            timelineFilter={timelineFilter}
+            setTimelineFilter={setTimelineFilter}
+            isTimelineLoading={isTimelineLoading}
+            isPatientsLoading={isPatientsLoading}
+            hasSummaryError={hasSummaryError}
+            hasTimelineError={hasTimelineError}
+            bloodSugarStats={bloodSugarStats}
+            bloodPressureStats={bloodPressureStats}
+            heartRateStats={heartRateStats}
+            temperatureStats={temperatureStats}
+            weightStats={weightStats}
+            selectedParameter={selectedParameter}
+            setSelectedParameter={setSelectedParameter}
+            visibleTimeline={visibleTimeline}
+            setIsModalOpen={setIsModalOpen}
+            onTabChange={handleTabChange}
+            setSelectedHistoryDate={setSelectedHistoryDate}
+          />
+        ) : isV5_2 ? (
           <DashboardViewV5_2
             user={user}
             effectivePatientId={effectivePatientId}
@@ -399,7 +431,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
           />
         );
       case "trends":
-        return (isV5_2 || isRecordsV5_2) ? (
+        return (isV6 || isRecordsV6 || isV5_2 || isRecordsV5_2) ? (
           <TrendsViewV5_2
             patientId={effectivePatientId}
             trends={trends}
@@ -446,7 +478,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
           />
         );
       case "ai-insights":
-        return (isV5_2 || isRecordsV5_2 || isInsightsV5_2) ? (
+        return (isV6 || isRecordsV6 || isInsightsV6 || isV5_2 || isRecordsV5_2 || isInsightsV5_2) ? (
           <AIInsightsViewV5_2
             trends={trends}
             selectedParameter={selectedParameter}
@@ -505,7 +537,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
           />
         );
       case "profile":
-        if (isV5_2 || isProfileV5_2) {
+        if (isV6 || isProfileV6 || isV5_2 || isProfileV5_2) {
           return (
             <ProfileViewV5_2
               user={user}
@@ -525,7 +557,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
           />
         );
       case "settings":
-        if (isV5_2 || isSettingsV5_2) {
+        if (isV6 || isSettingsV6 || isV5_2 || isSettingsV5_2) {
           return (
             <SettingsViewV5_2
               user={user}
@@ -555,7 +587,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
   const hasPatientPanel = user.role === "doctor" && activeTab === "doctor-visits";
 
   return (
-    <div className={`dashboard-wrapper ${isSidebarCollapsed ? "sidebar-collapsed" : ""} ${isV5_2 || isRecordsV5_2 || isInsightsV5_2 || isProfileV5_2 || isSettingsV5_2 ? "dashboard--v5_2" : isV5_1 ? "dashboard--v5_1" : (isV5 || isRecordsV5 || isInsightsV5 || isProfileV5 || isSettingsV5) ? "dashboard--v5" : isV4 ? "dashboard--v4" : isV3 ? "dashboard--v3" : isV2 ? "dashboard--v2" : ""}`}>
+    <div className={`dashboard-wrapper ${isSidebarCollapsed ? "sidebar-collapsed" : ""} ${isV6 || isRecordsV6 || isInsightsV6 || isProfileV6 || isSettingsV6 ? "dashboard--v6" : isV5_2 || isRecordsV5_2 || isInsightsV5_2 || isProfileV5_2 || isSettingsV5_2 ? "dashboard--v5_2" : isV5_1 ? "dashboard--v5_1" : (isV5 || isRecordsV5 || isInsightsV5 || isProfileV5 || isSettingsV5) ? "dashboard--v5" : isV4 ? "dashboard--v4" : isV3 ? "dashboard--v3" : isV2 ? "dashboard--v2" : ""}`}>
       {/* Mobile Nav Top Bar Header */}
       <div className="mobile-top-bar">
         <button
@@ -603,7 +635,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
             >
               ✕
             </button>
-            {isV5_2 || isRecordsV5_2 || isInsightsV5_2 || isProfileV5_2 || isSettingsV5_2 ? (
+            {isV6 || isRecordsV6 || isInsightsV6 || isProfileV6 || isSettingsV6 ? (
+              <SidebarV6
+                onLogout={onLogout}
+                onLogoutConfirmTrigger={() => setIsLogoutModalOpen(true)}
+                userRole={user.role}
+                activeTab={activeTab === "dashboard" && (isRecordsV6 || isInsightsV6) ? (isRecordsV6 ? "trends" as TabType : "ai-insights" as TabType) : activeTab}
+                onTabChange={handleTabChange}
+                isCollapsed={isSidebarCollapsed}
+                onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              />
+            ) : isV5_2 || isRecordsV5_2 || isInsightsV5_2 || isProfileV5_2 || isSettingsV5_2 ? (
               <SidebarV5_2
                 onLogout={onLogout}
                 onLogoutConfirmTrigger={() => setIsLogoutModalOpen(true)}
@@ -700,7 +742,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onProfileUpdate, 
           {user.role === "patient" && (
             <div className="patient-top-header">
               <div className="patient-top-header__breadcrumb">
-                {(isV5_1 || isV5_2 || isRecordsV5_2 || isInsightsV5_2 || isProfileV5_2 || isSettingsV5_2) ? (
+                {(isV6 || isRecordsV6 || isInsightsV6 || isProfileV6 || isSettingsV6 || isV5_1 || isV5_2 || isRecordsV5_2 || isInsightsV5_2 || isProfileV5_2 || isSettingsV5_2) ? (
                   <span className="breadcrumb-current">
                     {activeTab === "dashboard" ? "Home" : activeTab === "trends" ? "Health Records" : activeTab === "ai-insights" ? "Health Insights" : activeTab === "profile" ? "Profile" : "Settings"}
                   </span>

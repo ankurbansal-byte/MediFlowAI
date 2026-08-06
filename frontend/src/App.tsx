@@ -174,7 +174,24 @@ function App() {
     const isSettingsV5_2 = window.location.pathname === "/design-preview/settings-v5-2" ||
                            window.location.pathname === "/patient/settings-v5-2" ||
                            new URLSearchParams(window.location.search).get("view") === "design-preview-settings-v5-2";
-    return <Dashboard user={user} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} isV2={isV2} isV3={isV3} isV4={isV4} isV5={isV5} isV5_1={isV5_1} isV5_2={isV5_2} isRecordsV5={isRecordsV5} isInsightsV5={isInsightsV5} isProfileV5={isProfileV5} isSettingsV5={isSettingsV5} isRecordsV5_2={isRecordsV5_2} isInsightsV5_2={isInsightsV5_2} isProfileV5_2={isProfileV5_2} isSettingsV5_2={isSettingsV5_2} />;
+
+    const isV6 = window.location.pathname === "/design-preview/home-v6" ||
+                 window.location.pathname === "/patient/home-v6" ||
+                 new URLSearchParams(window.location.search).get("view") === "design-preview-home-v6";
+    const isRecordsV6 = window.location.pathname === "/design-preview/health-records-v6" ||
+                        window.location.pathname === "/patient/health-records-v6" ||
+                        new URLSearchParams(window.location.search).get("view") === "design-preview-health-records-v6";
+    const isInsightsV6 = window.location.pathname === "/design-preview/health-insights-v6" ||
+                         window.location.pathname === "/patient/health-insights-v6" ||
+                         new URLSearchParams(window.location.search).get("view") === "design-preview-health-insights-v6";
+    const isProfileV6 = window.location.pathname === "/design-preview/profile-v6" ||
+                        window.location.pathname === "/patient/profile-v6" ||
+                        new URLSearchParams(window.location.search).get("view") === "design-preview-profile-v6";
+    const isSettingsV6 = window.location.pathname === "/design-preview/settings-v6" ||
+                         window.location.pathname === "/patient/settings-v6" ||
+                         new URLSearchParams(window.location.search).get("view") === "design-preview-settings-v6";
+
+    return <Dashboard user={user} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} isV2={isV2} isV3={isV3} isV4={isV4} isV5={isV5} isV5_1={isV5_1} isV5_2={isV5_2} isRecordsV5={isRecordsV5} isInsightsV5={isInsightsV5} isProfileV5={isProfileV5} isSettingsV5={isSettingsV5} isRecordsV5_2={isRecordsV5_2} isInsightsV5_2={isInsightsV5_2} isProfileV5_2={isProfileV5_2} isSettingsV5_2={isSettingsV5_2} isV6={isV6} isRecordsV6={isRecordsV6} isInsightsV6={isInsightsV6} isProfileV6={isProfileV6} isSettingsV6={isSettingsV6} />;
   }
 
   // Guest Routing
