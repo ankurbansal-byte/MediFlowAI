@@ -12,6 +12,7 @@ import HomepageV1 from "./pages/HomepageV1";
 import HomepagePremium from "./pages/HomepagePremium";
 import Doc2mePitchHeroV1 from "./pages/Doc2mePitchHeroV1";
 import Doc2mePitchHeroV2Dark from "./pages/Doc2mePitchHeroV2Dark";
+import Doc2mePitchHeroV3Aurora from "./pages/Doc2mePitchHeroV3Aurora";
 import { clearAuthSession, isTokenExpired } from "./api/axios";
 
 export interface User {
@@ -116,6 +117,23 @@ function App() {
   if (isDoc2mePitchHeroV1) {
     return (
       <Doc2mePitchHeroV1
+        onLoginClick={() => {
+          setUser(null);
+          clearAuthSession();
+          setActiveView("login");
+          window.history.pushState({}, document.title, "/?view=login");
+        }}
+      />
+    );
+  }
+
+  // Doc2me Pitch Hero V3 Aurora Preview Route
+  const isDoc2mePitchHeroV3Aurora = window.location.pathname === "/design-preview/doc2me-pitch-hero-v3-aurora" ||
+                                    new URLSearchParams(window.location.search).get("view") === "design-preview-doc2me-pitch-hero-v3-aurora";
+
+  if (isDoc2mePitchHeroV3Aurora) {
+    return (
+      <Doc2mePitchHeroV3Aurora
         onLoginClick={() => {
           setUser(null);
           clearAuthSession();
