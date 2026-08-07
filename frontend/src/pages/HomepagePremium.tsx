@@ -93,50 +93,110 @@ const HomepagePremium: React.FC<HomepagePremiumProps> = ({ onLoginClick }) => {
         </div>
       </header>
 
-      {/* SECTION 1A: CONSECUTIVE HERO - POINTING DOCTOR (THE AI COMPANION) */}
-      <section id="companion-hero" className="premium-section hero-doctor-section">
-        <div className="section-decal-planes" />
-        <div className="premium-container hero-grid-split">
-          <div className="hero-text-composition">
-            <div className="editorial-tagline-badge">
-              <span className="pulse-circle" />
-              <span className="badge-label-text">Meet Your AI Companion</span>
-            </div>
+      {/* SECTION 1A: REDESIGNED PITCH-INSPIRED HERO SECTION */}
+      <section id="companion-hero" className="premium-section hero-pitch-section">
+        {/* Soft colorful radial glows background */}
+        <div className="hero-glow-layer">
+          <div className="hero-glow glow-1" />
+          <div className="hero-glow glow-2" />
+          <div className="hero-glow glow-3" />
+          <div className="hero-glow glow-4" />
+        </div>
 
-            <h1 className="giant-hero-title">
-              Your personal <br />
-              <span className="color-gradient-text">health intelligence.</span>
-            </h1>
+        {/* Low opacity floating background WhatsApp cards behind text */}
+        <div className="hero-floating-cards">
+          {/* Card 1: Patient message 1 */}
+          <div className="floating-whatsapp-card wc-patient wc-1">
+            <div className="wc-header">Patient</div>
+            <div className="wc-body">Today's sugar 126 fasting.</div>
+          </div>
 
-            <p className="hero-editorial-subtext">
-              Meet the next evolution of personal healthcare. A proactive companion designed to transform messy conversation notes and clinical reports into perfectly structured health timelines.
-            </p>
+          {/* Card 2: AI reply 1 */}
+          <div className="floating-whatsapp-card wc-ai wc-2">
+            <div className="wc-header">Doc2Me AI</div>
+            <div className="wc-body">Sugar saved successfully.</div>
+          </div>
 
-            <div className="hero-cta-group">
-              <button className="cta-btn-primary" onClick={onLoginClick || (() => window.location.href = "/?view=login")}>
-                Get Started Now
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-              <button className="cta-btn-secondary" onClick={() => handleScrollTo("whatsapp-platform")}>
-                Explore WhatsApp
-              </button>
-            </div>
+          {/* Card 3: Patient message 2 - Hindi */}
+          <div className="floating-whatsapp-card wc-patient wc-3">
+            <div className="wc-header">Patient</div>
+            <div className="wc-body">आज BP 128/82 है।</div>
+          </div>
 
-            <div className="handwritten-divider">
-              “Experience medical tracking like never before.”
+          {/* Card 4: AI reply 2 */}
+          <div className="floating-whatsapp-card wc-ai wc-4">
+            <div className="wc-header">Doc2Me AI</div>
+            <div className="wc-body">Blood pressure recorded.</div>
+          </div>
+
+          {/* Card 5: Voice note */}
+          <div className="floating-whatsapp-card wc-patient wc-5">
+            <div className="wc-header">Patient</div>
+            <div className="wc-body wc-voice">
+              <span className="voice-play-btn">▶</span>
+              <div className="voice-wave">
+                <span className="bar bar-1"></span>
+                <span className="bar bar-2"></span>
+                <span className="bar bar-3"></span>
+                <span className="bar bar-4"></span>
+              </div>
+              <span className="voice-duration">0:14</span>
             </div>
           </div>
 
-          <div className="hero-artwork-composition">
-            <div className="artwork-shadow-wrapper">
-              <img
-                src="/images/hero/hero-doctor.png"
-                alt="Pointing Doctor Companion Artwork"
-                className="artwork-img-full"
-              />
+          {/* Card 6: Image received */}
+          <div className="floating-whatsapp-card wc-ai wc-6">
+            <div className="wc-header">Doc2Me AI</div>
+            <div className="wc-body wc-image">
+              <svg className="wc-img-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              <span>Image analyzed.</span>
             </div>
+          </div>
+
+          {/* Card 7: Health value */}
+          <div className="floating-whatsapp-card wc-health-val wc-7">
+            <div className="wc-val-badge">BP 128/82</div>
+            <div className="wc-val-status">Normal</div>
+          </div>
+        </div>
+
+        <div className="premium-container hero-centered-content">
+          <div className="editorial-tagline-badge">
+            <span className="pulse-circle" />
+            <span className="badge-label-text">WhatsApp-First Health Record Platform</span>
+          </div>
+
+          <h1 className="giant-hero-title">
+            AI-powered WhatsApp <br />
+            <span className="color-gradient-text">Health Record Platform</span>
+          </h1>
+
+          <p className="hero-editorial-subtext">
+            No new apps to install. Just message your blood sugar, BP, weight, or voice notes straight to our secure AI companion to build structured, beautiful medical histories instantly.
+          </p>
+
+          <div className="hero-cta-group">
+            <button className="cta-btn-primary" onClick={onLoginClick || (() => window.location.href = "/?view=login")}>
+              Launch on WhatsApp
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <button className="cta-btn-secondary" onClick={() => handleScrollTo("smartest-way")}>
+              See How It Works
+            </button>
+          </div>
+
+          <div className="hero-main-preview-wrapper">
+            <img
+              src="/images/hero/hero-main-platform.png"
+              alt="AI Powered WhatsApp Platform Preview"
+              className="hero-main-preview-img"
+            />
           </div>
         </div>
       </section>
