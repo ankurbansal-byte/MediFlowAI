@@ -10,6 +10,7 @@ import ForcePasswordChange from "./pages/ForcePasswordChange";
 import PublicHome from "./pages/PublicHome";
 import HomepageV1 from "./pages/HomepageV1";
 import HomepagePremium from "./pages/HomepagePremium";
+import Doc2mePitchHeroV1 from "./pages/Doc2mePitchHeroV1";
 import { clearAuthSession, isTokenExpired } from "./api/axios";
 
 export interface User {
@@ -106,6 +107,23 @@ function App() {
     setUser(updatedUser);
     localStorage.setItem("mediflow_user", JSON.stringify(updatedUser));
   };
+
+  // Doc2me Pitch Hero V1 Preview Route
+  const isDoc2mePitchHeroV1 = window.location.pathname === "/design-preview/doc2me-pitch-hero-v1" ||
+                              new URLSearchParams(window.location.search).get("view") === "design-preview-doc2me-pitch-hero-v1";
+
+  if (isDoc2mePitchHeroV1) {
+    return (
+      <Doc2mePitchHeroV1
+        onLoginClick={() => {
+          setUser(null);
+          clearAuthSession();
+          setActiveView("login");
+          window.history.pushState({}, document.title, "/?view=login");
+        }}
+      />
+    );
+  }
 
   // Homepage V1 Preview Route
   const isHomepageV1 = window.location.pathname === "/design-preview/homepage-v1" ||
