@@ -9,6 +9,7 @@ import VerifyEmail from "./pages/VerifyEmail";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
 import HomepageV1 from "./pages/HomepageV1";
 import HomepagePremium from "./pages/HomepagePremium";
+import Doc2MePublicHomePage from "./doc2me-landing/Doc2MePublicHomePage";
 import Doc2mePitchHeroV1 from "./pages/Doc2mePitchHeroV1";
 import Doc2mePitchHeroV2Dark from "./pages/Doc2mePitchHeroV2Dark";
 import Doc2mePitchHeroV3Aurora from "./pages/Doc2mePitchHeroV3Aurora";
@@ -312,7 +313,7 @@ function App() {
   switch (activeView) {
     case "home":
       return (
-        <HomepagePremium
+        <Doc2MePublicHomePage
           onLoginClick={() => {
             setUser(null);
             clearAuthSession();
