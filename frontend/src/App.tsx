@@ -15,6 +15,7 @@ import Doc2mePitchHeroV3Aurora from "./pages/Doc2mePitchHeroV3Aurora";
 import Doc2mePitchHeroV4Sunrise from "./pages/Doc2mePitchHeroV4Sunrise";
 import Doc2mePitchHeroFinal from "./pages/Doc2mePitchHeroFinal";
 import { clearAuthSession, isTokenExpired } from "./api/axios";
+import { Doc2MePublicHomePage } from "./doc2me-landing/Doc2MePublicHomePage";
 
 export interface User {
   username: string;
@@ -312,13 +313,8 @@ function App() {
   switch (activeView) {
     case "home":
       return (
-        <HomepagePremium
-          onLoginClick={() => {
-            setUser(null);
-            clearAuthSession();
-            setActiveView("login");
-            window.history.pushState({}, document.title, "/?view=login");
-          }}
+        <Doc2MePublicHomePage
+         
         />
       );
     case "patient-register":
