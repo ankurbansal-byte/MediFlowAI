@@ -314,7 +314,18 @@ function App() {
     case "home":
       return (
         <Doc2MePublicHomePage
-         
+          onLoginClick={() => {
+            setUser(null);
+            clearAuthSession();
+            setActiveView("login");
+            window.history.pushState({}, document.title, "/?view=login");
+          }}
+          onBookDemoClick={() => {
+            setUser(null);
+            clearAuthSession();
+            setActiveView("login");
+            window.history.pushState({}, document.title, "/?view=login");
+          }}
         />
       );
     case "patient-register":

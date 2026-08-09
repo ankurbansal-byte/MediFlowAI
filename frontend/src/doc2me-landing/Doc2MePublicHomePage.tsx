@@ -50,9 +50,11 @@ import {
 
 interface Doc2MePublicHomePageProps {
   onOpenPortalModal?: (portalType: 'hospital' | 'doctor' | 'patient' | 'founders') => void;
+  onLoginClick?: () => void;
+  onBookDemoClick?: () => void;
 }
 
-export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePageProps) {
+export function Doc2MePublicHomePage({ onOpenPortalModal, onLoginClick, onBookDemoClick }: Doc2MePublicHomePageProps) {
   // State for interactive elements
   const [selectedVitalTab, setSelectedVitalTab] = useState<'sugar' | 'bp' | 'temp' | 'weight' | 'pulse' | 'spo2' | 'lab'>('sugar');
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(0);
@@ -60,7 +62,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
   const [selectedPortal, setSelectedPortal] = useState<'hospital' | 'doctor' | 'patient' | 'founders' | null>(null);
   const [workflowLang, setWorkflowLang] = useState<'en' | 'hinglish' | 'hi'>('en');
   const [isMetricsExpanded, setIsMetricsExpanded] = useState(false);
-  
+
   // Spotlight Cursor Tracking State
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 500, y: 300 });
   const spotlightSectionRef = React.useRef<HTMLDivElement>(null);
@@ -74,7 +76,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
       });
     }
   };
-  
+
   // Interactive Simulator State
   const [simVitalType, setSimVitalType] = useState<'sugar' | 'bp' | 'weight' | 'pulse'>('sugar');
   const [simInputValue, setSimInputValue] = useState('Sugar 126 Fasting');
@@ -88,10 +90,10 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
   const handleSimSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!simInputValue.trim()) return;
-    
+
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newMsg = { id: Date.now(), sender: 'patient', text: simInputValue, time: now };
-    
+
     setSimMessages(prev => [...prev, newMsg]);
     setSimInputValue('');
 
@@ -410,11 +412,11 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] selection:bg-blue-600 selection:text-white">
-      
+
       {/* SECTION 1: TOP NAVIGATION BAR */}
       <header className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 shadow-2xl text-white">
         <div className="w-full px-4 sm:px-8 lg:px-12 h-20 flex items-center justify-between">
-          
+
           {/* Logo & B2B Badge */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center font-black text-lg shadow-md shadow-blue-900/40">
@@ -447,7 +449,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
           {/* Action Buttons: Partner + Login + Signup + NEW Patient Point of View */}
           <div className="flex items-center gap-2 sm:gap-2.5">
             <button
-              onClick={() => setShowQrModal(true)}
+              onClick={onBookDemoClick || (() => setShowQrModal(true))}
               className="hidden lg:flex px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-extrabold shadow-md shadow-blue-600/30 transition-all items-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-95 border border-blue-400/30"
             >
               <Building2 className="w-3.5 h-3.5" />
@@ -455,14 +457,14 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
             </button>
 
             <button
-              onClick={() => setSelectedPortal('hospital')}
+              onClick={onLoginClick || (() => setSelectedPortal('hospital'))}
               className="px-3 py-2 rounded-xl bg-purple-900/60 hover:bg-purple-800 text-purple-200 text-xs font-bold transition-all items-center gap-1.5 cursor-pointer border border-purple-500/30"
             >
               <span>Login</span>
             </button>
 
             <button
-              onClick={() => setShowQrModal(true)}
+              onClick={onLoginClick || (() => setShowQrModal(true))}
               className="px-3 py-2 rounded-xl bg-purple-800/80 hover:bg-purple-700 text-white text-xs font-bold transition-all items-center gap-1.5 cursor-pointer border border-purple-400/30"
             >
               <span>Signup</span>
@@ -488,7 +490,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
       {/* SECTION 2: HERO SECTION (Cinematic Dark Purple with 12 Floating WhatsApp Threads) */}
       <section className="relative overflow-hidden pt-12 pb-20 lg:pt-16 lg:pb-28 bg-[#090417] text-white border-b border-purple-500/20">
-        
+
         {/* Background Sunrise Radial Spotlight & Glow Layer */}
         <BackgroundSunrise />
 
@@ -498,8 +500,8 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
             <motion.div
               key={thread.id}
               animate={thread.floatAnim}
-              style={{ 
-                filter: `blur(${thread.blurPx}px)`, 
+              style={{
+                filter: `blur(${thread.blurPx}px)`,
                 opacity: thread.opacityVal,
                 transform: `scale(${thread.scale})`
               }}
@@ -523,14 +525,14 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
                 {thread.messages.map((msg, idx) => {
                   const isPatient = msg.sender === 'patient';
                   return (
-                    <div 
+                    <div
                       key={idx}
                       className={`flex flex-col ${isPatient ? 'items-end' : 'items-start'}`}
                     >
-                      <div 
+                      <div
                         className={`px-2.5 py-1.5 rounded-xl text-xs font-medium max-w-[88%] shadow-sm ${
-                          isPatient 
-                            ? 'bg-[#005c4b] text-[#e9edef] rounded-tr-none' 
+                          isPatient
+                            ? 'bg-[#005c4b] text-[#e9edef] rounded-tr-none'
                             : 'bg-[#202c33] text-[#e9edef] rounded-tl-none border border-[#2a3942]/50'
                         }`}
                       >
@@ -555,12 +557,12 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            
+
             {/* Left Hero Content */}
             <div className="lg:col-span-7 text-center lg:text-left">
-              
+
               {/* Feature Badges */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
@@ -576,7 +578,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
               </motion.div>
 
               {/* Main Catchy Headline */}
-              <motion.h1 
+              <motion.h1
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.1 }}
@@ -586,7 +588,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
               </motion.h1>
 
               {/* Classy English Tagline */}
-              <motion.p 
+              <motion.p
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
@@ -596,14 +598,14 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
               </motion.p>
 
               {/* Single Prominent Main Hero Button */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
                 className="mt-8 flex items-center justify-center lg:justify-start"
               >
                 <button
-                  onClick={() => setShowQrModal(true)}
+                  onClick={onBookDemoClick || (() => setShowQrModal(true))}
                   className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold text-base sm:text-lg shadow-xl shadow-blue-600/30 flex items-center justify-center gap-3 transition-all transform hover:scale-[1.02] active:scale-95 cursor-pointer border border-blue-400/40"
                 >
                   <Building2 className="w-5 h-5" />
@@ -613,7 +615,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
               </motion.div>
 
               {/* Key Highlights under CTA */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
@@ -637,7 +639,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
             {/* Right Hero Interactive Visual Preview Card (WhatsApp Dark Theme Inspired) */}
             <div className="lg:col-span-5 relative z-10">
               <div className="relative mx-auto max-w-md lg:max-w-none bg-[#0b141a]/95 backdrop-blur-xl rounded-3xl p-5 sm:p-6 shadow-2xl border border-[#222d34] text-white ring-1 ring-emerald-500/20">
-                
+
                 {/* Header Switcher inside Preview */}
                 <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#222d34]">
                   <div className="flex items-center gap-2">
@@ -651,7 +653,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
                 {/* Patient WhatsApp -> Dual Dashboards Preview */}
                 <div className="space-y-4">
-                  
+
                   {/* Step A: Patient WhatsApp Chat Snippet (Authentic Light WhatsApp Theme) */}
                   <div className="bg-[#efeae2] rounded-2xl p-3.5 border border-slate-300 shadow-md">
                     <div className="flex items-center justify-between text-[11px] font-bold text-[#075e54] mb-2.5 px-1 pb-1.5 border-b border-slate-300/70">
@@ -694,7 +696,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
                   {/* Step B: Dual Dashboards Preview Container */}
                   <div className="space-y-3">
-                    
+
                     {/* View 1: Doctor Dashboard View */}
                     <div className="bg-[#060c18] rounded-2xl p-3.5 text-white shadow-inner border border-teal-500/30">
                       <div className="flex items-center justify-between pb-2 mb-2 border-b border-teal-500/20">
@@ -770,7 +772,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
             Trusted Framework Designed for Hospitals, Doctors & OPD Patients
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            
+
             <div className="flex items-center justify-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100">
               <ShieldCheck className="w-6 h-6 text-emerald-600 shrink-0" />
               <div className="text-left">
@@ -810,7 +812,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
       {/* SECTION 4: VALUE PROPOSITION FOR HOSPITALS & CLINICS */}
       <section id="value-prop" className="py-20 bg-slate-50 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           <div className="text-center max-w-3xl mx-auto">
             <span className="text-xs font-bold text-blue-600 uppercase tracking-widest bg-blue-100 px-3.5 py-1.5 rounded-full border border-blue-200">
               Value Proposition for Hospitals
@@ -825,7 +827,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
           {/* 3 Value Pillars for Hospitals (Very Soft Subtle Pastel Fills - Borderless & Shadowless) */}
           <div className="mt-16 grid md:grid-cols-3 gap-8">
-            
+
             {/* Pillar 1 - Soft Mint Green */}
             <div className="bg-emerald-50/90 text-slate-900 rounded-3xl p-8 border-0 outline-none shadow-none flex flex-col justify-between">
               <div>
@@ -900,7 +902,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
       {/* SECTION 5: NATURAL 4-STEP VISUAL WORKFLOW */}
       <section id="how-it-works" className="py-20 bg-slate-50/60 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           <div className="text-center max-w-3xl mx-auto">
             <span className="text-xs font-bold text-emerald-600 uppercase tracking-widest bg-emerald-100/90 px-3.5 py-1.5 rounded-full border border-emerald-200">
               Exact Natural Workflow
@@ -957,7 +959,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
           </div>
 
           <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-            
+
             {/* Step 1 */}
             <div className="relative bg-white rounded-3xl p-8 border-0 shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between group">
               <div>
@@ -1084,9 +1086,9 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
       {/* SECTION 5B / SECTION 4: THE DOC2ME ADVANTAGE (Doctor & Hospital Centric Precision Intelligence - Deep Royal Indigo & Midnight Cobalt 3D ECG-AI Theme) */}
       <section className="py-20 bg-gradient-to-br from-[#0b132b] via-[#1c2541] to-[#0a0f1d] text-white border-b-0 relative overflow-hidden">
-        
+
         {/* Radial Ambient Glows */}
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none opacity-40"
           style={{
             background: `
@@ -1098,7 +1100,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
         ></div>
 
         {/* Dynamic 3D Diagonal Geometric Stripe Overlay (Full Height Coverage) */}
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none opacity-15"
           style={{
             backgroundImage: `repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.04) 0px, rgba(255, 255, 255, 0.04) 60px, rgba(11, 19, 43, 0.3) 60px, rgba(11, 19, 43, 0.3) 120px)`
@@ -1137,23 +1139,23 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
             <polygon points="-100,1850 1400,1250 1600,1400 -100,2200" fill="rgba(99, 102, 241, 0.12)" filter="url(#shadow3dDeep)" />
 
             {/* Embedded ECG Heartbeat Vital Lines along 3D Diagonal Ribbons */}
-            <path 
-              d="M -100,-50 L 200,250 L 225,220 L 245,310 L 265,160 L 285,280 L 305,250 L 800,745 L 825,715 L 845,805 L 865,655 L 885,775 L 905,745 L 1600,1440" 
-              stroke="rgba(56, 189, 248, 0.6)" 
-              strokeWidth="2.5" 
-              fill="none" 
+            <path
+              d="M -100,-50 L 200,250 L 225,220 L 245,310 L 265,160 L 285,280 L 305,250 L 800,745 L 825,715 L 845,805 L 865,655 L 885,775 L 905,745 L 1600,1440"
+              stroke="rgba(56, 189, 248, 0.6)"
+              strokeWidth="2.5"
+              fill="none"
             />
-            <path 
-              d="M -100,550 L 300,950 L 325,920 L 345,1010 L 365,860 L 385,980 L 405,950 L 950,1495 L 975,1465 L 995,1555 L 1015,1405 L 1035,1525 L 1055,1495 L 1600,2040" 
-              stroke="rgba(52, 211, 153, 0.55)" 
-              strokeWidth="2.5" 
-              fill="none" 
+            <path
+              d="M -100,550 L 300,950 L 325,920 L 345,1010 L 365,860 L 385,980 L 405,950 L 950,1495 L 975,1465 L 995,1555 L 1015,1405 L 1035,1525 L 1055,1495 L 1600,2040"
+              stroke="rgba(52, 211, 153, 0.55)"
+              strokeWidth="2.5"
+              fill="none"
             />
-            <path 
-              d="M -100,1150 L 400,1650 L 425,1620 L 445,1710 L 465,1560 L 485,1680 L 505,1650 L 1050,2195 L 1075,2165 L 1095,2255 L 1115,2105 L 1135,2225 L 1155,2195 L 1600,2640" 
-              stroke="rgba(168, 85, 247, 0.55)" 
-              strokeWidth="2.5" 
-              fill="none" 
+            <path
+              d="M -100,1150 L 400,1650 L 425,1620 L 445,1710 L 465,1560 L 485,1680 L 505,1650 L 1050,2195 L 1075,2165 L 1095,2255 L 1115,2105 L 1135,2225 L 1155,2195 L 1600,2640"
+              stroke="rgba(168, 85, 247, 0.55)"
+              strokeWidth="2.5"
+              fill="none"
             />
 
             {/* Embedded AI Neural Grid Connections & Nodes along 3D Diagonal Ribbon Edges */}
@@ -1178,7 +1180,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          
+
           <div className="text-center max-w-3xl mx-auto mb-16">
             {/* Amber Badge */}
             <span className="text-xs font-mono font-extrabold text-amber-300 uppercase tracking-widest bg-slate-900/90 ring-1 ring-amber-400/50 px-4 py-1.5 rounded-full border-0 shadow-sm inline-flex items-center gap-2">
@@ -1195,7 +1197,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
           {/* Doctor Cabin & Tech Overlay Showcase (3-Part Layout: Large Doctor Cabin + Patient Dashboard + Bottom Clinical Table) */}
           <div className="mb-16 relative max-w-6xl mx-auto rounded-3xl overflow-hidden bg-slate-900/80 backdrop-blur-xl p-5 sm:p-8 shadow-2xl border-0">
-            
+
             {/* Header pill over the hybrid layout */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-6 border-b-0">
               <div className="flex items-center gap-2.5">
@@ -1212,14 +1214,14 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
             {/* Top Grid: Part 1 (Left Image) + Part 2 (Right Dashboard) */}
             <div className="grid lg:grid-cols-12 gap-6 items-start">
-              
+
               {/* Part 1 (Left Side): Large Doctor & Patient Cabin Photo (Shifted Up) */}
               <div className="lg:col-span-6 flex flex-col justify-start">
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl group">
-                  <img 
-                    src="/doctor-cabin.png" 
-                    alt="Doctor Consultation Cabin" 
-                    className="rounded-2xl shadow-2xl w-full object-cover max-h-[520px] transform group-hover:scale-[1.02] transition-transform duration-500" 
+                  <img
+                    src="/doctor-cabin.png"
+                    alt="Doctor Consultation Cabin"
+                    className="rounded-2xl shadow-2xl w-full object-cover max-h-[520px] transform group-hover:scale-[1.02] transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-transparent opacity-90 pointer-events-none"></div>
                   <div className="absolute bottom-4 left-4 right-4 bg-slate-900/95 backdrop-blur-md p-3.5 rounded-xl border-0 flex items-center justify-between shadow-lg">
@@ -1306,11 +1308,11 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
                         <line x1="0" y1="60" x2="320" y2="60" stroke="#e2e8f0" strokeWidth="1" />
 
                         {/* Curve 1: Post-Meal PP Sugar (Amber Gold Line) */}
-                        <path 
-                          d="M 0,18 Q 40,24 80,12 T 160,18 T 240,10 T 320,15" 
-                          fill="none" 
-                          stroke="#d97706" 
-                          strokeWidth="2.5" 
+                        <path
+                          d="M 0,18 Q 40,24 80,12 T 160,18 T 240,10 T 320,15"
+                          fill="none"
+                          stroke="#d97706"
+                          strokeWidth="2.5"
                           strokeDasharray="4 2"
                         />
                         <circle cx="80" cy="12" r="3" fill="#d97706" />
@@ -1324,15 +1326,15 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
                             <stop offset="100%" stopColor="#059669" stopOpacity="0.0" />
                           </linearGradient>
                         </defs>
-                        <path 
-                          d="M 0,50 Q 40,58 80,42 T 160,35 T 240,48 T 320,38 L 320,80 L 0,80 Z" 
-                          fill="url(#fastingGradDark)" 
+                        <path
+                          d="M 0,50 Q 40,58 80,42 T 160,35 T 240,48 T 320,38 L 320,80 L 0,80 Z"
+                          fill="url(#fastingGradDark)"
                         />
-                        <path 
-                          d="M 0,50 Q 40,58 80,42 T 160,35 T 240,48 T 320,38" 
-                          fill="none" 
-                          stroke="#059669" 
-                          strokeWidth="3" 
+                        <path
+                          d="M 0,50 Q 40,58 80,42 T 160,35 T 240,48 T 320,38"
+                          fill="none"
+                          stroke="#059669"
+                          strokeWidth="3"
                         />
                         <circle cx="0" cy="50" r="3.5" fill="#059669" />
                         <circle cx="80" cy="42" r="3.5" fill="#059669" />
@@ -1341,11 +1343,11 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
                         <circle cx="320" cy="38" r="4" fill="#059669" />
 
                         {/* Curve 3: Blood Pressure Systolic Trend (Indigo Blue Line) */}
-                        <path 
-                          d="M 0,35 Q 40,32 80,28 T 160,25 T 240,26 T 320,24" 
-                          fill="none" 
-                          stroke="#4f46e5" 
-                          strokeWidth="2.5" 
+                        <path
+                          d="M 0,35 Q 40,32 80,28 T 160,25 T 240,26 T 320,24"
+                          fill="none"
+                          stroke="#4f46e5"
+                          strokeWidth="2.5"
                         />
                         <circle cx="80" cy="28" r="3" fill="#4f46e5" />
                         <circle cx="160" cy="25" r="3" fill="#4f46e5" />
@@ -1468,7 +1470,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
           {/* 6 Feature Cards (Translucent Borderless Glass Cards with Soft Deep Ambient Shadow) */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
+
             {/* Feature 1 */}
             <div className="bg-slate-900/80 backdrop-blur-xl hover:bg-slate-900/95 transition-all rounded-3xl p-6 border-0 text-white shadow-2xl shadow-black/40 group">
               <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-300 ring-4 ring-amber-500/10 shadow-lg shadow-amber-500/10 flex items-center justify-center font-bold mb-4 group-hover:scale-110 transition-transform">
@@ -1574,7 +1576,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
       {/* SECTION 6: VITALS COVERED (INTERACTIVE CAROUSEL & INDIVIDUAL TAB THEMES) */}
       <section id="vitals-covered" className="py-20 bg-white border-b border-slate-200 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           <div className="text-center max-w-2xl mx-auto">
             <span className="text-xs font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full border border-blue-200/80">
               Complete Vitals Suite
@@ -1627,7 +1629,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
             return (
               <div className="mt-12 relative max-w-6xl mx-auto px-2 sm:px-4">
-                
+
                 {/* Navigation Buttons (Left & Right Arrows) */}
                 <button
                   onClick={() => setSelectedVitalTab(prevVital.id as any)}
@@ -1647,7 +1649,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
                 {/* Carousel Card Track */}
                 <div className="flex items-center justify-center gap-4 sm:gap-6 overflow-visible py-4">
-                  
+
                   {/* Left Peek Card (Previous Vital) */}
                   <div
                     onClick={() => setSelectedVitalTab(prevVital.id as any)}
@@ -1667,7 +1669,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
                   {/* Active Main Card (Centered, Large, Full Focus) */}
                   <div className="w-full max-w-2xl shrink-0 scale-100 opacity-100 shadow-2xl border-0 rounded-3xl bg-white p-6 sm:p-8 relative overflow-hidden transition-all duration-300 ring-1 ring-slate-900/5 z-10">
-                    
+
                     {/* Top Accent Gradient Bar */}
                     <div className={`absolute top-0 left-0 right-0 h-2 bg-gradient-to-r ${activeVital.color}`} />
 
@@ -1745,12 +1747,12 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
       </section>
 
       {/* SECTION 7: WHY HOSPITALS CHOOSE DOC2ME (PASTEL LEMON CANVAS + FLUSH GOLDEN YELLOW HALF-CIRCLE) */}
-      <section 
-        id="why-doc2me" 
+      <section
+        id="why-doc2me"
         className="py-16 sm:py-24 bg-[#fef9c3] text-slate-900 w-full relative min-h-[640px] overflow-hidden select-none border-b border-yellow-200/80 flex flex-col justify-center"
         style={{ backgroundColor: '#fef9c3' }}
       >
-        
+
         {/* Full-Canvas Transparent Golden Yellow Bridge Illustration in Background (Opacity ~25%) */}
         <div className="absolute inset-0 w-full h-full pointer-events-none opacity-25 flex items-center justify-center overflow-hidden z-0">
           <svg className="w-full h-full object-cover min-w-[900px]" viewBox="0 0 1000 400" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1771,9 +1773,9 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
-          
+
           {/* Header (Top Center - Heading / Para) */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -1793,12 +1795,12 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
           {/* Main Content Layout: Left Pillars (In Front of Bridge) | Right Golden Yellow Arc */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            
+
             {/* Left Column: 3 Core Pillars in Ultra-Bold Dark Slate */}
             <div className="lg:col-span-7 space-y-7 pr-0 lg:pr-8 relative z-10">
-              
+
               {/* Pillar 1 */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
@@ -1823,7 +1825,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
               </motion.div>
 
               {/* Pillar 2 */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
@@ -1848,7 +1850,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
               </motion.div>
 
               {/* Pillar 3 */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
@@ -1876,7 +1878,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
             {/* Right Column: Edge-to-Edge Golden Yellow Circle Arc with Crisp Metrics */}
             <div className="lg:col-span-5 relative min-h-[420px] flex items-center justify-end z-20">
-              
+
               <motion.div
                 initial={{ opacity: 0, x: 80 }}
                 whileInView={{ opacity: 1, x: 0 }}
@@ -1885,7 +1887,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
                 className="w-full lg:absolute lg:right-0 lg:top-0 lg:bottom-0 lg:h-full lg:w-[480px] xl:w-[540px] bg-[#eab308] text-white flex flex-col justify-center rounded-3xl lg:rounded-none lg:rounded-l-[999px] p-8 sm:p-12 shadow-none"
               >
                 <div className="max-w-md mx-auto w-full space-y-6 text-center">
-                  
+
                   {/* Metric 1 */}
                   <div className="bg-white/10 p-4 sm:p-5 rounded-2xl border border-white/20 shadow-none">
                     <p className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-none">0</p>
@@ -1936,7 +1938,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
       {/* SECTION 9: PATIENT & DOCTOR EXPERIENCE SHOWCASE (2-COLUMN SPLIT GLASS) */}
       <section className="py-20 bg-slate-50 border-b border-slate-200 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           <div className="text-center max-w-2xl mx-auto mb-16">
             <span className="text-xs font-bold text-blue-600 uppercase tracking-widest bg-blue-100 px-3.5 py-1.5 rounded-full border border-blue-200">
               Dual Experience
@@ -1950,7 +1952,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
           </div>
 
           <div className="relative max-w-6xl mx-auto">
-            
+
             {/* Central Pulsing Live Data Sync Connector */}
             <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 items-center gap-2 bg-white/95 backdrop-blur-md px-4 py-2 rounded-full border border-slate-200/90 shadow-lg text-xs font-black text-slate-800 pointer-events-none">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
@@ -1959,10 +1961,10 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              
+
               {/* Patient Experience Column */}
               <div className="relative overflow-hidden bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-3xl p-8 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-                
+
                 {/* WhatsApp Chat Bubble SVG Background Artwork */}
                 <div className="absolute -right-4 -bottom-4 opacity-30 pointer-events-none">
                   <svg className="w-56 h-56 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
@@ -1998,7 +2000,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
               {/* Doctor Experience Column */}
               <div className="relative overflow-hidden bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-3xl p-8 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-                
+
                 {/* Clinical Chart Trendline SVG Background Artwork */}
                 <div className="absolute -right-4 -bottom-4 opacity-30 pointer-events-none">
                   <svg className="w-60 h-60 text-indigo-600" viewBox="0 0 200 200" fill="none" stroke="currentColor">
@@ -2043,7 +2045,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
       {/* SECTION 9.5: B2B PRICING SECTION */}
       <section id="pricing" className="py-20 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           <div className="text-center max-w-2xl mx-auto mb-16">
             <span className="text-xs font-bold text-blue-600 uppercase tracking-widest bg-blue-100 px-3.5 py-1.5 rounded-full border border-blue-200">
               Hospital Pricing & Plans
@@ -2072,7 +2074,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> English & Hindi Voice/Text AI</li>
                 </ul>
               </div>
-              <button onClick={() => setShowQrModal(true)} className="mt-8 w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all cursor-pointer">
+              <button onClick={onBookDemoClick || (() => setShowQrModal(true))} className="mt-8 w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all cursor-pointer">
                 Start Free Demo
               </button>
             </div>
@@ -2096,7 +2098,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> Dedicated Onboarding Support</li>
                 </ul>
               </div>
-              <button onClick={() => setShowQrModal(true)} className="mt-8 w-full py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-bold text-xs transition-all cursor-pointer shadow-lg shadow-blue-500/30">
+              <button onClick={onBookDemoClick || (() => setShowQrModal(true))} className="mt-8 w-full py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-bold text-xs transition-all cursor-pointer shadow-lg shadow-blue-500/30">
                 Book a Free Hospital Demo
               </button>
             </div>
@@ -2116,7 +2118,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> 24/7 SLA & Dedicated Account Manager</li>
                 </ul>
               </div>
-              <button onClick={() => setShowQrModal(true)} className="mt-8 w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all cursor-pointer">
+              <button onClick={onBookDemoClick || (() => setShowQrModal(true))} className="mt-8 w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all cursor-pointer">
                 Contact Enterprise Sales
               </button>
             </div>
@@ -2127,9 +2129,9 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
       {/* SECTION 10: COMPREHENSIVE FAQ ACCORDION SECTION (INTERACTIVE WHATSAPP CHAT BUBBLE INTERFACE) */}
       <section id="faq" className="py-20 bg-slate-50 relative border-b border-slate-200">
-        
+
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          
+
           <div className="text-center mb-16">
             <span className="text-xs font-bold text-emerald-700 uppercase tracking-widest bg-emerald-100 px-3.5 py-1.5 rounded-full border border-emerald-300/80 inline-flex items-center gap-1.5 shadow-xs">
               <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
@@ -2148,7 +2150,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
               const isOpen = activeFaqIndex === index;
               return (
                 <div key={index} className="flex flex-col space-y-2">
-                  
+
                   {/* QUESTION: Incoming WhatsApp Chat Bubble (Left Aligned) */}
                   <div
                     onClick={() => setActiveFaqIndex(isOpen ? null : index)}
@@ -2197,7 +2199,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
       {/* SECTION 11: HIGH-CONVERTING B2B CTA BANNER */}
       <section className="py-20 bg-gradient-to-tr from-blue-900 via-indigo-900 to-slate-900 text-white relative overflow-hidden border-t border-blue-500/30">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          
+
           <span className="text-xs font-bold text-blue-300 uppercase tracking-widest bg-blue-950/80 px-3.5 py-1.5 rounded-full border border-blue-500/40">
             Partner With Doc2Me
           </span>
@@ -2211,7 +2213,7 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
 
           <div className="mt-8 flex items-center justify-center">
             <button
-              onClick={() => setShowQrModal(true)}
+              onClick={onBookDemoClick || (() => setShowQrModal(true))}
               className="border-0 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold text-lg px-10 py-5 rounded-2xl shadow-xl hover:shadow-emerald-500/40 hover:scale-105 transition-all duration-300 cursor-pointer flex items-center gap-3"
             >
               <Calendar className="w-6 h-6 text-white" />
@@ -2226,9 +2228,9 @@ export function Doc2MePublicHomePage({ onOpenPortalModal }: Doc2MePublicHomePage
       {/* SECTION 12: LARGE PROFESSIONAL FOOTER */}
       <footer className="bg-slate-950 text-slate-400 py-16 border-t border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pb-12 border-b border-slate-800/80">
-            
+
             {/* Column 1: Brand Info */}
             <div className="col-span-2">
               <div className="flex items-center gap-3 mb-4">

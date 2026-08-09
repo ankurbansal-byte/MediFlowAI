@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { 
-  MessageSquare, 
-  Sparkles, 
-  ShieldCheck, 
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  MessageSquare,
+  Sparkles,
+  ShieldCheck,
   QrCode,
   X,
   CheckCircle2,
   Mic,
   Languages,
-  CheckCheck
+  CheckCheck,
+  Building2,
+  ArrowRight
 } from 'lucide-react';
 
 interface HeroProps {
@@ -40,7 +42,7 @@ interface ChatThreadCard {
 export function Hero({ onStartWhatsApp }: HeroProps) {
   const [showQrModal, setShowQrModal] = useState(false);
 
-  /* Authentic WhatsApp Conversation Threads spread across the entire Hero section (1px blur, 70% opacity) */
+  /* Authentic WhatsApp Conversation Threads spread across the Hero section (1px blur, 70% opacity) */
   const whatsappThreads: ChatThreadCard[] = [
     {
       id: 'thread-1',
@@ -229,15 +231,15 @@ export function Hero({ onStartWhatsApp }: HeroProps) {
 
   return (
     <section className="relative w-full min-h-[calc(100vh-80px)] flex flex-col justify-between px-4 sm:px-8 lg:px-12 py-6 overflow-hidden z-10">
-      
+
       {/* ATMOSPHERIC BACKGROUND LAYER: 6 Realistic WhatsApp Chat Threads */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 select-none">
         {whatsappThreads.map((thread) => (
           <motion.div
             key={thread.id}
             animate={thread.floatAnim}
-            style={{ 
-              filter: `blur(${thread.blurPx}px)`, 
+            style={{
+              filter: `blur(${thread.blurPx}px)`,
               opacity: thread.opacityVal,
               transform: `scale(${thread.scale})`
             }}
@@ -261,14 +263,14 @@ export function Hero({ onStartWhatsApp }: HeroProps) {
               {thread.messages.map((msg, idx) => {
                 const isPatient = msg.sender === 'patient';
                 return (
-                  <div 
+                  <div
                     key={idx}
                     className={`flex flex-col ${isPatient ? 'items-end' : 'items-start'}`}
                   >
-                    <div 
+                    <div
                       className={`px-2.5 py-1.5 rounded-xl text-xs font-medium max-w-[88%] shadow-sm ${
-                        isPatient 
-                          ? 'bg-[#005c4b] text-[#e9edef] rounded-tr-none' 
+                        isPatient
+                          ? 'bg-[#005c4b] text-[#e9edef] rounded-tr-none'
                           : 'bg-[#202c33] text-[#e9edef] rounded-tl-none border border-[#2a3942]/50'
                       }`}
                     >
@@ -293,9 +295,9 @@ export function Hero({ onStartWhatsApp }: HeroProps) {
 
       {/* CENTER HERO CONTENT */}
       <div className="relative z-10 flex flex-col items-center text-center max-w-5xl mx-auto my-auto py-8 sm:py-14 px-2">
-        
+
         {/* Top Tagline Pill Badge Restored */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -313,7 +315,7 @@ export function Hero({ onStartWhatsApp }: HeroProps) {
         </motion.div>
 
         {/* Headline - Increased Visual Weight */}
-        <motion.h1 
+        <motion.h1
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
@@ -326,7 +328,7 @@ export function Hero({ onStartWhatsApp }: HeroProps) {
         </motion.h1>
 
         {/* Subheadline */}
-        <motion.p 
+        <motion.p
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
@@ -336,7 +338,7 @@ export function Hero({ onStartWhatsApp }: HeroProps) {
         </motion.p>
 
         {/* Micro Trust Indicators */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.35 }}
@@ -344,6 +346,23 @@ export function Hero({ onStartWhatsApp }: HeroProps) {
         >
           <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>End-to-End Encrypted • Instant WhatsApp AI Record Sync</span>
+        </motion.div>
+
+        {/* Button container */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mt-8 flex items-center justify-center lg:justify-start"
+        >
+          <button
+            onClick={handlePrimaryCta}
+            className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold text-base sm:text-lg shadow-xl shadow-blue-600/30 flex items-center justify-center gap-3 transition-all transform hover:scale-[1.02] active:scale-95 cursor-pointer border border-blue-400/40"
+          >
+            <Building2 className="w-5 h-5" />
+            <span>Schedule a Demo for Your Hospital</span>
+            <ArrowRight className="w-5 h-5" />
+          </button>
         </motion.div>
       </div>
 
@@ -421,5 +440,3 @@ export function Hero({ onStartWhatsApp }: HeroProps) {
     </section>
   );
 }
-
-

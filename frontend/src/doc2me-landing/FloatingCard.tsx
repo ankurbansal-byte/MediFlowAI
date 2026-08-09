@@ -1,21 +1,42 @@
 import { useState } from 'react';
-import { 
-  CheckCheck, 
-  Play, 
-  Pause, 
-  Sparkles, 
-  FileText, 
-  Activity, 
-  Heart, 
-  Scale, 
+import {
+  CheckCheck,
+  Play,
+  Pause,
+  Sparkles,
+  FileText,
+  Activity,
+  Heart,
+  Scale,
   Droplet,
   Thermometer,
   CheckCircle2,
-  Clock,
   Mic,
   Languages
 } from 'lucide-react';
-import { ChatMessageCard, HealthMetric } from '../types';
+
+export interface ChatMessageCard {
+  id: string | number;
+  type: 'voice_note' | 'ai_reply' | 'image_received' | 'patient_text' | string;
+  time: string;
+  content: string;
+  language?: string;
+  audioDuration?: string;
+  statusBadge?: string;
+  imageCaption?: string;
+  aiAnalysis?: string;
+}
+
+export interface HealthMetric {
+  id: string | number;
+  type: 'sugar' | 'bp' | 'weight' | 'pulse' | 'temp' | string;
+  title: string;
+  time: string;
+  value: string;
+  unit: string;
+  status: string;
+  subText?: string;
+}
 
 interface FloatingCardProps {
   card: ChatMessageCard | HealthMetric;
@@ -47,7 +68,7 @@ export function FloatingCard({ card, cardCategory, className = '', animationClas
     };
 
     return (
-      <div 
+      <div
         id={`health-card-${metric.id}`}
         className={`purple-glass purple-glass-hover rounded-2xl p-3.5 sm:p-4 shadow-xl shadow-purple-950/40 select-none ${animationClass} ${className}`}
       >
@@ -95,7 +116,7 @@ export function FloatingCard({ card, cardCategory, className = '', animationClas
   // 1. Voice Note Card
   if (chat.type === 'voice_note') {
     return (
-      <div 
+      <div
         id={`chat-card-${chat.id}`}
         className={`bg-[#0F2018]/90 backdrop-blur-xl border border-emerald-500/30 rounded-2xl p-3.5 sm:p-4 shadow-xl shadow-emerald-950/50 max-w-[280px] sm:max-w-[320px] transition-all duration-300 hover:border-emerald-400/50 ${animationClass} ${className}`}
       >
@@ -112,7 +133,7 @@ export function FloatingCard({ card, cardCategory, className = '', animationClas
         </div>
 
         <div className="flex items-center gap-3 mt-2 bg-emerald-950/60 p-2.5 rounded-xl border border-emerald-500/20">
-          <button 
+          <button
             type="button"
             onClick={() => setIsPlayingVoice(!isPlayingVoice)}
             className="w-9 h-9 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/30 transition-transform active:scale-95 cursor-pointer font-bold"
@@ -124,14 +145,14 @@ export function FloatingCard({ card, cardCategory, className = '', animationClas
           <div className="flex-1">
             <div className="flex items-center gap-0.5 h-6">
               {[40, 75, 25, 90, 60, 30, 80, 100, 45, 65, 85, 30, 70, 50, 90, 40].map((h, i) => (
-                <span 
-                  key={i} 
+                <span
+                  key={i}
                   className={`w-1 rounded-full transition-all duration-300 ${
-                    isPlayingVoice 
-                      ? 'bg-emerald-400 animate-pulse' 
+                    isPlayingVoice
+                      ? 'bg-emerald-400 animate-pulse'
                       : i < 6 ? 'bg-emerald-400' : 'bg-emerald-800'
                   }`}
-                  style={{ 
+                  style={{
                     height: `${isPlayingVoice ? Math.max(20, (h * Math.random()) % 100) : h}%`,
                     animationDelay: `${i * 60}ms`
                   }}
@@ -163,7 +184,7 @@ export function FloatingCard({ card, cardCategory, className = '', animationClas
   // 2. AI Reply Card
   if (chat.type === 'ai_reply') {
     return (
-      <div 
+      <div
         id={`chat-card-${chat.id}`}
         className={`purple-glass purple-glass-hover rounded-2xl p-3.5 sm:p-4 shadow-xl shadow-purple-950/50 max-w-[290px] sm:max-w-[340px] ${animationClass} ${className}`}
       >
@@ -204,7 +225,7 @@ export function FloatingCard({ card, cardCategory, className = '', animationClas
   // 3. Image Received / Lab Report Card
   if (chat.type === 'image_received') {
     return (
-      <div 
+      <div
         id={`chat-card-${chat.id}`}
         className={`bg-[#0F1E28]/90 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-3 sm:p-3.5 shadow-xl shadow-cyan-950/50 max-w-[270px] sm:max-w-[310px] hover:border-cyan-400/50 transition-all ${animationClass} ${className}`}
       >
@@ -260,7 +281,7 @@ export function FloatingCard({ card, cardCategory, className = '', animationClas
   // 4. Patient Text Messages (English, हिन्दी, Hinglish)
   const isHindi = (chat.language as string) === 'हिन्दी' || (chat.language as string) === 'Hindi';
   return (
-    <div 
+    <div
       id={`chat-card-${chat.id}`}
       className={`bg-[#14211A]/90 backdrop-blur-xl border border-emerald-500/30 rounded-2xl p-3 sm:p-3.5 shadow-xl shadow-emerald-950/40 max-w-[260px] sm:max-w-[310px] hover:border-emerald-400/50 transition-all ${animationClass} ${className}`}
     >

@@ -13,8 +13,8 @@ export function Header({ onLoginClick, onSignUpClick }: HeaderProps) {
   return (
     <header className="w-full max-w-7xl mx-auto px-6 sm:px-10 py-6 flex items-center justify-between relative z-30">
       {/* Left: Doc2Me Logo Badge */}
-      <a 
-        href="#" 
+      <a
+        href="#"
         id="doc2me-logo-link"
         className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white shadow-lg shadow-purple-950/30 hover:scale-[1.02] transition-transform duration-200"
       >
@@ -51,4 +51,3 @@ export function Header({ onLoginClick, onSignUpClick }: HeaderProps) {
     </header>
   );
 }
-
