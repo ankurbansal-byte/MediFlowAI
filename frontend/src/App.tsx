@@ -7,7 +7,6 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import ForcePasswordChange from "./pages/ForcePasswordChange";
-import PublicHome from "./pages/PublicHome";
 import HomepageV1 from "./pages/HomepageV1";
 import HomepagePremium from "./pages/HomepagePremium";
 import Doc2mePitchHeroV1 from "./pages/Doc2mePitchHeroV1";
@@ -70,6 +69,8 @@ function App() {
       }
     } else if (viewParam === "verify-email") {
       return "verify-email";
+    } else if (viewParam === "login") {
+      return "login";
     }
     return "home";
   });
@@ -311,8 +312,13 @@ function App() {
   switch (activeView) {
     case "home":
       return (
-        <PublicHome
-          onLoginClick={() => setActiveView("login")}
+        <HomepagePremium
+          onLoginClick={() => {
+            setUser(null);
+            clearAuthSession();
+            setActiveView("login");
+            window.history.pushState({}, document.title, "/?view=login");
+          }}
         />
       );
     case "patient-register":
